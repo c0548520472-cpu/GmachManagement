@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using GmachManagement.Core.Interfaces;
 using GmachManagement.Data.Context;
 using GmachManagement.Data.Repositories;
+using GmachManagement.Data.Services;
 
 namespace GmachManagement.Data
 {
@@ -22,6 +23,7 @@ namespace GmachManagement.Data
             services.AddScoped<ILoanRepository, LoanRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPersonalTransactionRepository, PersonalTransactionRepository>();
+            services.AddHostedService<PersonalReminderWorker>();
             services.AddScoped<IItemRepository, ItemRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
 
