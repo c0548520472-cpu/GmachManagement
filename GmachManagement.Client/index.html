@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>ניהול הגמ"ח</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>ניהול הגמ"ח</h1>
+            <div id="userArea">
+                <span id="welcomeText"></span>
+                <button id="logoutBtn" class="secondary" hidden>
+                    התנתקות
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section id="authSection" class="auth-card">
+            <h2>ברוכים הבאים</h2>
+            <p class="muted">התחברו כדי לנהל השאלות ופריטים</p>
+
+            <div class="tabs">
+                <button id="loginTab" class="tab active">
+                    התחברות
+                </button>
+                <button id="registerTab" class="tab">
+                    הרשמה
+                </button>
+            </div>
+
+            <form id="authForm">
+                <div id="nameGroup" hidden>
+                    <label for="fullName">שם מלא</label>
+                    <input id="fullName" type="text">
+                </div>
+
+                <label for="email">כתובת אימייל</label>
+                <input id="email" type="email" required>
+
+                <label for="password">סיסמה</label>
+                <input id="password" type="password" required>
+
+                <button type="submit" class="primary full-width"
+                        id="authSubmit">
+                    התחברות
+                </button>
+            </form>
+
+            <p id="authMessage" class="message"
+               role="status" aria-live="polite"></p>
+        </section>
+
+        <section id="dashboardSection" hidden>
+            <div class="page-heading">
+                <div>
+                    <h2>קטלוג הפריטים</h2>
+                    <p class="muted">
+                        חיפוש פריטים והשאלת עותקים זמינים
+                    </p>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <input id="searchInput" type="search"
+                       placeholder="חיפוש פריט...">
+
+                <label class="checkbox-label">
+                    <input id="availableOnly"
+                           type="checkbox">
+                    זמינים בלבד
+                </label>
+
+                <button id="searchBtn" class="primary">
+                    חיפוש
+                </button>
+            </div>
+
+            <p id="itemsMessage" class="message"
+               role="status" aria-live="polite"></p>
+
+            <div id="itemsGrid" class="items-grid"></div>
+
+            <div class="pagination">
+                <button id="prevPage" class="secondary">
+                    הקודם
+                </button>
+                <span id="pageLabel">עמוד 1</span>
+                <button id="nextPage" class="secondary">
+                    הבא
+                </button>
+            </div>
+        </section>
+
+        <dialog id="borrowDialog">
+            <form id="borrowForm">
+                <h2>השאלת פריט</h2>
+                <p id="borrowItemName"></p>
+
+                <label for="returnDate">
+                    תאריך החזרה צפוי
+                </label>
+                <input id="returnDate" type="date" required>
+
+                <p id="borrowMessage" class="message"
+                   role="status" aria-live="polite"></p>
+
+                <div class="dialog-actions">
+                    <button type="button" id="cancelBorrow"
+                            class="secondary">
+                        ביטול
+                    </button>
+                    <button type="submit" class="primary">
+                        אישור השאלה
+                    </button>
+                </div>
+            </form>
+        </dialog>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/GmachManagement.Client/">
+    <File Path="GmachManagement.Client/app.js" />
+    <File Path="GmachManagement.Client/index.html" />
+    <File Path="GmachManagement.Client/style.css" />
+  </Folder>
+  <Project Path="GmachManagement.API/GmachManagement.API.csproj" />
+  <Project Path="GmachManagement.Core/GmachManagement.Core.csproj" />
+  <Project Path="GmachManagement.Data/GmachManagement.Data.csproj" />
+  <Project Path="GmachManagement.Service/GmachManagement.Service.csproj" />
+  <Project Path="GmachManagement.Tests/GmachManagement.Tests.csproj" />
+</Solution>

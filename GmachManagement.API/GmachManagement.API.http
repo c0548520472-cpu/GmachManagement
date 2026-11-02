@@ -1,0 +1,16 @@
+
+@host = https://localhost:7042
+
+### בדיקת רשימת השאלות
+GET {{host}}/api/loans
+Accept: application/json
+
+### השאלת מקדחה
+POST {{host}}/api/loans
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "itemCopyId": 1,
+  "expectedReturnDate": "2026-12-01T12:00:00Z"
+}
