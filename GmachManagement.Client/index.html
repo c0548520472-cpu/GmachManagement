@@ -100,6 +100,18 @@
         </section>
 
 
+            <section id="adminSection" class="auth-card" hidden style="margin-top:24px">
+                <h2>ניהול גמ"ח</h2>
+                <form id="adminItemForm">
+                    <label for="adminItemName">שם פריט</label><input id="adminItemName" required maxlength="150">
+                    <label for="adminItemDescription">תיאור</label><input id="adminItemDescription">
+                    <button class="primary" type="submit">הוספת פריט</button>
+                </form>
+                <p id="adminMessage" class="message" role="status"></p>
+                <div id="adminItems"></div>
+                <h3>השאלות פעילות</h3>
+                <div id="adminLoans"></div>
+            </section>
             <section id="personalSection" class="auth-card" style="margin-top:24px">
                 <h2>ההשאלות האישיות שלי</h2>
                 <p class="muted">מעקב אחר פריטים ששאלתי או השאלתי באופן פרטי</p>
