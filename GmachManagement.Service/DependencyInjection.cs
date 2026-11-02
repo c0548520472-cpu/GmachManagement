@@ -20,6 +20,7 @@ namespace GmachManagement.Service
             services.AddScoped<ILoanService, LoanService>();
             services.AddScoped<PasswordService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IPersonalTransactionService, PersonalTransactionService>();
 
             services.AddScoped<ICategoryService, CategoryService>();
 
