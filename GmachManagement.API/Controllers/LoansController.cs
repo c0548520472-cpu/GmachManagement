@@ -14,6 +14,26 @@ namespace GmachManagement.API.Controllers
 
     public class LoansController : ControllerBase
     {
+        [HttpPost("{loanId:int}/admin-return")]
+        [Authorize(Roles = "GmachAdmin")]
+        public async Task<IActionResult> AdminReturn(int loanId, CancellationToken ct)
+        {
+            return await _loanService.ReturnAsAdminAsync(loanId, ct) ? NoContent() : NotFound();
+        }
+
+        [HttpPut("{loanId:int}/due-date")]
+        [Authorize(Roles = "GmachAdmin")]
+        public async Task<IActionResult> ChangeDueDate(int loanId, [FromBody] ChangeDueDateDto request, CancellationToken ct)
+        {
+            if (request.ExpectedReturnDate <= DateTime.UtcNow) return BadRequest();
+            return await _loanService.ChangeReturnDateAsync(loanId, request.ExpectedReturnDate, ct) ? NoContent() : NotFound();
+        }
+
+        public sealed class ChangeDueDateDto
+        {
+            public DateTime ExpectedReturnDate { get; set; }
+        }
+
         private readonly ILoanService _loanService;
         private readonly IMapper _mapper;
 
