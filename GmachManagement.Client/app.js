@@ -29,6 +29,7 @@ function showDashboard() {
         "מחובר למערכת";
     loadItems();
     loadPersonalTransactions();
+    initializeAdmin();
 }
 
 function showLogin() {
@@ -520,4 +521,96 @@ document.getElementById("personalForm").addEventListener("submit", async (event)
     } catch (error) {
         showMessage(message, error.message, "error");
     }
+});
+
+function isAdminToken() {
+    try {
+        const data = JSON.parse(atob(token.split(".")[1]));
+        return (data.role || data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]) === "GmachAdmin";
+    } catch { return false; }
+}
+async function initializeAdmin() {
+    const section = document.getElementById("adminSection");
+    section.hidden = !isAdminToken();
+    if (!section.hidden) await refreshAdmin();
+}
+async function refreshAdmin() {
+    const items = document.getElementById("adminItems");
+    const loans = document.getElementById("adminLoans");
+    const message = document.getElementById("adminMessage");
+    items.replaceChildren();
+    loans.replaceChildren();
+    try {
+        const catalog = await apiRequest("/items?page=1&pageSize=100");
+        for (const item of catalog) {
+            const row = document.createElement("article");
+            row.className = "item-card";
+            const title = document.createElement("h3");
+            title.textContent = item.name;
+            const edit = document.createElement("button");
+            edit.textContent = "עריכת פריט";
+            edit.onclick = async () => {
+                const name = prompt("שם", item.name);
+                if (!name || !name.trim()) return;
+                const description = prompt("תיאור", item.description || "");
+                if (description === null) return;
+                try {
+                    await apiRequest("/items/" + item.id, {method:"PUT",body:JSON.stringify({name,description})});
+                    await refreshAdmin(); await loadItems();
+                } catch(e) {showMessage(message,e.message,"error");}
+            };
+            const copy = document.createElement("button");
+            copy.textContent = "הוספת עותק";
+            copy.onclick = async () => {
+                try {await apiRequest("/items/"+item.id+"/copies",{method:"POST"});await refreshAdmin();await loadItems();}
+                catch(e){showMessage(message,e.message,"error");}
+            };
+            const active = document.createElement("button");
+            active.textContent = item.isActive ? "הסרת פריט" : "שחזור פריט";
+            active.onclick = async () => {
+                try {await apiRequest("/items/"+item.id+"/active?isActive="+(!item.isActive),{method:"PUT"});await refreshAdmin();await loadItems();}
+                catch(e){showMessage(message,e.message,"error");}
+            };
+            row.append(title,edit,copy,active);
+            items.append(row);
+        }
+        const activeLoans = await apiRequest("/Loans/active");
+        for (const loan of activeLoans) {
+            const row = document.createElement("article");
+            row.className = "item-card";
+            const info = document.createElement("p");
+            info.textContent = "השאלה "+loan.id+" | משתמש "+loan.userId+" | עותק "+loan.itemCopyId+" | עד "+new Date(loan.expectedReturnDate).toLocaleDateString("he-IL");
+            const returned = document.createElement("button");
+            returned.textContent = "הוחזר";
+            returned.onclick = async () => {
+                try {await apiRequest("/Loans/"+loan.id+"/admin-return",{method:"POST"});await refreshAdmin();await loadItems();}
+                catch(e){showMessage(message,e.message,"error");}
+            };
+            const due = document.createElement("button");
+            due.textContent = "שינוי תאריך";
+            due.onclick = async () => {
+                const value = prompt("תאריך חדש YYYY-MM-DD");
+                if (!value) return;
+                const date = new Date(value+"T12:00:00");
+                if (isNaN(date.getTime())) return;
+                try {await apiRequest("/Loans/"+loan.id+"/due-date",{method:"PUT",body:JSON.stringify({expectedReturnDate:date.toISOString()})});await refreshAdmin();}
+                catch(e){showMessage(message,e.message,"error");}
+            };
+            row.append(info,returned,due);
+            loans.append(row);
+        }
+    } catch(e) {showMessage(message,e.message,"error");}
+}
+document.getElementById("adminItemForm").addEventListener("submit",async event => {
+    event.preventDefault();
+    const message = document.getElementById("adminMessage");
+    try {
+        await apiRequest("/items",{method:"POST",body:JSON.stringify({
+            name:document.getElementById("adminItemName").value.trim(),
+            description:document.getElementById("adminItemDescription").value.trim()
+        })});
+        event.target.reset();
+        await refreshAdmin(); await loadItems();
+        showMessage(message,"הפריט נוסף","success");
+    } catch(e){showMessage(message,e.message,"error");}
 });
