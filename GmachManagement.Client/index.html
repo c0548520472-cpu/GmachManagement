@@ -99,6 +99,30 @@
             </div>
         </section>
 
+
+            <section id="personalSection" class="auth-card" style="margin-top:24px">
+                <h2>ההשאלות האישיות שלי</h2>
+                <p class="muted">מעקב אחר פריטים ששאלתי או השאלתי באופן פרטי</p>
+                <form id="personalForm">
+                    <label for="personalParty">שם האדם</label>
+                    <input id="personalParty" type="text" maxlength="150" required>
+                    <label for="personalItem">תיאור הפריט</label>
+                    <input id="personalItem" type="text" maxlength="500" required>
+                    <label for="personalType">סוג פעולה</label>
+                    <select id="personalType">
+                        <option value="1">שאלתי ממישהו</option>
+                        <option value="2">השאלתי למישהו</option>
+                    </select>
+                    <label for="personalDate">תאריך ההשאלה</label>
+                    <input id="personalDate" type="date" required>
+                    <label for="personalReminder">תאריך תזכורת (אופציונלי)</label>
+                    <input id="personalReminder" type="date">
+                    <button class="primary" type="submit">שמירת השאלה אישית</button>
+                </form>
+                <p id="personalMessage" class="message" role="status" aria-live="polite"></p>
+                <div id="personalList"></div>
+            </section>
+
         <dialog id="borrowDialog">
             <form id="borrowForm">
                 <h2>השאלת פריט</h2>
