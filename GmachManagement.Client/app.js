@@ -28,6 +28,7 @@ function showDashboard() {
     document.getElementById("welcomeText").textContent =
         "מחובר למערכת";
     loadItems();
+    loadPersonalTransactions();
 }
 
 function showLogin() {
@@ -449,3 +450,74 @@ if (token) {
 } else {
     showLogin();
 }
+
+
+// Personal borrowing / lending
+async function loadPersonalTransactions() {
+    const list = document.getElementById("personalList");
+    const message = document.getElementById("personalMessage");
+    list.replaceChildren();
+    try {
+        const entries = await apiRequest("/personal-transactions");
+        if (!entries.length) {
+            showMessage(message, "עדיין לא נוספו השאלות אישיות.");
+            return;
+        }
+        showMessage(message, "");
+        for (const entry of entries) {
+            const row = document.createElement("article");
+            row.className = "item-card";
+            const title = document.createElement("h3");
+            title.textContent = entry.itemDescription || "פריט";
+            const details = document.createElement("p");
+            details.textContent = (entry.type === 1 ? "שאלתי מ: " : "השאלתי ל: ") + entry.otherPartyName;
+            const status = document.createElement("p");
+            status.textContent = entry.isCompleted ? "הוחזר" : "ממתין להחזרה";
+            row.append(title, details, status);
+            if (!entry.isCompleted) {
+                const button = document.createElement("button");
+                button.className = "secondary";
+                button.textContent = "סימון כהוחזר";
+                button.addEventListener("click", async () => {
+                    button.disabled = true;
+                    try {
+                        await apiRequest(`/personal-transactions/${entry.id}/complete`, { method: "POST" });
+                        await loadPersonalTransactions();
+                    } catch (error) {
+                        showMessage(message, error.message, "error");
+                        button.disabled = false;
+                    }
+                });
+                row.append(button);
+            }
+            list.append(row);
+        }
+    } catch (error) {
+        showMessage(message, error.message, "error");
+    }
+}
+
+document.getElementById("personalDate").value = new Date().toLocaleDateString("en-CA");
+document.getElementById("personalForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = document.getElementById("personalMessage");
+    const date = document.getElementById("personalDate").value;
+    const reminder = document.getElementById("personalReminder").value;
+    try {
+        await apiRequest("/personal-transactions", {
+            method: "POST",
+            body: JSON.stringify({
+                otherPartyName: document.getElementById("personalParty").value.trim(),
+                itemDescription: document.getElementById("personalItem").value.trim(),
+                type: Number(document.getElementById("personalType").value),
+                transactionDate: new Date(date + "T12:00:00").toISOString(),
+                reminderDate: reminder ? new Date(reminder + "T12:00:00").toISOString() : null
+            })
+        });
+        event.target.reset();
+        showMessage(message, "ההשאלה נשמרה בהצלחה.", "success");
+        await loadPersonalTransactions();
+    } catch (error) {
+        showMessage(message, error.message, "error");
+    }
+});
