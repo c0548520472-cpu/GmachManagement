@@ -1,0 +1,20 @@
+name: Build and test
+on:
+  push:
+    branches: [main, feature/personal-borrowing]
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore GmachManagement.slnx
+      - name: Build
+        run: dotnet build GmachManagement.slnx --no-restore
+      - name: Test
+        run: dotnet test GmachManagement.slnx --no-build --verbosity normal
