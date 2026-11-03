@@ -15,6 +15,7 @@ public sealed class PersonalReminderWorker : BackgroundService
     private readonly IConfiguration _config;
     private readonly ILogger<PersonalReminderWorker> _logger;
     private readonly HashSet<int> _sent = new();
+    private DateTime _lastReminderDay = DateTime.MinValue;
 
     public PersonalReminderWorker(IServiceScopeFactory scopeFactory, IConfiguration config, ILogger<PersonalReminderWorker> logger)
     {
@@ -42,11 +43,16 @@ public sealed class PersonalReminderWorker : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var today = DateTime.UtcNow.Date;
+        if (_lastReminderDay != today)
+        {
+            _sent.Clear();
+            _lastReminderDay = today;
+        }
         var tomorrow = today.AddDays(1);
         var due = await db.PersonalTransactions.AsNoTracking()
             .Include(t => t.User)
             .Where(t => !t.IsCompleted && t.ReminderDate != null &&
-                        t.ReminderDate < tomorrow)
+                        t.ReminderDate >= today && t.ReminderDate < tomorrow)
             .ToListAsync(ct);
 
         foreach (var transaction in due)
