@@ -527,7 +527,8 @@ document.getElementById("personalForm").addEventListener("submit", async (event)
 
 function isAdminToken() {
     try {
-        const data = JSON.parse(atob(token.split(".")[1]));
+        const encoded = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const data = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
         return (data.role || data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]) === "GmachAdmin";
     } catch { return false; }
 }
