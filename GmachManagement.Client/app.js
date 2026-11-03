@@ -474,6 +474,7 @@ async function loadPersonalTransactions() {
             details.textContent = (entry.type === 1 ? "שאלתי מ: " : "השאלתי ל: ") + entry.otherPartyName;
             const status = document.createElement("p");
             status.textContent = entry.isCompleted ? "הוחזר" : "ממתין להחזרה";
+            if (entry.amount != null) details.textContent += " | סכום: " + entry.amount;
             row.append(title, details, status);
             if (!entry.isCompleted) {
                 const button = document.createElement("button");
@@ -511,6 +512,7 @@ document.getElementById("personalForm").addEventListener("submit", async (event)
                 otherPartyName: document.getElementById("personalParty").value.trim(),
                 itemDescription: document.getElementById("personalItem").value.trim(),
                 type: Number(document.getElementById("personalType").value),
+                amount: document.getElementById("personalAmount").value ? Number(document.getElementById("personalAmount").value) : null,
                 transactionDate: new Date(date + "T12:00:00").toISOString(),
                 reminderDate: reminder ? new Date(reminder + "T12:00:00").toISOString() : null
             })
