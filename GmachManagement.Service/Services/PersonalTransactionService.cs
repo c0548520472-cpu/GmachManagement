@@ -17,6 +17,7 @@ public class PersonalTransactionService : IPersonalTransactionService
         OtherPartyName = t.OtherPartyName,
         ItemDescription = t.ItemDescription,
         Type = t.Type,
+        Amount = t.Amount,
         TransactionDate = t.TransactionDate,
         ReminderDate = t.ReminderDate,
         IsCompleted = t.IsCompleted
@@ -39,6 +40,7 @@ public class PersonalTransactionService : IPersonalTransactionService
             OtherPartyName = request.OtherPartyName.Trim(),
             ItemDescription = request.ItemDescription.Trim(),
             Type = request.Type,
+            Amount = request.Amount,
             TransactionDate = request.TransactionDate,
             ReminderDate = request.ReminderDate,
             IsCompleted = false
