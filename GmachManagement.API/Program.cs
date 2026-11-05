@@ -90,6 +90,7 @@ namespace GmachManagement.API
                 });
 
             builder.Services.AddAuthorization();
+            builder.Services.AddDataProtection().SetApplicationName("GmachManagement");
 
             builder.Services.AddCors(options =>
             {
