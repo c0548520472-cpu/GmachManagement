@@ -61,11 +61,13 @@
 
 
 
-  <Target Name="PublishDataAssembly" AfterTargets="Publish">
-    <MSBuild Projects="$(MSBuildProjectDirectory)/../GmachManagement.Data/GmachManagement.Data.csproj" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)" />
+  <!-- Add the reflection-loaded Data assembly to the SDK publish file list. -->
+  <Target Name="IncludeDataInPublish" BeforeTargets="ComputeFilesToPublish" DependsOnTargets="Build">
     <ItemGroup>
-      <DataPublishAssemblies Include="$(MSBuildProjectDirectory)/../GmachManagement.Data/bin/$(Configuration)/$(TargetFramework)/*.dll" />
+      <ResolvedFileToPublish Include="$(MSBuildProjectDirectory)/../GmachManagement.Data/bin/$(Configuration)/$(TargetFramework)/GmachManagement.Data.dll">
+        <RelativePath>GmachManagement.Data.dll</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
     </ItemGroup>
-    <Copy SourceFiles="@(DataPublishAssemblies)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
   </Target>
 </Project>
