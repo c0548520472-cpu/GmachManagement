@@ -17,6 +17,11 @@ namespace GmachManagement.Data.Context
         {
         }
 
+        // Allows a provider-specific design-time context to reuse this model.
+        protected AppDbContext(DbContextOptions options) : base(options)
+        {
+        }
+
         public DbSet<User> Users { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<ItemCopy> ItemCopies { get; set; }
