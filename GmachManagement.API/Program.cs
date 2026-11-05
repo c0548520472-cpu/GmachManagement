@@ -5,6 +5,7 @@ using GmachManagement.Core.Interfaces;
 using GmachManagement.Service;
 using GmachManagement.Service.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using NLog.Web;
