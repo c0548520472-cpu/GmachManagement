@@ -60,4 +60,12 @@
 
 
 
+
+  <Target Name="PublishDataAssembly" AfterTargets="Publish">
+    <MSBuild Projects="$(MSBuildProjectDirectory)/../GmachManagement.Data/GmachManagement.Data.csproj" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)" />
+    <ItemGroup>
+      <DataPublishAssemblies Include="$(MSBuildProjectDirectory)/../GmachManagement.Data/bin/$(Configuration)/$(TargetFramework)/*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DataPublishAssemblies)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
