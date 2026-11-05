@@ -30,6 +30,12 @@ namespace GmachManagement.Data.Repositories
                     cancellationToken);
         }
 
+        public async Task<bool> UpdatePasswordHashAsync(int userId, string expectedHash, string newHash, CancellationToken cancellationToken = default)
+        {
+            return await _context.Users.Where(u => u.Id == userId && u.PasswordHash == expectedHash)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.PasswordHash, newHash), cancellationToken) == 1;
+        }
+
         public async Task<User> AddAsync(
             User user,
             CancellationToken cancellationToken = default)
