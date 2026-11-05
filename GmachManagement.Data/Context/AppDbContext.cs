@@ -49,9 +49,22 @@ namespace GmachManagement.Data.Context
                 .HasMany(i => i.Categories)
                 .WithMany(c => c.Items);
 
-            modelBuilder.Entity<ItemCopy>()
-                .Property(c => c.RowVersion)
-                .IsRowVersion();
+            // SQL Server uses its native rowversion; PostgreSQL uses the xmin system column.
+            // Ignore the SQL Server-only byte[] property for PostgreSQL so its
+            // [Timestamp] annotation does not create an incompatible bytea column.
+            if (Database.IsNpgsql())
+            {
+                modelBuilder.Entity<ItemCopy>().Ignore(c => c.RowVersion);
+                modelBuilder.Entity<ItemCopy>()
+                    .Property<uint>("xmin")
+                    .IsRowVersion();
+            }
+            else
+            {
+                modelBuilder.Entity<ItemCopy>()
+                    .Property(c => c.RowVersion)
+                    .IsRowVersion();
+            }
 
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Loans)
