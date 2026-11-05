@@ -16,9 +16,22 @@ namespace GmachManagement.Data
             IConfiguration configuration)
         {
             services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString(
-                        "DefaultConnection")));
+            {
+                var provider = configuration["DatabaseProvider"] ?? "SqlServer";
+                if (provider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.UseNpgsql(configuration.GetConnectionString("PostgreSQL")
+                        ?? throw new InvalidOperationException("PostgreSQL connection string is missing."));
+                }
+                else if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Unsupported database provider: {provider}");
+                }
+            });
 
             services.AddScoped<ILoanRepository, LoanRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
