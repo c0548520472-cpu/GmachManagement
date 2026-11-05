@@ -1,5 +1,5 @@
 
-const API_BASE = "https://localhost:7042/api";
+const API_BASE = "https://gmachmanagement-api.onrender.com/api";
 const PAGE_SIZE = 6;
 
 const authSection = document.getElementById("authSection");
