@@ -91,6 +91,10 @@ async function apiRequest(path, options = {}) {
             }
         }
 
+        if (response.status === 409 && path.toLowerCase() === "/loans") {
+            throw new Error("העותק נתפס על ידי משתמש אחר. יש לרענן את הרשימה ולנסות שוב.");
+        }
+
         throw new Error(message);
     }
 
@@ -461,7 +465,7 @@ document.getElementById("borrowForm").addEventListener(
         } catch (error) {
             showMessage(borrowMessage, error.message, "error");
 
-            if (error.message.includes("אינו זמין")) {
+            if (error.message.includes("העותק נתפס") || error.message.includes("אינו זמין")) {
                 await loadItems();
             }
         } finally {
