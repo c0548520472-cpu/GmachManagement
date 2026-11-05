@@ -30,6 +30,8 @@ namespace GmachManagement.Data.Repositories
                     cancellationToken);
         }
 
+        public Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default) => _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+
         public async Task<bool> UpdatePasswordHashAsync(int userId, string expectedHash, string newHash, CancellationToken cancellationToken = default)
         {
             return await _context.Users.Where(u => u.Id == userId && u.PasswordHash == expectedHash)
