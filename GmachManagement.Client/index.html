@@ -54,6 +54,15 @@
                 </button>
             </form>
 
+            <button id="forgotPasswordBtn" type="button" class="secondary">שכחתי סיסמה</button>
+            <form id="forgotPasswordForm" hidden>
+                <label for="resetEmail">כתובת אימייל</label><input id="resetEmail" type="email" required>
+                <button type="submit" class="primary">שליחת קישור לאיפוס</button>
+            </form>
+            <form id="resetPasswordForm" hidden>
+                <label for="newPassword">סיסמה חדשה</label><input id="newPassword" type="password" minlength="8" required>
+                <button type="submit" class="primary">עדכון סיסמה</button>
+            </form>
             <p id="authMessage" class="message"
                role="status" aria-live="polite"></p>
         </section>
