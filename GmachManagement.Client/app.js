@@ -70,16 +70,10 @@ async function apiRequest(path, options = {}) {
         );
     }
 
-    if (response.status === 401) {
+    if (response.status === 401 && token) {
         logout();
         throw new Error(
             "יש להתחבר מחדש למערכת."
-        );
-    }
-
-    if (response.status === 409) {
-        throw new Error(
-            "הפריט כבר אינו זמין. ייתכן שמשתמש אחר השאיל אותו."
         );
     }
 
@@ -90,7 +84,7 @@ async function apiRequest(path, options = {}) {
 
         try {
             const data = JSON.parse(text);
-            message = data.message || data.title || message;
+            message = data.message || (data.errors ? Object.values(data.errors).flat().join(" ") : null) || data.title || message;
         } catch {
             if (text && text.length < 250) {
                 message = text;
@@ -106,6 +100,45 @@ async function apiRequest(path, options = {}) {
 
     return response.json();
 }
+
+const forgotForm = document.getElementById("forgotPasswordForm");
+const resetForm = document.getElementById("resetPasswordForm");
+const resetToken = new URLSearchParams(location.search).get("resetToken");
+if (resetToken) {
+    resetForm.hidden = false;
+    authForm.hidden = true;
+    document.querySelector(".tabs").hidden = true;
+    document.getElementById("forgotPasswordBtn").hidden = true;
+}
+document.getElementById("forgotPasswordBtn").addEventListener("click", () => {
+    forgotForm.hidden = !forgotForm.hidden;
+    document.getElementById("resetEmail").value = document.getElementById("email").value;
+});
+forgotForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    try {
+        await apiRequest("/Auth/forgot-password", {
+            method: "POST",
+            body: JSON.stringify({ email: document.getElementById("resetEmail").value.trim() })
+        });
+        showMessage(authMessage, "אם הכתובת רשומה, יישלח אליה קישור לאיפוס.", "success");
+    } catch (error) { showMessage(authMessage, error.message, "error"); }
+});
+resetForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    try {
+        await apiRequest("/Auth/reset-password", {
+            method: "POST",
+            body: JSON.stringify({ token: resetToken, newPassword: document.getElementById("newPassword").value })
+        });
+        history.replaceState(null, "", location.pathname);
+        resetForm.hidden = true;
+        authForm.hidden = false;
+        document.querySelector(".tabs").hidden = false;
+        document.getElementById("forgotPasswordBtn").hidden = false;
+        showMessage(authMessage, "הסיסמה עודכנה. ניתן להתחבר.", "success");
+    } catch (error) { showMessage(authMessage, error.message, "error"); }
+});
 
 // התחברות
 authForm.addEventListener("submit", async (event) => {
