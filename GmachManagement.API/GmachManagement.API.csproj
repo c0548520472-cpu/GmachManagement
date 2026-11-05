@@ -64,8 +64,12 @@
   <!-- Add the reflection-loaded Data assembly to the SDK publish file list. -->
   <Target Name="IncludeDataInPublish" BeforeTargets="ComputeFilesToPublish" DependsOnTargets="Build">
     <ItemGroup>
-      <ResolvedFileToPublish Include="$(MSBuildProjectDirectory)/../GmachManagement.Data/bin/$(Configuration)/$(TargetFramework)/*.dll" Exclude="$(MSBuildProjectDirectory)/../GmachManagement.Data/bin/$(Configuration)/$(TargetFramework)/GmachManagement.Core.dll">
-        <RelativePath>%(Filename)%(Extension)</RelativePath>
+      <ResolvedFileToPublish Include="$(MSBuildProjectDirectory)/../GmachManagement.Data/bin/$(Configuration)/$(TargetFramework)/Npgsql.dll">
+        <RelativePath>Npgsql.dll</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(MSBuildProjectDirectory)/../GmachManagement.Data/bin/$(Configuration)/$(TargetFramework)/Npgsql.EntityFrameworkCore.PostgreSQL.dll">
+        <RelativePath>Npgsql.EntityFrameworkCore.PostgreSQL.dll</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
       <ResolvedFileToPublish Include="$(MSBuildProjectDirectory)/../GmachManagement.Data/bin/$(Configuration)/$(TargetFramework)/GmachManagement.Data.dll">
