@@ -13,7 +13,7 @@ namespace GmachManagement.Data.Context
             const string apiUserSecretsId = "756bb929-c18a-4270-bac8-770f68b1d44c";
 
             var configuration = new ConfigurationBuilder()
-                .AddUserSecrets(apiUserSecretsId, optional: true)
+                .AddUserSecrets(apiUserSecretsId)
                 .AddEnvironmentVariables()
                 .Build();
 
