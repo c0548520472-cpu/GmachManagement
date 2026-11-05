@@ -14,6 +14,8 @@ namespace GmachManagement.Core.Interfaces
             CancellationToken cancellationToken = default);
     
     
+        Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+
         Task<bool> UpdatePasswordHashAsync(int userId, string expectedHash, string newHash, CancellationToken cancellationToken = default);
 
         Task<User> AddAsync(
