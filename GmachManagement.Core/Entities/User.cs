@@ -15,6 +15,7 @@ namespace GmachManagement.Core.Entities
         public string Email { get; set; } = string.Empty;
 
         public string PasswordHash { get; set; } = string.Empty;
+        public string? RecoveryCodeHash { get; set; }
 
         public UserRole Role { get; set; }
 
