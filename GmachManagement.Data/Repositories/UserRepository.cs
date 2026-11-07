@@ -26,7 +26,11 @@ namespace GmachManagement.Data.Repositories
             if(user==null)return (null,"המשתמש לא נמצא.");
             if(await _context.Users.AnyAsync(u=>u.Id!=userId&&u.Email.ToLower()==email.ToLower(),ct))return (null,"כתובת המייל כבר רשומה במערכת.");
             var gmach=await _context.Gmachs.FirstOrDefaultAsync(g=>g.OwnerId==userId,ct);
-            if(!isOwner&&gmach!=null)return (null,"לא ניתן להסיר בעלות על גמ״ח קיים. יש להעביר את הגמ״ח בצורה מסודרת לפני שינוי התפקיד.");
+            if(!isOwner&&gmach!=null){
+                if(await _context.Items.AnyAsync(i=>i.GmachId==gmach.Id,ct) || await _context.ManagedLoans.AnyAsync(l=>l.GmachId==gmach.Id,ct))
+                    return (null,"לא ניתן לבטל בעלות כל עוד יש לגמ״ח פריטים או השאלות. הנתונים יישמרו ללא שינוי.");
+                _context.Gmachs.Remove(gmach);
+            }
             user.Name=name;
             user.Email=email;
             if(passwordHash!=null)user.PasswordHash=passwordHash;
