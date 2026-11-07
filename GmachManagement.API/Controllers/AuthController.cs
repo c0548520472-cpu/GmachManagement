@@ -49,6 +49,8 @@ namespace GmachManagement.API.Controllers
             [FromBody] RegisterDto request,
             CancellationToken cancellationToken)
         {
+            if (request.IsGmachOwner && (string.IsNullOrWhiteSpace(request.GmachName) || string.IsNullOrWhiteSpace(request.City)))
+                return BadRequest(new { message = "יש להזין שם גמ״ח ועיר." });
             var registered = await _authService.RegisterAsync(
                 request,
                 cancellationToken);
