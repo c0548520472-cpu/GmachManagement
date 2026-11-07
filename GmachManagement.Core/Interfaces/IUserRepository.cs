@@ -18,6 +18,8 @@ namespace GmachManagement.Core.Interfaces
 
         Task<bool> UpdatePasswordHashAsync(int userId, string expectedHash, string newHash, CancellationToken cancellationToken = default);
 
+        Task<User> AddWithGmachAsync(User user, Gmach gmach, CancellationToken cancellationToken = default);
+
         Task<User> AddAsync(
             User user,
             CancellationToken cancellationToken = default);
