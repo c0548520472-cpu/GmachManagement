@@ -11,6 +11,19 @@ public class GmachOwnershipTests {
   protected override void OnModelCreating(ModelBuilder builder){base.OnModelCreating(builder);builder.Entity<ItemCopy>().Ignore(c=>c.RowVersion);}
  }
 
+ [Fact] public async Task ExcelBatchIsAssignedOnlyToItsGmach(){
+  await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
+  var options=new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+  await using var db=new TestDbContext(options);await db.Database.EnsureCreatedAsync();
+  db.Users.Add(new User{Id=201,Name="Owner",Email="owner@test.invalid",Role=UserRole.GmachAdmin});
+  db.Gmachs.Add(new Gmach{Id=201,OwnerId=201,Name="Tools",City="Jerusalem"});
+  await db.SaveChangesAsync();
+  var repo=new GmachRepository(db);
+  var count=await repo.ImportItemsAsync(201,new List<(string Name,string Description)>{("Drill","Electric"),("Saw","Hand")},CancellationToken.None);
+  Assert.Equal(2,count);
+  Assert.Equal(2,await db.Items.CountAsync(i=>i.GmachId==201));
+  Assert.Equal(0,await db.Items.CountAsync(i=>i.GmachId!=201));
+ }
  [Fact] public async Task CitySearchAndOwnerIsolation(){
   await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
   var options=new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
