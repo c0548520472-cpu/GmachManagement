@@ -496,6 +496,30 @@ if (token) {
 
 
 // Personal borrowing / lending
+// Shared client-side search for item name or description in each management view.
+function matchesItemSearch(query, ...fields) {
+    const normalized = query.trim().toLocaleLowerCase("he");
+    return !normalized || fields.some(field => String(field ?? "").toLocaleLowerCase("he").includes(normalized));
+}
+function filterItemCards(containerId, query) {
+    const container = document.getElementById(containerId);
+    for (const card of container.querySelectorAll("[data-item-search]")) {
+        card.hidden = !matchesItemSearch(query, card.dataset.itemSearch);
+    }
+}
+function applyPersonalItemSearch() {
+    const query = document.getElementById("personalItemSearch").value;
+    filterItemCards("openPersonalList", query);
+    filterItemCards("personalList", query);
+}
+function applyAdminItemSearch() {
+    const query = document.getElementById("adminItemSearch").value;
+    filterItemCards("adminItems", query);
+    filterItemCards("removedAdminItems", query);
+}
+document.getElementById("personalItemSearch").addEventListener("input", applyPersonalItemSearch);
+document.getElementById("adminItemSearch").addEventListener("input", applyAdminItemSearch);
+
 async function loadPersonalTransactions() {
     const historyList = document.getElementById("personalList");
     const openList = document.getElementById("openPersonalList");
@@ -512,6 +536,7 @@ async function loadPersonalTransactions() {
         for (const entry of entries) {
             const row = document.createElement("article");
             row.className = "item-card";
+            row.dataset.itemSearch = entry.itemDescription || "";
             const title = document.createElement("h3");
             title.textContent = entry.itemDescription || "פריט";
             const details = document.createElement("p");
@@ -538,6 +563,7 @@ async function loadPersonalTransactions() {
             }
             (entry.isCompleted ? historyList : openList).append(row);
         }
+        applyPersonalItemSearch();
         if (!completed.length) {
             const empty = document.createElement("p");
             empty.textContent = "אין עדיין השאלות שהסתיימו.";
@@ -660,6 +686,7 @@ async function refreshAdmin() {
         for (const item of catalog) {
             const row = document.createElement("article");
             row.className = "item-card";
+            row.dataset.itemSearch = [item.name, item.description].filter(Boolean).join(" ");
             const title = document.createElement("h3");
             title.textContent = item.name;
             const details = document.createElement("p");
@@ -695,6 +722,7 @@ async function refreshAdmin() {
                 removedList.append(row);
             }
         }
+        applyAdminItemSearch();
         if (!removedList.childElementCount) {
             const empty=document.createElement("p"); empty.textContent="אין פריטים לשחזור."; removedList.append(empty);
         }
