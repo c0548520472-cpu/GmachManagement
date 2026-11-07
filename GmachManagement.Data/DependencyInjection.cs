@@ -33,6 +33,12 @@ namespace GmachManagement.Data
                 }
             });
 
+            if (string.Equals(configuration["DatabaseProvider"], "PostgreSQL", StringComparison.OrdinalIgnoreCase))
+            {
+                services.AddDbContext<PostgreSqlMigrationsDbContext>(options =>
+                    options.UseNpgsql(configuration.GetConnectionString("PostgreSQL")));
+            }
+
             services.AddScoped<ILoanRepository, LoanRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPersonalTransactionRepository, PersonalTransactionRepository>();
@@ -44,6 +50,14 @@ namespace GmachManagement.Data
             return services;
         }
 
+
+        public static async Task ApplyPostgreSqlMigrationsAsync(IServiceProvider provider, IConfiguration configuration)
+        {
+            if (!string.Equals(configuration["DatabaseProvider"], "PostgreSQL", StringComparison.OrdinalIgnoreCase)) return;
+            using var scope = provider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<PostgreSqlMigrationsDbContext>();
+            await context.Database.MigrateAsync();
+        }
 
         public static async Task CreateInitialAdminAsync(
             IServiceProvider serviceProvider,
