@@ -22,31 +22,21 @@ function showMessage(element, message, type = "") {
 }
 
 function showDashboard() {
-    authSection.hidden = true;
-    dashboardSection.hidden = false;
-    document.getElementById("logoutBtn").hidden = false;
-    document.getElementById("welcomeText").textContent =
-        "מחובר למערכת";
-    updateNavigation();
-    loadItems();
-    loadPersonalTransactions();
+    showHome();
     loadMyLoans();
-    initializeAdmin();
+    loadPersonalTransactions();
+    if (isAdminToken()) refreshAdmin();
 }
 
 function showLogin() {
-    authSection.hidden = false;
-    dashboardSection.hidden = true;
-    document.getElementById("logoutBtn").hidden = true;
-    document.getElementById("welcomeText").textContent = "";
-    updateNavigation();
+    showPage("login");
 }
 
 function logout() {
     sessionStorage.removeItem("gmachToken");
     token = null;
     currentItems = [];
-    showLogin();
+    document.getElementById("welcomeText").textContent = "";
     showHome();
 }
 
@@ -586,9 +576,9 @@ function isAdminToken() {
 }
 async function initializeAdmin() {
     const section = document.getElementById("adminSection");
-    section.hidden = !isAdminToken();
+    section.hidden = false;
     updateNavigation();
-    if (!section.hidden) await refreshAdmin();
+    if (isAdminToken()) await refreshAdmin();
 }
 async function refreshAdmin() {
     const items = document.getElementById("adminItems");
@@ -683,28 +673,46 @@ document.getElementById("adminItemForm").addEventListener("submit",async event =
 });
 
 
-// Public catalog and the two role-based user journeys.
-function showHome() {
-    authSection.hidden = true;
-    dashboardSection.hidden = false;
+// Separate public catalog, login, personal account and owner management views.
+function showPage(page, push = true) {
+    if ((page === "account" || page === "owner") && !token) page = "login";
+    if (page === "owner" && !isAdminToken()) page = "account";
+    authSection.hidden = page !== "login";
+    dashboardSection.hidden = page !== "home";
+    document.getElementById("accountPage").hidden = page !== "account";
+    document.getElementById("ownerPage").hidden = page !== "owner";
     document.getElementById("logoutBtn").hidden = !token;
-    updateNavigation();
-    loadItems();
-    document.getElementById("personalSection").hidden = !token;
-    document.getElementById("myLoansSection").hidden = !token;
-    document.getElementById("adminSection").hidden = !token || !isAdminToken();
+    document.getElementById("welcomeText").textContent = token ? "מחובר למערכת" : "";
+    document.getElementById("loginNav").hidden = !!token;
+    document.getElementById("myLoansNav").hidden = !token;
+    document.getElementById("adminNav").hidden = !token || !isAdminToken();
+    if (push) {
+        const url = new URL(location.href);
+        url.searchParams.delete("gmach");
+        if (page === "home") url.searchParams.delete("page");
+        else url.searchParams.set("page", page);
+        history.pushState({page}, "", url);
+    }
+    if (page === "home") { loadItems(); findGmachs(); }
+    if (page === "account") { loadMyLoans(); loadPersonalTransactions(); }
+    if (page === "owner") refreshAdmin();
+    window.scrollTo({top:0,behavior:"instant"});
 }
+function showHome() { showPage("home"); }
 function updateNavigation() {
     document.getElementById("loginNav").hidden = !!token;
     document.getElementById("myLoansNav").hidden = !token;
     document.getElementById("adminNav").hidden = !token || !isAdminToken();
-    document.getElementById("personalSection").hidden = !token;
-    document.getElementById("myLoansSection").hidden = !token;
 }
-document.getElementById("homeNav").addEventListener("click", () => { showHome(); window.scrollTo({top:0,behavior:"smooth"}); });
-document.getElementById("loginNav").addEventListener("click", () => { showLogin(); authSection.scrollIntoView({behavior:"smooth"}); });
-document.getElementById("myLoansNav").addEventListener("click", () => { showHome(); document.getElementById("myLoansSection").scrollIntoView({behavior:"smooth"}); });
-document.getElementById("adminNav").addEventListener("click", () => { showHome(); document.getElementById("adminSection").scrollIntoView({behavior:"smooth"}); });
+document.getElementById("homeNav").addEventListener("click", showHome);
+document.getElementById("loginNav").addEventListener("click", showLogin);
+document.getElementById("myLoansNav").addEventListener("click", () => showPage("account"));
+document.getElementById("adminNav").addEventListener("click", () => showPage("owner"));
+window.addEventListener("popstate", () => {
+    const page = new URLSearchParams(location.search).get("page") || "home";
+    showPage(["login","account","owner"].includes(page) ? page : "home", false);
+});
+
 async function loadMyLoans() {
     if (!token) return;
     const list = document.getElementById("myLoansList");
@@ -753,7 +761,7 @@ async function findGmachs(){
  }catch(e){showMessage(itemsMessage,e.message,"error");}
 }
 async function showGmach(id){
- const url=new URL(location.href);url.searchParams.set("gmach",id);history.replaceState(null,"",url);
+ const url=new URL(location.href);url.searchParams.delete("page");url.searchParams.set("gmach",id);history.pushState(null,"",url);
  const container=document.getElementById("gmachDetails");container.replaceChildren();
  try {const g=await apiRequest("/gmachs/"+id);const section=document.createElement("section");section.className="auth-card wide-card";
  const title=document.createElement("h2");title.textContent=g.name+" — "+g.city;section.append(title);
@@ -771,6 +779,8 @@ document.getElementById("findGmachs").addEventListener("click",findGmachs);
 findGmachs();
 const directGmachId=Number(new URLSearchParams(location.search).get("gmach"));
 if(Number.isInteger(directGmachId)&&directGmachId>0)showGmach(directGmachId);
+const initialPage=new URLSearchParams(location.search).get("page");
+showPage(["login","account","owner"].includes(initialPage)?initialPage:"home",false);
 document.getElementById("excelImportForm").addEventListener("submit",async event=>{
  event.preventDefault();const file=document.getElementById("excelFile").files[0];if(!file)return;
  const form=new FormData();form.append("file",file);
