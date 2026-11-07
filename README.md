@@ -42,3 +42,28 @@
 
 ## דמו מומלץ
 הרשמה והתחברות; הצגת קטלוג וסינון; השאלת עותק; הדגמת HTTP 409 בשתי בקשות מתחרות; הוספת השאלה אישית; סימון החזרה; התחברות מנהל והוספת פריט/עותק, עדכון מועד החזרה.
+
+
+## Gmach directory and owner areas
+
+- Public directory: `GET /api/gmachs?city=...`, detail page: `GET /api/gmachs/{id}`.
+- Registration accepts `isGmachOwner`, `gmachName`, and `city`. An owner gets a single gmach linked to their user account.
+- Owners manage their own items through `/api/gmachs/mine` and `/api/gmachs/mine/items`; item and loan administration is ownership-scoped.
+- Excel import: `POST /api/gmachs/mine/import` with multipart field `file`, `.xlsx` only, first worksheet; first row is headers, column A item name, B description, up to 500 items and 2 MB.
+- Existing unassigned items remain unassigned; no automatic transfer of ownership.
+
+### Required database upgrade (before using owner registration)
+
+**Back up the existing Neon database first.** Run the additive PostgreSQL migration using the already-configured local Neon credentials:
+
+```powershell
+dotnet ef database update --context PostgreSqlMigrationsDbContext --project GmachManagement.Data --startup-project GmachManagement.API
+```
+
+For local SQL Server:
+
+```powershell
+dotnet ef database update --context AppDbContext --project GmachManagement.Data --startup-project GmachManagement.API
+```
+
+The deployment does not automatically run migrations. Verify the migration has completed before testing owner registration, gmach search or Excel import on the public site.
