@@ -28,6 +28,27 @@ namespace GmachManagement.Service.Services
             _configuration = configuration;
         }
 
+        public async Task<(string? Name,string? Email,bool IsOwner,string? GmachName,string? City)> GetProfileAsync(int userId,CancellationToken ct=default)
+        {
+            var user=await _userRepository.GetByIdAsync(userId,ct);
+            if(user==null)return (null,null,false,null,null);
+            var gmach=await _userRepository.GetOwnedGmachAsync(userId,ct);
+            return (user.Name,user.Email,gmach!=null||user.Role==UserRole.GmachAdmin,gmach?.Name,gmach?.City);
+        }
+        public async Task<(string? Token,string? Error)> UpdateProfileAsync(int userId,string name,string email,string currentPassword,string? newPassword,bool isOwner,string? gmachName,string? city,CancellationToken ct=default)
+        {
+            var user=await _userRepository.GetByIdAsync(userId,ct);
+            if(user==null||!_passwordService.VerifyPassword(user,currentPassword))return (null,"הסיסמה הנוכחית שגויה.");
+            if(string.IsNullOrWhiteSpace(name)||string.IsNullOrWhiteSpace(email))return (null,"יש להזין שם וכתובת מייל.");
+            if(isOwner&&(string.IsNullOrWhiteSpace(gmachName)||string.IsNullOrWhiteSpace(city)))return (null,"יש להזין שם גמ״ח ועיר.");
+            if(newPassword!=null&&(newPassword.Length<8||newPassword.Length>128))return (null,"הסיסמה החדשה חייבת להכיל 8 עד 128 תווים.");
+            var newHash=newPassword==null?null:_passwordService.HashPassword(user,newPassword);
+            var result=await _userRepository.UpdateProfileAsync(userId,name.Trim(),email.Trim().ToLowerInvariant(),newHash,isOwner,gmachName?.Trim(),city?.Trim(),ct);
+            if(result.Error!=null)return (null,result.Error);
+            var token=await LoginAsync(new LoginDto{Email=email.Trim(),Password=newPassword??currentPassword},ct);
+            return (token,token==null?"יש להתחבר מחדש.":null);
+        }
+
         public async Task<string?> LoginAsync(
             LoginDto request,
             CancellationToken cancellationToken = default)
