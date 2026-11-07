@@ -15,8 +15,8 @@ public sealed class GmachRepository : IGmachRepository {
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>db.Gmachs.AsNoTracking().Include(g=>g.Items).ThenInclude(i=>i.Copies).FirstOrDefaultAsync(g=>g.Id==id,ct);
  public Task<Gmach?> GetByOwnerAsync(int ownerId,CancellationToken ct)=>db.Gmachs.AsNoTracking().FirstOrDefaultAsync(g=>g.OwnerId==ownerId,ct);
  public async Task<Gmach> CreateAsync(Gmach g,CancellationToken ct){db.Gmachs.Add(g);await db.SaveChangesAsync(ct);return g;}
- public async Task<int> ImportItemsAsync(int gmachId,IReadOnlyList<(string Name,string Description)> rows,CancellationToken ct){
-  var items=rows.Select(r=>new Item{Name=r.Name,Description=r.Description,GmachId=gmachId}).ToList();
+ public async Task<int> ImportItemsAsync(int gmachId,IReadOnlyList<(string Name,string Description,int Quantity)> rows,CancellationToken ct){
+  var items=rows.Select(r=>new Item{Name=r.Name,Description=r.Description,GmachId=gmachId,Copies=Enumerable.Range(0,r.Quantity).Select(_=>new ItemCopy{Status=GmachManagement.Core.Enums.ItemStatus.Available}).ToList()}).ToList();
   db.Items.AddRange(items);
   await db.SaveChangesAsync(ct);
   return items.Count;
