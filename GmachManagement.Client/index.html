@@ -47,7 +47,7 @@
                 <input id="email" type="email" required>
 
                 <label for="password">סיסמה</label>
-                <input id="password" type="password" required>
+                <div class="password-field"><input id="password" type="password" required autocomplete="current-password"><label class="password-toggle"><input id="showPassword" type="checkbox"> הצג סיסמה</label></div>
 
                 <button type="submit" class="primary full-width"
                         id="authSubmit">
@@ -61,7 +61,7 @@
                 <button type="submit" class="primary">שליחת קישור לאיפוס</button>
             </form>
             <form id="resetPasswordForm" hidden>
-                <label for="newPassword">סיסמה חדשה</label><input id="newPassword" type="password" minlength="8" required>
+                <label for="newPassword">סיסמה חדשה</label><input id="newPassword" type="password" minlength="8" required><label class="password-toggle"><input id="showNewPassword" type="checkbox"> הצג סיסמה</label>
                 <button type="submit" class="primary">עדכון סיסמה</button>
             </form>
             <p id="authMessage" class="message"
