@@ -16,6 +16,8 @@ namespace GmachManagement.Core.Interfaces
     
         Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
+        Task<bool> SetRecoveryCodeHashAsync(int userId, string codeHash, CancellationToken cancellationToken = default);
+        Task<bool> ConsumeRecoveryCodeAsync(string email, string expectedCodeHash, string newPasswordHash, CancellationToken cancellationToken = default);
         Task<bool> UpdatePasswordHashAsync(int userId, string expectedHash, string newHash, CancellationToken cancellationToken = default);
 
         Task<User> AddWithGmachAsync(User user, Gmach gmach, CancellationToken cancellationToken = default);
