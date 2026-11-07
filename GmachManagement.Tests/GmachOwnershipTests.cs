@@ -35,6 +35,20 @@ public class GmachOwnershipTests {
   Assert.Equal(2,await db.Items.CountAsync(i=>i.GmachId==201));
   Assert.Equal(0,await db.Items.CountAsync(i=>i.GmachId!=null && i.GmachId!=201));
  }
+ [Fact] public async Task ReimportAndManualAddIncreaseCopiesWithoutDuplicateItems(){
+  await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
+  var options=new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+  await using var db=new TestDbContext(options);await db.Database.EnsureCreatedAsync();
+  db.Users.Add(new User{Id=401,Name="Owner",Email="merge@test.invalid",Role=UserRole.GmachAdmin});
+  db.Gmachs.Add(new Gmach{Id=401,OwnerId=401,Name="Tools",City="Jerusalem"});
+  await db.SaveChangesAsync();
+  var repo=new GmachRepository(db);
+  await repo.ImportItemsAsync(401,new List<(string Name,string Description,int Quantity)>{("Drill","Electric",3)},CancellationToken.None);
+  await repo.ImportItemsAsync(401,new List<(string Name,string Description,int Quantity)>{(" drill ","electric",2),("Drill","Electric",4)},CancellationToken.None);
+  await repo.AddItemAsync(401,"DRILL","ELECTRIC",CancellationToken.None);
+  Assert.Equal(1,await db.Items.CountAsync(i=>i.GmachId==401));
+  Assert.Equal(10,await db.ItemCopies.CountAsync(c=>c.Item.GmachId==401));
+ }
  [Fact] public async Task CitySearchAndOwnerIsolation(){
   await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
   var options=new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
