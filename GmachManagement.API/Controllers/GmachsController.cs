@@ -34,7 +34,19 @@ public sealed class GmachsController : ControllerBase {
   return loan==null?Conflict(new {message="אין עותק זמין להשאלה."}):Ok(loan);
  }
  [HttpGet("mine/managed-loans"),Authorize(Roles="GmachAdmin")]
- public async Task<IActionResult> ManagedLoans(CancellationToken ct)=>Ok(await service.GetManagedLoansAsync(UserId,ct));
+ public async Task<IActionResult> ManagedLoans(CancellationToken ct){
+  var loans=await service.GetManagedLoansAsync(UserId,ct);
+  var ownedGmach=await service.GetMineAsync(UserId,ct);
+  var gmach=ownedGmach==null?null:await service.GetAsync(ownedGmach.Id,ct);
+  var copies=(gmach?.Items??Enumerable.Empty<GmachManagement.Core.Entities.Item>())
+   .SelectMany(item=>item.Copies.Select(copy=>new {copy.Id,ItemId=item.Id,ItemName=item.Name}))
+   .ToDictionary(copy=>copy.Id);
+  return Ok(loans.Select(loan=>new {
+   loan.Id,loan.GmachId,loan.ItemCopyId,loan.BorrowerName,loan.BorrowerPhone,loan.BorrowerEmail,loan.BorrowedAt,loan.ReturnedAt,
+   ItemId=copies.TryGetValue(loan.ItemCopyId,out var copy)?copy.ItemId:(int?)null,
+   ItemName=copies.TryGetValue(loan.ItemCopyId,out var namedCopy)?namedCopy.ItemName:null
+  }));
+ }
  [HttpPost("mine/managed-loans/{id:int}/return"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> ReturnManagedLoan(int id,CancellationToken ct)=>await service.ReturnManagedLoanAsync(UserId,id,ct)?NoContent():NotFound();
 }
