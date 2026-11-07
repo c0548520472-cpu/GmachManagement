@@ -99,43 +99,37 @@ async function apiRequest(path, options = {}) {
     return response.json();
 }
 
-const forgotForm = document.getElementById("forgotPasswordForm");
-const resetForm = document.getElementById("resetPasswordForm");
-const resetToken = new URLSearchParams(location.search).get("resetToken");
-if (resetToken) {
-    resetForm.hidden = false;
-    authForm.hidden = true;
-    document.querySelector(".tabs").hidden = true;
-    document.getElementById("forgotPasswordBtn").hidden = true;
+const forgotForm=document.getElementById("forgotPasswordForm");
+const recoveryNotice=document.getElementById("recoveryCodeNotice");
+function displayRecoveryCode(code){
+ document.getElementById("recoveryCodeValue").textContent=code;
+ recoveryNotice.hidden=false;
 }
-document.getElementById("forgotPasswordBtn").addEventListener("click", () => {
-    forgotForm.hidden = !forgotForm.hidden;
-    document.getElementById("resetEmail").value = document.getElementById("email").value;
+document.getElementById("closeRecoveryCode").addEventListener("click",()=>{
+ document.getElementById("recoveryCodeValue").textContent="";recoveryNotice.hidden=true;
 });
-forgotForm.addEventListener("submit", async event => {
-    event.preventDefault();
-    try {
-        await apiRequest("/Auth/forgot-password", {
-            method: "POST",
-            body: JSON.stringify({ email: document.getElementById("resetEmail").value.trim() })
-        });
-        showMessage(authMessage, "אם הכתובת רשומה, יישלח אליה קישור לאיפוס.", "success");
-    } catch (error) { showMessage(authMessage, error.message, "error"); }
+document.getElementById("copyRecoveryCode").addEventListener("click",async()=>{
+ try{await navigator.clipboard.writeText(document.getElementById("recoveryCodeValue").textContent);}catch(e){showMessage(authMessage,"לא ניתן להעתיק אוטומטית. העתיקי ידנית.","error");}
 });
-resetForm.addEventListener("submit", async event => {
-    event.preventDefault();
-    try {
-        await apiRequest("/Auth/reset-password", {
-            method: "POST",
-            body: JSON.stringify({ token: resetToken, newPassword: document.getElementById("newPassword").value })
-        });
-        history.replaceState(null, "", location.pathname);
-        resetForm.hidden = true;
-        authForm.hidden = false;
-        document.querySelector(".tabs").hidden = false;
-        document.getElementById("forgotPasswordBtn").hidden = false;
-        showMessage(authMessage, "הסיסמה עודכנה. ניתן להתחבר.", "success");
-    } catch (error) { showMessage(authMessage, error.message, "error"); }
+document.getElementById("newRecoveryCodeBtn").addEventListener("click",async()=>{
+ if(!confirm("יצירת קוד חדש תבטל את קוד השחזור הקודם. להמשיך?"))return;
+ try{const result=await apiRequest("/Auth/my-recovery-code",{method:"POST"});displayRecoveryCode(result.recoveryCode);}
+ catch(e){showMessage(authMessage,e.message,"error");}
+});
+document.getElementById("showRecoveryPassword").addEventListener("change",e=>{
+ document.getElementById("recoveryNewPassword").type=e.target.checked?"text":"password";
+});
+document.getElementById("forgotPasswordBtn").addEventListener("click",()=>{
+ forgotForm.hidden=!forgotForm.hidden;
+ document.getElementById("resetEmail").value=document.getElementById("email").value;
+});
+forgotForm.addEventListener("submit",async event=>{
+ event.preventDefault();
+ try{
+  await apiRequest("/Auth/reset-with-recovery",{method:"POST",body:JSON.stringify({email:document.getElementById("resetEmail").value.trim(),recoveryCode:document.getElementById("recoveryCode").value.trim(),newPassword:document.getElementById("recoveryNewPassword").value})});
+  forgotForm.reset();forgotForm.hidden=true;
+  showMessage(authMessage,"הסיסמה עודכנה. אפשר להתחבר. קוד השחזור נוצל.","success");
+ }catch(e){showMessage(authMessage,e.message,"error");}
 });
 
 // התחברות
@@ -150,12 +144,13 @@ authForm.addEventListener("submit", async (event) => {
         showMessage(authMessage, "מבצע הרשמה...");
 
         try {
-            await apiRequest("/Auth/register", {
+            const registration = await apiRequest("/Auth/register", {
                 method: "POST",
                 body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), city: document.getElementById("gmachCity").value.trim() })
             });
 
             switchAuthMode("login");
+            if(registration.recoveryCode)displayRecoveryCode(registration.recoveryCode);
 
             showMessage(
                 authMessage,
@@ -824,6 +819,7 @@ function showPage(page, push = true) {
     document.getElementById("ownerPage").hidden = page !== "owner";
     document.getElementById("adminSection").hidden = page !== "owner";
     document.getElementById("logoutBtn").hidden = !token;
+    document.getElementById("newRecoveryCodeBtn").hidden = !token;
     document.getElementById("welcomeText").textContent = token ? "מחובר למערכת" : "";
     document.getElementById("loginNav").hidden = !!token;
     document.getElementById("myLoansNav").hidden = !token;
