@@ -120,14 +120,21 @@ document.getElementById("showRecoveryPassword").addEventListener("change",e=>{
  document.getElementById("recoveryNewPassword").type=e.target.checked?"text":"password";
 });
 document.getElementById("forgotPasswordBtn").addEventListener("click",()=>{
- forgotForm.hidden=!forgotForm.hidden;
+ forgotForm.hidden=false;
+ authForm.hidden=true;
+ document.querySelector("#authSection .tabs").hidden=true;
+ document.getElementById("forgotPasswordBtn").hidden=true;
  document.getElementById("resetEmail").value=document.getElementById("email").value;
+ document.getElementById("recoveryNewPassword").value="";
+ document.getElementById("recoveryCode").value="";
+ showMessage(authMessage,"");
+ document.getElementById("resetEmail").focus();
 });
 forgotForm.addEventListener("submit",async event=>{
  event.preventDefault();
  try{
   await apiRequest("/Auth/reset-with-recovery",{method:"POST",body:JSON.stringify({email:document.getElementById("resetEmail").value.trim(),recoveryCode:document.getElementById("recoveryCode").value.trim(),newPassword:document.getElementById("recoveryNewPassword").value})});
-  forgotForm.reset();forgotForm.hidden=true;
+  forgotForm.reset();switchAuthMode("login");
   showMessage(authMessage,"הסיסמה עודכנה. אפשר להתחבר. קוד השחזור נוצל.","success");
  }catch(e){showMessage(authMessage,e.message,"error");}
 });
@@ -191,6 +198,8 @@ authForm.addEventListener("submit", async (event) => {
 
 function switchAuthMode(mode) {
     authMode = mode;
+    authForm.hidden=false;
+    document.querySelector("#authSection .tabs").hidden=false;
 
     document.getElementById("loginTab")
         .classList.toggle("active", mode === "login");
@@ -211,6 +220,8 @@ function switchAuthMode(mode) {
 
     showMessage(authMessage, "");
 }
+
+document.getElementById("cancelRecovery").addEventListener("click",()=>switchAuthMode("login"));
 
 document.getElementById("loginTab").addEventListener(
     "click", () => switchAuthMode("login")
