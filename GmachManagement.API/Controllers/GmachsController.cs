@@ -20,5 +20,5 @@ public sealed class GmachsController : ControllerBase {
   return Created($"/api/gmachs/{g.Id}",new {g.Id,g.Name,g.City,g.Description});
  }
  [HttpGet("mine"),Authorize(Roles="GmachAdmin")] public async Task<IActionResult> Mine(CancellationToken ct){var g=await service.GetMineAsync(UserId,ct);return g==null?NotFound(new {message="לא נמצא גמ״ח משויך לחשבון."}):Ok(Project(await service.GetAsync(g.Id,ct)??g));}
- [HttpPost("mine/items"),Authorize(Roles="GmachAdmin")] public async Task<IActionResult> AddItem([FromBody]CreateItemDto dto,CancellationToken ct){var g=await service.GetMineAsync(UserId,ct);if(g==null)return Forbid();var item=await service.AddItemAsync(g.Id,dto.Name.Trim(),dto.Description.Trim(),ct);return Created($"/api/items/{item.Id}",new {item.Id,item.Name,item.Description});}
+ [HttpPost("mine/items"),Authorize(Roles="GmachAdmin")] public async Task<IActionResult> AddItem([FromBody]CreateItemDto dto,CancellationToken ct){var g=await service.GetMineAsync(UserId,ct);if(g==null)return Forbid();var item=await service.AddItemAsync(g.Id,dto.Name.Trim(),dto.Description?.Trim() ?? string.Empty,ct);return Created($"/api/items/{item.Id}",new {item.Id,item.Name,item.Description});}
 }
