@@ -81,6 +81,7 @@ namespace GmachManagement.Data.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
                     b.Property<string>("Name").IsRequired().HasMaxLength(150).HasColumnType("nvarchar(150)");
                     b.Property<string>("City").IsRequired().HasMaxLength(100).HasColumnType("nvarchar(100)");
+                    b.Property<string>("Type").IsRequired().HasMaxLength(100).HasDefaultValue("").HasColumnType("nvarchar(100)");
                     b.Property<string>("Description").HasColumnType("nvarchar(max)");
                     b.Property<int>("OwnerId").HasColumnType("int");
                     b.HasKey("Id");
