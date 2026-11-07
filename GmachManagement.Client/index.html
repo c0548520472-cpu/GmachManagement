@@ -12,7 +12,7 @@
     <header class="header">
         <div class="header-content">
             <h1>ניהול הגמ"ח</h1>
-            <div id="userArea">
+            <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button></nav><div id="userArea">
                 <span id="welcomeText"></span>
                 <button id="logoutBtn" class="secondary" hidden>
                     התנתקות
@@ -108,7 +108,8 @@
             </div>
 
 
-            <section id="adminSection" class="auth-card" hidden style="margin-top:24px">
+            <section id="myLoansSection" class="auth-card wide-card" hidden><h2>ההשאלות שלי מהגמ״ח</h2><p id="myLoansMessage" class="message" role="status"></p><div id="myLoansList" class="items-grid"></div></section>
+            <section id="adminSection" class="auth-card wide-card" hidden style="margin-top:24px">
                 <h2>ניהול גמ"ח</h2>
                 <form id="adminItemForm">
                     <label for="adminItemName">שם פריט</label><input id="adminItemName" required maxlength="150">
@@ -120,7 +121,7 @@
                 <h3>השאלות פעילות</h3>
                 <div id="adminLoans"></div>
             </section>
-            <section id="personalSection" class="auth-card" style="margin-top:24px">
+            <section id="personalSection" class="auth-card wide-card" style="margin-top:24px">
                 <h2>ההשאלות האישיות שלי</h2>
                 <p class="muted">מעקב אחר פריטים ששאלתי או השאלתי באופן פרטי</p>
                 <form id="personalForm">
