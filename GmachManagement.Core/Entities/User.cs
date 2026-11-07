@@ -18,6 +18,8 @@ namespace GmachManagement.Core.Entities
 
         public UserRole Role { get; set; }
 
+        public Gmach? OwnedGmach { get; set; }
+
         public ICollection<Loan> Loans { get; set; }= new List<Loan>();
     
 
