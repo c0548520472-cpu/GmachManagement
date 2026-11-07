@@ -636,6 +636,7 @@ document.getElementById("ownerBorrowForm").addEventListener("submit",async event
   ownerBorrowDialog.close();await refreshAdmin();await loadItems();
  }catch(error){showMessage(message,error.message,"error");}
 });
+document.getElementById("managedLoansSort").addEventListener("change", () => refreshAdmin());
 const selectedAdminItems = new Map();
 function updateBulkToolbar() {
     const count=selectedAdminItems.size;
@@ -756,13 +757,19 @@ async function refreshAdmin() {
         const managedContainer=document.getElementById("managedLoans");
         managedContainer.replaceChildren();
         const managedLoans=await apiRequest("/gmachs/mine/managed-loans");
+        const sortDirection=document.getElementById("managedLoansSort").value;
+        managedLoans.sort((a,b)=>sortDirection==="oldest"
+          ? new Date(a.borrowedAt)-new Date(b.borrowedAt)
+          : new Date(b.borrowedAt)-new Date(a.borrowedAt));
         for(const record of managedLoans){
           const row=document.createElement("article");row.className="item-card";
           const details=document.createElement("p");
           details.textContent="עותק "+record.itemCopyId+" | "+record.borrowerName+" | "+(record.borrowerPhone||"")+" | "+(record.borrowerEmail||"");
+          const borrowedDate=document.createElement("p");
+          borrowedDate.textContent="הושאל בתאריך: "+new Date(record.borrowedAt).toLocaleString("he-IL",{dateStyle:"short",timeStyle:"short"});
           const returned=document.createElement("button");returned.textContent="הוחזר";
           returned.onclick=async()=>{try{await apiRequest("/gmachs/mine/managed-loans/"+record.id+"/return",{method:"POST"});await refreshAdmin();await loadItems();}catch(e){showMessage(message,e.message,"error");}};
-          row.append(details,returned);managedContainer.append(row);
+          row.append(details,borrowedDate,returned);managedContainer.append(row);
         }
         const activeLoans = await apiRequest("/Loans/active");
         for (const loan of activeLoans) {
