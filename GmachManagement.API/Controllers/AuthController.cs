@@ -100,5 +100,27 @@ namespace GmachManagement.API.Controllers
             return code==null?NotFound():Ok(new {recoveryCode=code});
         }
     }
+        public sealed class ProfileUpdateRequest {
+            [System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.StringLength(150)] public string Name {get;set;}="";
+            [System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.EmailAddress] public string Email {get;set;}="";
+            [System.ComponentModel.DataAnnotations.Required] public string CurrentPassword {get;set;}="";
+            public string? NewPassword {get;set;}
+            public bool IsGmachOwner {get;set;}
+            public string? GmachName {get;set;}
+            public string? City {get;set;}
+        }
+        [Authorize,HttpGet("profile")]
+        public async Task<IActionResult> Profile(CancellationToken ct){
+            if(!int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,out var id))return Unauthorized();
+            var p=await _authService.GetProfileAsync(id,ct);
+            return p.Name==null?NotFound():Ok(new {name=p.Name,email=p.Email,isGmachOwner=p.IsOwner,gmachName=p.GmachName,city=p.City});
+        }
+        [Authorize,HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] ProfileUpdateRequest request,CancellationToken ct){
+            if(!int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,out var id))return Unauthorized();
+            var result=await _authService.UpdateProfileAsync(id,request.Name,request.Email,request.CurrentPassword,request.NewPassword,request.IsGmachOwner,request.GmachName,request.City,ct);
+            return result.Error==null?Ok(new {accessToken=result.Token,message="הפרטים עודכנו בהצלחה."}):BadRequest(new {message=result.Error});
+        }
+
 }
 
