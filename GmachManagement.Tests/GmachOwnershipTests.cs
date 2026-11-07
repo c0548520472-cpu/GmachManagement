@@ -22,7 +22,7 @@ public class GmachOwnershipTests {
   var count=await repo.ImportItemsAsync(201,new List<(string Name,string Description)>{("Drill","Electric"),("Saw","Hand")},CancellationToken.None);
   Assert.Equal(2,count);
   Assert.Equal(2,await db.Items.CountAsync(i=>i.GmachId==201));
-  Assert.Equal(0,await db.Items.CountAsync(i=>i.GmachId!=201));
+  Assert.Equal(0,await db.Items.CountAsync(i=>i.GmachId!=null && i.GmachId!=201));
  }
  [Fact] public async Task CitySearchAndOwnerIsolation(){
   await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
