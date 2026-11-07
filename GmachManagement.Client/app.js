@@ -162,7 +162,7 @@ authForm.addEventListener("submit", async (event) => {
         try {
             await apiRequest("/Auth/register", {
                 method: "POST",
-                body: JSON.stringify({ name, email, password })
+                body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), city: document.getElementById("gmachCity").value.trim() })
             });
 
             switchAuthMode("login");
@@ -215,6 +215,7 @@ function switchAuthMode(mode) {
 
     document.getElementById("nameGroup").hidden =
         mode !== "register";
+    document.getElementById("ownerRegistration").hidden = mode !== "register";
 
     document.getElementById("authSubmit").textContent =
         mode === "login" ? "התחברות" : "הרשמה";
@@ -592,7 +593,9 @@ async function refreshAdmin() {
     items.replaceChildren();
     loans.replaceChildren();
     try {
-        const catalog = await apiRequest("/items?page=1&pageSize=100");
+        const gmach = await apiRequest("/gmachs/mine");
+        document.getElementById("ownerGmachInfo").textContent = "הגמ״ח שלי: " + gmach.name + " — " + gmach.city;
+        const catalog = gmach.items;
         for (const item of catalog) {
             const row = document.createElement("article");
             row.className = "item-card";
@@ -656,7 +659,7 @@ document.getElementById("adminItemForm").addEventListener("submit",async event =
     event.preventDefault();
     const message = document.getElementById("adminMessage");
     try {
-        await apiRequest("/items",{method:"POST",body:JSON.stringify({
+        await apiRequest("/gmachs/mine/items",{method:"POST",body:JSON.stringify({
             name:document.getElementById("adminItemName").value.trim(),
             description:document.getElementById("adminItemDescription").value.trim()
         })});
@@ -719,3 +722,44 @@ async function loadCategories() {
     } catch (error) { showMessage(itemsMessage, error.message, "error"); }
 }
 loadCategories();
+
+// Gmach directory and owner onboarding
+const ownerCheckbox=document.getElementById("registerOwner");
+ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerFields").hidden=!ownerCheckbox.checked;});
+async function findGmachs(){
+ const list=document.getElementById("gmachList");list.replaceChildren();document.getElementById("gmachDetails").replaceChildren();
+ const query=new URLSearchParams({city:document.getElementById("citySearch").value.trim(),search:document.getElementById("gmachSearch").value.trim()});
+ try {const groups=await apiRequest("/gmachs?"+query);
+  for(const group of groups){const card=document.createElement("article");card.className="item-card";
+   const heading=document.createElement("h3");heading.textContent=group.name;
+   const city=document.createElement("p");city.textContent=group.city;
+   const button=document.createElement("button");button.className="primary";button.textContent="דף הגמ״ח";button.addEventListener("click",()=>showGmach(group.id));
+   card.append(heading,city,button);list.append(card);
+  }
+  if(!groups.length){const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";list.append(empty);}
+ }catch(e){showMessage(itemsMessage,e.message,"error");}
+}
+async function showGmach(id){
+ const container=document.getElementById("gmachDetails");container.replaceChildren();
+ try {const g=await apiRequest("/gmachs/"+id);const section=document.createElement("section");section.className="auth-card wide-card";
+ const title=document.createElement("h2");title.textContent=g.name+" — "+g.city;section.append(title);
+ const desc=document.createElement("p");desc.textContent=g.description||"";section.append(desc);
+ for(const item of g.items){const card=document.createElement("article");card.className="item-card";
+ const name=document.createElement("h3");name.textContent=item.name;
+ const info=document.createElement("p");info.textContent=(item.description||"")+" | עותקים זמינים: "+item.availableCopies;
+ const button=document.createElement("button");button.textContent="השאלה";button.disabled=!item.isActive||item.availableCopies<1;
+ button.addEventListener("click",()=>{if(!token){showLogin();authSection.scrollIntoView();}else openBorrowDialog(item);});
+ card.append(name,info,button);section.append(card);}
+ container.append(section);container.scrollIntoView({behavior:"smooth"});
+ }catch(e){showMessage(itemsMessage,e.message,"error");}
+}
+document.getElementById("findGmachs").addEventListener("click",findGmachs);
+findGmachs();
+document.getElementById("excelImportForm").addEventListener("submit",async event=>{
+ event.preventDefault();const file=document.getElementById("excelFile").files[0];if(!file)return;
+ const form=new FormData();form.append("file",file);
+ try{const response=await fetch(API_BASE+"/gmachs/mine/import",{method:"POST",headers:{Authorization:"Bearer "+token},body:form});
+ const result=await response.json();if(!response.ok)throw new Error(result.message||"ייבוא נכשל");
+ showMessage(document.getElementById("adminMessage"),"יובאו "+result.imported+" פריטים בהצלחה","success");await refreshAdmin();await loadItems();await findGmachs();
+ }catch(e){showMessage(document.getElementById("adminMessage"),e.message,"error");}
+});
