@@ -88,7 +88,7 @@ namespace GmachManagement.API.Controllers
             [System.ComponentModel.DataAnnotations.Required] public string RecoveryCode {get;set;} = "";
             [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.MinLength(8), System.ComponentModel.DataAnnotations.MaxLength(128)] public string NewPassword {get;set;} = "";
         }
-        [HttpPost("reset-with-recovery"),AllowAnonymous]
+        [HttpPost("reset-with-recovery"),AllowAnonymous,Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
         public async Task<IActionResult> ResetWithRecovery([FromBody] OfflineResetRequest request,CancellationToken ct){
             var success=await _authService.ResetWithRecoveryAsync(request.Email,request.RecoveryCode,request.NewPassword,ct);
             return success?Ok(new {message="הסיסמה עודכנה. קוד השחזור נוצל."}):BadRequest(new {message="קוד השחזור שגוי או שכבר נוצל."});
