@@ -22,6 +22,12 @@ public sealed class GmachRepository : IGmachRepository {
   return items.Count;
  }
  public async Task<Item> AddItemAsync(int gmachId,string name,string description,CancellationToken ct){var item=new Item{Name=name,Description=description,GmachId=gmachId};db.Items.Add(item);await db.SaveChangesAsync(ct);return item;}
+ public async Task<int> AddCopiesAsync(int itemId,int quantity,CancellationToken ct){
+  if(!await db.Items.AnyAsync(i=>i.Id==itemId && i.IsActive,ct))return 0;
+  db.ItemCopies.AddRange(Enumerable.Range(0,quantity).Select(_=>new ItemCopy{ItemId=itemId,Status=GmachManagement.Core.Enums.ItemStatus.Available}));
+  await db.SaveChangesAsync(ct);
+  return quantity;
+ }
  public Task<int?> GetItemIdForCopyAsync(int copyId,CancellationToken ct)=>db.ItemCopies.Where(c=>c.Id==copyId).Select(c=>(int?)c.ItemId).FirstOrDefaultAsync(ct);
  public Task<bool> OwnsLoanAsync(int ownerId,int loanId,CancellationToken ct)=>db.Loans.AnyAsync(l=>l.Id==loanId && l.ItemCopy.Item.Gmach!=null && l.ItemCopy.Item.Gmach.OwnerId==ownerId,ct);
  public Task<bool> OwnsItemAsync(int ownerId,int itemId,CancellationToken ct)=>db.Items.AnyAsync(i=>i.Id==itemId && i.Gmach!=null && i.Gmach.OwnerId==ownerId,ct);
