@@ -63,14 +63,14 @@ namespace GmachManagement.API.Controllers
                 (ex.InnerException?.GetType().Name == "PostgresException" &&
                  ex.InnerException.GetType().GetProperty("SqlState")?.GetValue(ex.InnerException) as string == "23505"))
             {
-                return Conflict(new { message = "כתובת האימייל כבר רשומה במערכת. יש להתחבר עם החשבון הקיים." });
+                return Conflict(new { message = "כתובת האימייל כבר רשומה במערכת. ניתן לשחזר את הסיסמה באמצעות 'שכחתי סיסמה' במסך ההתחברות." });
             }
 
             if (!registered)
             {
                 return Conflict(new
                 {
-                    message = "כתובת האימייל כבר רשומה במערכת. יש להתחבר עם החשבון הקיים."
+                    message = "כתובת האימייל כבר רשומה במערכת. ניתן לשחזר את הסיסמה באמצעות 'שכחתי סיסמה' במסך ההתחברות."
                 });
             }
 
