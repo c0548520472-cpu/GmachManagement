@@ -111,20 +111,11 @@
             </div>
 
 
+        </section>
+
+        <section id="accountPage" class="account-page" hidden>
+            <div class="page-heading"><h2>האזור האישי שלי</h2><p class="muted">ניהול השאלות ופעולות אישיות</p></div>
             <section id="myLoansSection" class="auth-card wide-card" hidden><h2>ההשאלות שלי מהגמ״ח</h2><p id="myLoansMessage" class="message" role="status"></p><div id="myLoansList" class="items-grid"></div></section>
-            <section id="adminSection" class="auth-card wide-card" hidden style="margin-top:24px">
-                <h2>ניהול גמ"ח</h2>
-                <div id="ownerGmachInfo"></div><form id="claimGmachForm" hidden><h3>שיוך גמ״ח לחשבון קיים</h3><label for="claimGmachName">שם הגמ״ח</label><input id="claimGmachName" maxlength="150" required><label for="claimGmachCity">עיר</label><input id="claimGmachCity" maxlength="100" required><button type="submit" class="primary">יצירת הגמ״ח שלי</button></form><div id="ownerManagement" hidden><form id="excelImportForm" enctype="multipart/form-data"><label for="excelFile">ייבוא פריטים מ־Excel (עמודה A: שם פריט, עמודה B: תיאור)</label><input id="excelFile" type="file" accept=".xlsx" required><button class="primary" type="submit">ייבוא Excel</button></form>
-                <form id="adminItemForm">
-                    <label for="adminItemName">שם פריט</label><input id="adminItemName" required maxlength="150">
-                    <label for="adminItemDescription">תיאור</label><input id="adminItemDescription">
-                    <button class="primary" type="submit">הוספת פריט</button>
-                </form>
-                </div><p id="adminMessage" class="message" role="status"></p>
-                <div id="adminItems"></div>
-                <h3>השאלות פעילות</h3>
-                <div id="adminLoans"></div>
-            </section>
             <section id="personalSection" class="auth-card wide-card" style="margin-top:24px">
                 <h2>ההשאלות האישיות שלי</h2>
                 <p class="muted">מעקב אחר פריטים ששאלתי או השאלתי באופן פרטי</p>
@@ -148,6 +139,22 @@
                 </form>
                 <p id="personalMessage" class="message" role="status" aria-live="polite"></p>
                 <div id="personalList"></div>
+            </section>
+        </section>
+        <section id="ownerPage" class="account-page" hidden>
+            <div class="page-heading"><h2>אזור בעל הגמ״ח</h2><p class="muted">ניהול פריטים, השאלות וייבוא Excel</p></div>
+            <section id="adminSection" class="auth-card wide-card" hidden style="margin-top:24px">
+                <h2>ניהול גמ"ח</h2>
+                <div id="ownerGmachInfo"></div><form id="claimGmachForm" hidden><h3>שיוך גמ״ח לחשבון קיים</h3><label for="claimGmachName">שם הגמ״ח</label><input id="claimGmachName" maxlength="150" required><label for="claimGmachCity">עיר</label><input id="claimGmachCity" maxlength="100" required><button type="submit" class="primary">יצירת הגמ״ח שלי</button></form><div id="ownerManagement" hidden><form id="excelImportForm" enctype="multipart/form-data"><label for="excelFile">ייבוא פריטים מ־Excel (עמודה A: שם פריט, עמודה B: תיאור)</label><input id="excelFile" type="file" accept=".xlsx" required><button class="primary" type="submit">ייבוא Excel</button></form>
+                <form id="adminItemForm">
+                    <label for="adminItemName">שם פריט</label><input id="adminItemName" required maxlength="150">
+                    <label for="adminItemDescription">תיאור</label><input id="adminItemDescription">
+                    <button class="primary" type="submit">הוספת פריט</button>
+                </form>
+                </div><p id="adminMessage" class="message" role="status"></p>
+                <div id="adminItems"></div>
+                <h3>השאלות פעילות</h3>
+                <div id="adminLoans"></div>
             </section>
         </section>
 
