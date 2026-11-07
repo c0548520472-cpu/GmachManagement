@@ -281,3 +281,10 @@ dialog {
         }
 
 }
+
+/* Public home and role-based areas */
+.site-nav { display:flex; gap:8px; flex-wrap:wrap; }
+.site-nav button { padding:9px 12px; }
+.wide-card { max-width:1150px; margin:24px auto; }
+#adminItems, #adminLoans, #personalList { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+@media(max-width:700px){ .header-content{flex-wrap:wrap} .site-nav{order:3;width:100%} }
