@@ -15,6 +15,12 @@ public sealed class GmachRepository : IGmachRepository {
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>db.Gmachs.AsNoTracking().Include(g=>g.Items).ThenInclude(i=>i.Copies).FirstOrDefaultAsync(g=>g.Id==id,ct);
  public Task<Gmach?> GetByOwnerAsync(int ownerId,CancellationToken ct)=>db.Gmachs.AsNoTracking().FirstOrDefaultAsync(g=>g.OwnerId==ownerId,ct);
  public async Task<Gmach> CreateAsync(Gmach g,CancellationToken ct){db.Gmachs.Add(g);await db.SaveChangesAsync(ct);return g;}
+ public async Task<int> ImportItemsAsync(int gmachId,IReadOnlyList<(string Name,string Description)> rows,CancellationToken ct){
+  var items=rows.Select(r=>new Item{Name=r.Name,Description=r.Description,GmachId=gmachId}).ToList();
+  db.Items.AddRange(items);
+  await db.SaveChangesAsync(ct);
+  return items.Count;
+ }
  public async Task<Item> AddItemAsync(int gmachId,string name,string description,CancellationToken ct){var item=new Item{Name=name,Description=description,GmachId=gmachId};db.Items.Add(item);await db.SaveChangesAsync(ct);return item;}
  public Task<int?> GetItemIdForCopyAsync(int copyId,CancellationToken ct)=>db.ItemCopies.Where(c=>c.Id==copyId).Select(c=>(int?)c.ItemId).FirstOrDefaultAsync(ct);
  public Task<bool> OwnsLoanAsync(int ownerId,int loanId,CancellationToken ct)=>db.Loans.AnyAsync(l=>l.Id==loanId && l.ItemCopy.Item.Gmach!=null && l.ItemCopy.Item.Gmach.OwnerId==ownerId,ct);
