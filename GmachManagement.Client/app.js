@@ -497,15 +497,17 @@ if (token) {
 
 // Personal borrowing / lending
 async function loadPersonalTransactions() {
-    const list = document.getElementById("personalList");
+    const historyList = document.getElementById("personalList");
+    const openList = document.getElementById("openPersonalList");
     const message = document.getElementById("personalMessage");
-    list.replaceChildren();
+    const openMessage = document.getElementById("openPersonalMessage");
+    historyList.replaceChildren();
+    openList.replaceChildren();
     try {
         const entries = await apiRequest("/personal-transactions");
-        if (!entries.length) {
-            showMessage(message, "עדיין לא נוספו השאלות אישיות.");
-            return;
-        }
+        const open = entries.filter(entry => !entry.isCompleted);
+        const completed = entries.filter(entry => entry.isCompleted);
+        showMessage(openMessage, open.length ? "" : "אין השאלות אישיות פתוחות.");
         showMessage(message, "");
         for (const entry of entries) {
             const row = document.createElement("article");
@@ -528,16 +530,21 @@ async function loadPersonalTransactions() {
                         await apiRequest(`/personal-transactions/${entry.id}/complete`, { method: "POST" });
                         await loadPersonalTransactions();
                     } catch (error) {
-                        showMessage(message, error.message, "error");
+                        showMessage(openMessage, error.message, "error");
                         button.disabled = false;
                     }
                 });
                 row.append(button);
             }
-            list.append(row);
+            (entry.isCompleted ? historyList : openList).append(row);
+        }
+        if (!completed.length) {
+            const empty = document.createElement("p");
+            empty.textContent = "אין עדיין השאלות שהסתיימו.";
+            historyList.append(empty);
         }
     } catch (error) {
-        showMessage(message, error.message, "error");
+        showMessage(openMessage, error.message, "error");
     }
 }
 
@@ -680,7 +687,7 @@ function showPage(page, push = true) {
     authSection.hidden = page !== "login";
     dashboardSection.hidden = page !== "home";
     document.getElementById("accountPage").hidden = page !== "account";
-    document.getElementById("myLoansSection").hidden = page !== "account";
+    document.getElementById("openLoansSection").hidden = page !== "account";
     document.getElementById("ownerPage").hidden = page !== "owner";
     document.getElementById("adminSection").hidden = page !== "owner";
     document.getElementById("logoutBtn").hidden = !token;
