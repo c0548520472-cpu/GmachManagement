@@ -12,6 +12,6 @@ public sealed class GmachService {
  public Task<Item> AddItemAsync(int gmachId,string name,string description,CancellationToken ct)=>repo.AddItemAsync(gmachId,name,description,ct);
  public Task<int?> GetItemIdForCopyAsync(int copyId,CancellationToken ct)=>repo.GetItemIdForCopyAsync(copyId,ct);
  public Task<bool> OwnsLoanAsync(int ownerId,int loanId,CancellationToken ct)=>repo.OwnsLoanAsync(ownerId,loanId,ct);
- public Task<int> AddCopiesAsync(int itemId,int quantity,CancellationToken ct)=>repository.AddCopiesAsync(itemId,quantity,ct);
+ public Task<int> AddCopiesAsync(int itemId,int quantity,CancellationToken ct)=>repo.AddCopiesAsync(itemId,quantity,ct);
  public Task<bool> OwnsItemAsync(int ownerId,int itemId,CancellationToken ct)=>repo.OwnsItemAsync(ownerId,itemId,ct);
 }
