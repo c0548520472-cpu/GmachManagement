@@ -12,7 +12,6 @@ namespace GmachManagement.API.Controllers;
 
 [ApiController]
 [Route("api/items")]
-[Authorize]
 public class ItemsController : ControllerBase
 {
     private readonly IItemService _itemService;
@@ -25,6 +24,7 @@ public class ItemsController : ControllerBase
 
 
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ItemDto>>> GetAll(
     [FromQuery] string? search,
@@ -51,6 +51,7 @@ public class ItemsController : ControllerBase
     }
 
 
+    [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ItemDto>> GetById(
         int id,
@@ -96,6 +97,7 @@ public class ItemsController : ControllerBase
     }
 
 
+    [Authorize]
     [HttpGet("{id:int}/copies")]
     public async Task<ActionResult<IEnumerable<ItemCopyDto>>> GetCopies(
         int id,
@@ -199,6 +201,7 @@ public class ItemsController : ControllerBase
         return NoContent();
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:int}/categories")]
     public async Task<IActionResult> GetCategories(
         int id,
