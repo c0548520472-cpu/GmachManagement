@@ -764,7 +764,7 @@ async function refreshAdmin() {
         for(const record of managedLoans){
           const row=document.createElement("article");row.className="item-card";
           const details=document.createElement("p");
-          details.textContent="עותק "+record.itemCopyId+" | "+record.borrowerName+" | "+(record.borrowerPhone||"")+" | "+(record.borrowerEmail||"");
+          details.textContent=(record.itemName || "פריט") + " | קוד פריט: " + (record.itemId ?? "לא ידוע") + " | " + record.borrowerName + " | " + (record.borrowerPhone||"") + " | " + (record.borrowerEmail||"");
           const borrowedDate=document.createElement("p");
           borrowedDate.textContent="הושאל בתאריך: "+new Date(record.borrowedAt).toLocaleString("he-IL",{dateStyle:"short",timeStyle:"short"});
           const returned=document.createElement("button");returned.textContent="הוחזר";
