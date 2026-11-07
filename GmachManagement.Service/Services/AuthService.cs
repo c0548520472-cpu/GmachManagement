@@ -107,10 +107,6 @@ namespace GmachManagement.Service.Services
 
             return true;
 
-
-            await _userRepository.AddAsync(user, cancellationToken);
-            return true;
-
         }
 
      
