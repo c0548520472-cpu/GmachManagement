@@ -740,6 +740,7 @@ async function findGmachs(){
  }catch(e){showMessage(itemsMessage,e.message,"error");}
 }
 async function showGmach(id){
+ const url=new URL(location.href);url.searchParams.set("gmach",id);history.replaceState(null,"",url);
  const container=document.getElementById("gmachDetails");container.replaceChildren();
  try {const g=await apiRequest("/gmachs/"+id);const section=document.createElement("section");section.className="auth-card wide-card";
  const title=document.createElement("h2");title.textContent=g.name+" — "+g.city;section.append(title);
@@ -755,6 +756,8 @@ async function showGmach(id){
 }
 document.getElementById("findGmachs").addEventListener("click",findGmachs);
 findGmachs();
+const directGmachId=Number(new URLSearchParams(location.search).get("gmach"));
+if(Number.isInteger(directGmachId)&&directGmachId>0)showGmach(directGmachId);
 document.getElementById("excelImportForm").addEventListener("submit",async event=>{
  event.preventDefault();const file=document.getElementById("excelFile").files[0];if(!file)return;
  const form=new FormData();form.append("file",file);
