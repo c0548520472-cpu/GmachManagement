@@ -26,7 +26,7 @@ namespace GmachManagement.Data.Repositories
             return await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(
-                    user => user.Email == email,
+                    user => user.Email.ToLower() == email.Trim().ToLower(),
                     cancellationToken);
         }
 
