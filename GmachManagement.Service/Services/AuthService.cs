@@ -103,10 +103,8 @@ namespace GmachManagement.Service.Services
             return await _userRepository.ConsumeRecoveryCodeAsync(normalizedEmail,HashRecoveryCode(code.Trim().ToUpperInvariant()),passwordHash,cancellationToken);
         }
         public Task<bool> RegisterAsync(RegisterDto request,CancellationToken cancellationToken=default)=>RegisterInternalAsync(request,null,cancellationToken);
-        private async Task<bool> RegisterInternalAsync(RegisterDto request,string? recoveryHash,CancellationToken cancellationToken)
-        {return await RegisterCoreAsync(request,recoveryHash,cancellationToken);}
-        private async Task<bool> RegisterCoreAsync(RegisterDto request,string? recoveryHash,CancellationToken cancellationToken)
-        {return await RegisterImplAsync(request,recoveryHash,cancellationToken);}
+        private Task<bool> RegisterInternalAsync(RegisterDto request,string? recoveryHash,CancellationToken cancellationToken)
+            => RegisterImplAsync(request,recoveryHash,cancellationToken);
         private async Task<bool> RegisterImplAsync(
             RegisterDto request,
             string? recoveryHash,
