@@ -3,6 +3,8 @@
 using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GmachManagement.API.Controllers
@@ -51,15 +53,24 @@ namespace GmachManagement.API.Controllers
         {
             if (request.IsGmachOwner && (string.IsNullOrWhiteSpace(request.GmachName) || string.IsNullOrWhiteSpace(request.City)))
                 return BadRequest(new { message = "יש להזין שם גמ״ח ועיר." });
-            var registered = await _authService.RegisterAsync(
-                request,
-                cancellationToken);
+            bool registered;
+            try
+            {
+                registered = await _authService.RegisterAsync(request, cancellationToken);
+            }
+            catch (DbUpdateException ex) when (
+                (ex.InnerException is SqlException sql && (sql.Number == 2601 || sql.Number == 2627)) ||
+                (ex.InnerException?.GetType().Name == "PostgresException" &&
+                 ex.InnerException.GetType().GetProperty("SqlState")?.GetValue(ex.InnerException) as string == "23505"))
+            {
+                return Conflict(new { message = "כתובת האימייל כבר רשומה במערכת. יש להתחבר עם החשבון הקיים." });
+            }
 
             if (!registered)
             {
                 return Conflict(new
                 {
-                    message = "כתובת האימייל כבר רשומה במערכת"
+                    message = "כתובת האימייל כבר רשומה במערכת. יש להתחבר עם החשבון הקיים."
                 });
             }
 
