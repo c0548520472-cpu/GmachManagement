@@ -22,6 +22,7 @@ namespace GmachManagement.Data.Context
         {
         }
 
+        public DbSet<Gmach> Gmachs { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<ItemCopy> ItemCopies { get; set; }
@@ -33,6 +34,13 @@ namespace GmachManagement.Data.Context
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Gmach>(entity => {
+                entity.Property(g => g.Name).HasMaxLength(150).IsRequired();
+                entity.Property(g => g.City).HasMaxLength(100).IsRequired();
+                entity.HasIndex(g => g.OwnerId).IsUnique();
+                entity.HasOne(g => g.Owner).WithOne(u => u.OwnedGmach).HasForeignKey<Gmach>(g => g.OwnerId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasMany(g => g.Items).WithOne(i => i.Gmach).HasForeignKey(i => i.GmachId).OnDelete(DeleteBehavior.Restrict);
+            });
             modelBuilder.Entity<Category>(entity =>
             {
                 entity.Property(c => c.Name)
