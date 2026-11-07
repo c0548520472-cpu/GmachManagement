@@ -38,6 +38,7 @@ namespace GmachManagement.Data.Context
             modelBuilder.Entity<Gmach>(entity => {
                 entity.Property(g => g.Name).HasMaxLength(150).IsRequired();
                 entity.Property(g => g.City).HasMaxLength(100).IsRequired();
+                entity.Property(g => g.Type).HasMaxLength(100).IsRequired().HasDefaultValue("");
                 entity.HasIndex(g => g.OwnerId).IsUnique();
                 entity.HasOne(g => g.Owner).WithOne(u => u.OwnedGmach).HasForeignKey<Gmach>(g => g.OwnerId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasMany(g => g.Items).WithOne(i => i.Gmach).HasForeignKey(i => i.GmachId).OnDelete(DeleteBehavior.Restrict);
