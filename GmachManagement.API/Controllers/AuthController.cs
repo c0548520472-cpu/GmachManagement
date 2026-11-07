@@ -54,11 +54,9 @@ namespace GmachManagement.API.Controllers
             if (request.IsGmachOwner && (string.IsNullOrWhiteSpace(request.GmachName) || string.IsNullOrWhiteSpace(request.City)))
                 return BadRequest(new { message = "יש להזין שם גמ״ח ועיר." });
             bool registered;
-            string? recoveryCode = null;
             try
             {
-                recoveryCode = await _authService.RegisterWithRecoveryAsync(request, cancellationToken);
-                registered = recoveryCode != null;
+                registered = await _authService.RegisterAsync(request, cancellationToken);
             }
             catch (DbUpdateException ex) when (
                 (ex.InnerException is SqlException sql && (sql.Number == 2601 || sql.Number == 2627)) ||
@@ -78,28 +76,10 @@ namespace GmachManagement.API.Controllers
 
             return StatusCode(201, new
             {
-                message = "ההרשמה בוצעה בהצלחה. יש לשמור את קוד השחזור במקום בטוח.",
-                recoveryCode
+                message = "ההרשמה בוצעה בהצלחה."
             });
         }
 
-        public sealed class OfflineResetRequest {
-            [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.EmailAddress] public string Email {get;set;} = "";
-            [System.ComponentModel.DataAnnotations.Required] public string RecoveryCode {get;set;} = "";
-            [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.MinLength(8), System.ComponentModel.DataAnnotations.MaxLength(128)] public string NewPassword {get;set;} = "";
-        }
-        [HttpPost("reset-with-recovery"),AllowAnonymous,Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
-        public async Task<IActionResult> ResetWithRecovery([FromBody] OfflineResetRequest request,CancellationToken ct){
-            var success=await _authService.ResetWithRecoveryAsync(request.Email,request.RecoveryCode,request.NewPassword,ct);
-            return success?Ok(new {message="הסיסמה עודכנה. קוד השחזור נוצל."}):BadRequest(new {message="קוד השחזור שגוי או שכבר נוצל."});
-        }
-        [HttpPost("my-recovery-code"),Authorize]
-        public async Task<IActionResult> GenerateMyRecoveryCode(CancellationToken ct){
-            if(!int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,out var id))return Unauthorized();
-            var code=await _authService.GenerateRecoveryCodeAsync(id,ct);
-            return code==null?NotFound():Ok(new {recoveryCode=code});
-        }
-    }
         public sealed class ProfileUpdateRequest {
             [System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.StringLength(150)] public string Name {get;set;}="";
             [System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.EmailAddress] public string Email {get;set;}="";
