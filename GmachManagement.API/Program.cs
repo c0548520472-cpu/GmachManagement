@@ -19,7 +19,19 @@ namespace GmachManagement.API
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddControllers();
+            builder.Services.AddRateLimiter(options => {
+    options.AddPolicy("password-recovery", context =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(15),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+    options.RejectionStatusCode = 429;
+});
+builder.Services.AddControllers();
             builder.Services.AddServiceServices();
 
             var dataAssemblyPath = Path.Combine(
@@ -136,7 +148,8 @@ namespace GmachManagement.API
 
             app.UseCors("ClientPolicy");
 
-            app.UseAuthentication();
+            app.UseRateLimiter();
+app.UseAuthentication();
             app.UseAuthorization();
 
 
