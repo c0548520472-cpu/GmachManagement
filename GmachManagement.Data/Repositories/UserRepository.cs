@@ -38,6 +38,15 @@ namespace GmachManagement.Data.Repositories
                 .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.PasswordHash, newHash), cancellationToken) == 1;
         }
 
+        public async Task<bool> SetRecoveryCodeHashAsync(int userId,string codeHash,CancellationToken ct=default)
+        {
+            return await _context.Users.Where(u=>u.Id==userId).ExecuteUpdateAsync(setters=>setters.SetProperty(u=>u.RecoveryCodeHash,codeHash),ct)==1;
+        }
+        public async Task<bool> ConsumeRecoveryCodeAsync(string email,string expectedCodeHash,string newPasswordHash,CancellationToken ct=default)
+        {
+            return await _context.Users.Where(u=>u.Email==email && u.RecoveryCodeHash==expectedCodeHash)
+              .ExecuteUpdateAsync(setters=>setters.SetProperty(u=>u.PasswordHash,newPasswordHash).SetProperty(u=>u.RecoveryCodeHash,(string?)null),ct)==1;
+        }
         public async Task<User> AddWithGmachAsync(User user, Gmach gmach, CancellationToken cancellationToken = default)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
