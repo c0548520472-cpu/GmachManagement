@@ -56,13 +56,15 @@
             </form>
 
             <button id="forgotPasswordBtn" type="button" class="secondary">שכחתי סיסמה</button>
-            <form id="forgotPasswordForm" hidden>
-                <p class="muted">איפוס סיסמה ללא מייל באמצעות קוד שחזור ששמרת מראש. אם אין לך קוד, אין אפשרות לאמת בעלות על החשבון בדרך זו.</p>
+            <form id="forgotPasswordForm" class="reset-form" hidden>
+                <h3>בחירת סיסמה חדשה</h3>
+                <p class="muted">הזיני כתובת אימייל וסיסמה חדשה. לאימות בעלות על החשבון נדרש קוד שחזור אישי שנשמר מראש. לא ייווצר משתמש נוסף.</p>
                 <label for="resetEmail">כתובת אימייל</label><input id="resetEmail" type="email" required autocomplete="email">
-                <label for="recoveryCode">קוד שחזור</label><input id="recoveryCode" type="text" required autocomplete="off" spellcheck="false">
+                <label for="recoveryCode">קוד שחזור לאימות זהות</label><input id="recoveryCode" type="text" required autocomplete="off" spellcheck="false">
                 <label for="recoveryNewPassword">סיסמה חדשה</label><input id="recoveryNewPassword" type="password" minlength="8" maxlength="128" required autocomplete="new-password">
                 <label class="password-toggle"><input id="showRecoveryPassword" type="checkbox"> הצג סיסמה</label>
-                <button type="submit" class="primary">איפוס סיסמה</button>
+                <button type="submit" class="primary full-width">שמירת סיסמה חדשה</button>
+                <button type="button" id="cancelRecovery" class="secondary">חזרה להתחברות</button>
             </form>
             <div id="recoveryCodeNotice" class="auth-card" hidden role="status">
                 <h3>קוד שחזור אישי</h3>
