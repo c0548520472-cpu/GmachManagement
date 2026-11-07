@@ -115,7 +115,7 @@
 
         <section id="accountPage" class="account-page" hidden>
             <div class="page-heading"><h2>האזור האישי שלי</h2><p class="muted">ניהול השאלות ופעולות אישיות</p></div>
-            <section id="openLoansSection" class="auth-card wide-card"><h2>ההשאלות הפתוחות שלי</h2><p class="muted">השאלות שעדיין ממתינות להחזרה</p><div id="openPersonalList" class="items-grid"></div><p id="openPersonalMessage" class="message" role="status"></p><h3>השאלות פתוחות מהגמ״ח</h3><p id="myLoansMessage" class="message" role="status"></p><div id="myLoansList" class="items-grid"></div></section>
+            <section id="openLoansSection" class="auth-card wide-card"><h2>ההשאלות הפתוחות שלי</h2><label for="personalItemSearch">חיפוש השאלות לפי שם או תיאור פריט</label><input id="personalItemSearch" type="search" placeholder="הקלידי שם או תיאור פריט..." autocomplete="off"><p class="muted">השאלות שעדיין ממתינות להחזרה</p><div id="openPersonalList" class="items-grid"></div><p id="openPersonalMessage" class="message" role="status"></p><h3>השאלות פתוחות מהגמ״ח</h3><p id="myLoansMessage" class="message" role="status"></p><div id="myLoansList" class="items-grid"></div></section>
             <section id="personalSection" class="auth-card wide-card" style="margin-top:24px">
                 <h2>השאלה חדשה</h2>
                 <p class="muted">מעקב אחר פריטים ששאלתי או השאלתי באופן פרטי</p>
@@ -156,6 +156,7 @@
                 </form>
                 </div><p id="adminMessage" class="message" role="status"></p>
                 <h3>פריטים פעילים</h3>
+                <label for="adminItemSearch">חיפוש פריטים לפי שם או תיאור</label><input id="adminItemSearch" type="search" placeholder="הקלידי שם או תיאור פריט..." autocomplete="off">
                 <div id="bulkItemActions" class="auth-card" hidden><span id="selectedItemsCount"></span> <button id="bulkEditItems" type="button">עריכת פריטים נבחרים</button> <button id="bulkAddCopies" type="button">הוספת עותקים לנבחרים</button> <button id="bulkRemoveItems" type="button">הסרת פריטים נבחרים</button></div>
                 <div id="adminItems"></div>
                 <details id="removedItemsDetails"><summary>פריטים שהוסרו — לשחזור</summary><div id="removedAdminItems"></div></details>
