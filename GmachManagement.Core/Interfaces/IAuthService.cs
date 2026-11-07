@@ -14,6 +14,9 @@ namespace GmachManagement.Core.Interfaces
             CancellationToken cancellationToken = default);
 
 
+        Task<string?> RegisterWithRecoveryAsync(RegisterDto request,CancellationToken cancellationToken=default);
+        Task<string?> GenerateRecoveryCodeAsync(int userId,CancellationToken cancellationToken=default);
+        Task<bool> ResetWithRecoveryAsync(string email,string code,string newPassword,CancellationToken cancellationToken=default);
         Task<bool> RegisterAsync(
             RegisterDto request,
             CancellationToken cancellationToken = default);
