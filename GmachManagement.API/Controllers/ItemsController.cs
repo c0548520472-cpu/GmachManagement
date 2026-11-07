@@ -78,7 +78,7 @@ public class ItemsController : ControllerBase
     {
         var gmach = await _gmachService.GetMineAsync(OwnerId, cancellationToken);
         if (gmach == null) return Forbid();
-        var item = await _gmachService.AddItemAsync(gmach.Id, dto.Name.Trim(), dto.Description.Trim(), cancellationToken);
+        var item = await _gmachService.AddItemAsync(gmach.Id, dto.Name.Trim(), dto.Description?.Trim() ?? string.Empty, cancellationToken);
 
         return CreatedAtAction(
             nameof(GetById),
