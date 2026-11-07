@@ -112,6 +112,14 @@ namespace GmachManagement.API
 
             var app = builder.Build();
 
+            // Apply only pending PostgreSQL migrations before serving requests.
+            // Data stays loaded through reflection; API does not reference Data.
+            var migrationMethod = dependencyInjectionType.GetMethod(
+                "ApplyPostgreSqlMigrationsAsync", BindingFlags.Public | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Data migration runner not found.");
+            await (Task)(migrationMethod.Invoke(null, new object[] { app.Services, app.Configuration })
+                ?? throw new InvalidOperationException("Migration runner returned no task."));
+
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
             app.UseMiddleware<CorrelationIdMiddleware>();
