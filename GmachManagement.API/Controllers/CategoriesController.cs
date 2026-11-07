@@ -22,6 +22,7 @@ public class CategoriesController : ControllerBase
         _service = service;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll(
         CancellationToken ct)
@@ -30,6 +31,7 @@ public class CategoriesController : ControllerBase
         return Ok(categories.Select(ToDto).ToList());
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CategoryDto>> GetById(
         int id,
