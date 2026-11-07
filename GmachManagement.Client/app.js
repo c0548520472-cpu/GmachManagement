@@ -680,7 +680,9 @@ function showPage(page, push = true) {
     authSection.hidden = page !== "login";
     dashboardSection.hidden = page !== "home";
     document.getElementById("accountPage").hidden = page !== "account";
+    document.getElementById("myLoansSection").hidden = page !== "account";
     document.getElementById("ownerPage").hidden = page !== "owner";
+    document.getElementById("adminSection").hidden = page !== "owner";
     document.getElementById("logoutBtn").hidden = !token;
     document.getElementById("welcomeText").textContent = token ? "מחובר למערכת" : "";
     document.getElementById("loginNav").hidden = !!token;
