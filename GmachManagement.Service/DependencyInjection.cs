@@ -17,6 +17,7 @@ namespace GmachManagement.Service
 
                 cfg => cfg.AddProfile<MappingProfile>());
 
+            services.AddScoped<GmachService>();
             services.AddScoped<ILoanService, LoanService>();
             services.AddScoped<PasswordService>();
             services.AddScoped<IAuthService, AuthService>();
