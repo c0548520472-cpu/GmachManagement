@@ -19,7 +19,7 @@ namespace GmachManagement.Data.Repositories
             _context = context;
         }
 
-        public async Task<(User? User, string? Error)> UpdateProfileAsync(int userId,string name,string email,string? passwordHash,bool isOwner,string? gmachName,string? city,CancellationToken ct=default)
+        public async Task<(User? User, string? Error)> UpdateProfileAsync(int userId,string name,string email,string? passwordHash,bool isOwner,string? gmachName,string? city,string? gmachType,CancellationToken ct=default)
         {
             await using var transaction=await _context.Database.BeginTransactionAsync(ct);
             var user=await _context.Users.FirstOrDefaultAsync(u=>u.Id==userId,ct);
@@ -32,8 +32,8 @@ namespace GmachManagement.Data.Repositories
             if(passwordHash!=null)user.PasswordHash=passwordHash;
             user.Role=isOwner?GmachManagement.Core.Enums.UserRole.GmachAdmin:GmachManagement.Core.Enums.UserRole.User;
             if(isOwner){
-                if(gmach==null){gmach=new Gmach{OwnerId=userId,Name=gmachName!,City=city!};_context.Gmachs.Add(gmach);}
-                else{gmach.Name=gmachName!;gmach.City=city!;}
+                if(gmach==null){gmach=new Gmach{OwnerId=userId,Name=gmachName!,City=city!,Type=gmachType??""};_context.Gmachs.Add(gmach);}
+                else{gmach.Name=gmachName!;gmach.City=city!;gmach.Type=gmachType??"";}
             }
             try{await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);return (user,null);}
             catch(DbUpdateException ex) when(ex.InnerException?.GetType().Name=="PostgresException" || ex.InnerException is Microsoft.Data.SqlClient.SqlException){return (null,"לא ניתן לשמור את הפרטים. ייתכן שכתובת המייל כבר רשומה.");}
