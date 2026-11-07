@@ -18,6 +18,7 @@ namespace GmachManagement.API.Controllers
         [Authorize(Roles = "GmachAdmin")]
         public async Task<IActionResult> AdminReturn(int loanId, CancellationToken ct)
         {
+            if (!await _gmachService.OwnsLoanAsync(CurrentOwnerId, loanId, ct)) return Forbid();
             return await _loanService.ReturnAsAdminAsync(loanId, ct) ? NoContent() : NotFound();
         }
 
@@ -25,6 +26,7 @@ namespace GmachManagement.API.Controllers
         [Authorize(Roles = "GmachAdmin")]
         public async Task<IActionResult> ChangeDueDate(int loanId, [FromBody] ChangeDueDateDto request, CancellationToken ct)
         {
+            if (!await _gmachService.OwnsLoanAsync(CurrentOwnerId, loanId, ct)) return Forbid();
             if (request.ExpectedReturnDate <= DateTime.UtcNow) return BadRequest();
             return await _loanService.ChangeReturnDateAsync(loanId, request.ExpectedReturnDate, ct) ? NoContent() : NotFound();
         }
@@ -34,15 +36,19 @@ namespace GmachManagement.API.Controllers
             public DateTime ExpectedReturnDate { get; set; }
         }
 
+        private readonly GmachManagement.Service.Services.GmachService _gmachService;
+        private int CurrentOwnerId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         private readonly ILoanService _loanService;
         private readonly IMapper _mapper;
 
         public LoansController(
             ILoanService loanService,
-            IMapper mapper)
+            IMapper mapper,
+            GmachManagement.Service.Services.GmachService gmachService)
         {
             _loanService = loanService;
             _mapper = mapper;
+            _gmachService = gmachService;
         }
 
 
@@ -54,7 +60,9 @@ namespace GmachManagement.API.Controllers
             var loans = await _loanService.GetActiveLoansAsync(
                 cancellationToken);
 
-            return Ok(_mapper.Map<List<LoanDto>>(loans));
+            var mine = new List<GmachManagement.Core.Entities.Loan>();
+            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
+            return Ok(_mapper.Map<List<LoanDto>>(mine));
         }
 
         [HttpGet("overdue")]
@@ -105,7 +113,9 @@ namespace GmachManagement.API.Controllers
                 userId,
                 cancellationToken);
 
-            var result = _mapper.Map<List<LoanDto>>(loans);
+            var mine = new List<GmachManagement.Core.Entities.Loan>();
+            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
+            var result = _mapper.Map<List<LoanDto>>(mine);
 
             return Ok(result);
         }
