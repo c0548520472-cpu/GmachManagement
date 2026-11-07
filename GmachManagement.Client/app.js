@@ -250,6 +250,8 @@ async function loadItems() {
     if (search) {
         params.set("search", search);
     }
+    const category = document.getElementById("categoryFilter").value;
+    if (category) params.set("categoryId", category);
 
     grid.replaceChildren();
     showMessage(itemsMessage, "טוען פריטים...");
@@ -352,6 +354,7 @@ document.getElementById("searchInput").addEventListener(
     }
 );
 
+document.getElementById("categoryFilter").addEventListener("change", () => { currentPage = 1; loadItems(); });
 document.getElementById("availableOnly").addEventListener(
     "change", () => {
         currentPage = 1;
@@ -702,3 +705,17 @@ async function loadMyLoans() {
         }
     } catch (error) { showMessage(message,error.message,"error"); }
 }
+
+async function loadCategories() {
+    const select = document.getElementById("categoryFilter");
+    try {
+        const categories = await apiRequest("/categories");
+        for (const category of categories) {
+            const option = document.createElement("option");
+            option.value = category.id;
+            option.textContent = category.name;
+            select.appendChild(option);
+        }
+    } catch (error) { showMessage(itemsMessage, error.message, "error"); }
+}
+loadCategories();
