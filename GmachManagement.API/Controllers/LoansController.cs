@@ -73,7 +73,9 @@ namespace GmachManagement.API.Controllers
             var loans = await _loanService.GetOverdueLoansAsync(
                 cancellationToken);
 
-            return Ok(_mapper.Map<List<LoanDto>>(loans));
+            var mine = new List<GmachManagement.Core.Entities.Loan>();
+            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
+            return Ok(_mapper.Map<List<LoanDto>>(mine));
         }
 
         [HttpGet("my/active")]
@@ -113,9 +115,7 @@ namespace GmachManagement.API.Controllers
                 userId,
                 cancellationToken);
 
-            var mine = new List<GmachManagement.Core.Entities.Loan>();
-            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
-            var result = _mapper.Map<List<LoanDto>>(mine);
+            var result = _mapper.Map<List<LoanDto>>(loans);
 
             return Ok(result);
         }
@@ -130,7 +130,9 @@ namespace GmachManagement.API.Controllers
             var loans = await _loanService.GetAllLoansAsync(
                 cancellationToken);
 
-            var result = _mapper.Map<List<LoanDto>>(loans);
+            var mine = new List<GmachManagement.Core.Entities.Loan>();
+            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
+            var result = _mapper.Map<List<LoanDto>>(mine);
 
             return Ok(result);
         }
