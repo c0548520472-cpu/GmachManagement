@@ -28,8 +28,10 @@ public class GmachOwnershipTests {
   db.Gmachs.Add(new Gmach{Id=201,OwnerId=201,Name="Tools",City="Jerusalem"});
   await db.SaveChangesAsync();
   var repo=new GmachRepository(db);
-  var count=await repo.ImportItemsAsync(201,new List<(string Name,string Description)>{("Drill","Electric"),("Saw","Hand")},CancellationToken.None);
+  var count=await repo.ImportItemsAsync(201,new List<(string Name,string Description,int Quantity)>{("Drill","Electric",3),("Saw","Hand",2)},CancellationToken.None);
   Assert.Equal(2,count);
+  Assert.Equal(5,await db.ItemCopies.CountAsync(c=>c.Item.GmachId==201));
+  Assert.Equal(3,await db.ItemCopies.CountAsync(c=>c.Item.Name=="Drill" && c.Status==ItemStatus.Available));
   Assert.Equal(2,await db.Items.CountAsync(i=>i.GmachId==201));
   Assert.Equal(0,await db.Items.CountAsync(i=>i.GmachId!=null && i.GmachId!=201));
  }
