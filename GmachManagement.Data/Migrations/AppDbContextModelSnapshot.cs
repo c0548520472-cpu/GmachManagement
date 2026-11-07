@@ -47,7 +47,8 @@ namespace GmachManagement.Data.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -196,6 +197,23 @@ namespace GmachManagement.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Loans");
+                });
+
+            modelBuilder.Entity("GmachManagement.Core.Entities.ManagedLoan", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<int>("GmachId").HasColumnType("int");
+                    b.Property<int>("ItemCopyId").HasColumnType("int");
+                    b.Property<string>("BorrowerName").IsRequired().HasMaxLength(150).HasColumnType("nvarchar(150)");
+                    b.Property<string>("BorrowerPhone").HasMaxLength(30).HasColumnType("nvarchar(30)");
+                    b.Property<string>("BorrowerEmail").HasMaxLength(254).HasColumnType("nvarchar(254)");
+                    b.Property<DateTime>("BorrowedAt").HasColumnType("datetime2");
+                    b.Property<DateTime?>("ReturnedAt").HasColumnType("datetime2");
+                    b.HasKey("Id");
+                    b.HasIndex("GmachId");
+                    b.HasIndex("ItemCopyId");
+                    b.ToTable("ManagedLoans");
                 });
 
             modelBuilder.Entity("GmachManagement.Core.Entities.PersonalTransaction", b =>
