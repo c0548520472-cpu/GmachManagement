@@ -293,3 +293,16 @@ dialog {
 [hidden] { display: none !important; }
 .password-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-weight: 400; cursor: pointer; }
 .password-toggle input { width: auto; margin: 0; }
+
+/* Owner bulk actions: aligned, compact and responsive */
+#bulkItemActions.auth-card { max-width:none; width:100%; margin:16px 0 22px; padding:18px 20px; border:1px solid #e2e8f0; box-shadow:0 4px 18px #1725540b; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+#selectedItemsCount { font-weight:700; margin-inline-end:auto; white-space:nowrap; }
+#bulkItemActions button { flex:0 1 auto; width:auto; margin:0; padding:10px 15px; background:#e9eff7; color:#15345c; font-size:14px; }
+#bulkItemActions #bulkRemoveItems { color:#991b1b; background:#fee2e2; }
+#bulkItemActions button:hover { filter:brightness(.96); }
+#removedItemsDetails { margin:22px 0; border:1px solid #e2e8f0; background:white; border-radius:12px; padding:16px; }
+#removedItemsDetails summary { cursor:pointer; font-weight:700; }
+#removedAdminItems { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin-top:16px; }
+#adminItems { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+#adminItems .item-card input[type="checkbox"] { width:auto; }
+@media(max-width:650px){#bulkItemActions.auth-card { align-items:stretch; flex-direction:column; } #selectedItemsCount { margin:0; } #bulkItemActions button { width:100%; }}
