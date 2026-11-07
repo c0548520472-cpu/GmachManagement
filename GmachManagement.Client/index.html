@@ -12,7 +12,7 @@
     <header class="header">
         <div class="header-content">
             <h1>ניהול הגמ"ח</h1>
-            <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button></nav><div id="userArea">
+            <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button></nav><div id="userArea"><button id="newRecoveryCodeBtn" class="secondary" type="button" hidden>קוד שחזור</button>
                 <span id="welcomeText"></span>
                 <button id="logoutBtn" class="secondary" hidden>
                     התנתקות
@@ -57,13 +57,20 @@
 
             <button id="forgotPasswordBtn" type="button" class="secondary">שכחתי סיסמה</button>
             <form id="forgotPasswordForm" hidden>
-                <label for="resetEmail">כתובת אימייל</label><input id="resetEmail" type="email" required>
-                <button type="submit" class="primary">שליחת קישור לאיפוס</button>
+                <p class="muted">איפוס סיסמה ללא מייל באמצעות קוד שחזור ששמרת מראש. אם אין לך קוד, אין אפשרות לאמת בעלות על החשבון בדרך זו.</p>
+                <label for="resetEmail">כתובת אימייל</label><input id="resetEmail" type="email" required autocomplete="email">
+                <label for="recoveryCode">קוד שחזור</label><input id="recoveryCode" type="text" required autocomplete="off" spellcheck="false">
+                <label for="recoveryNewPassword">סיסמה חדשה</label><input id="recoveryNewPassword" type="password" minlength="8" maxlength="128" required autocomplete="new-password">
+                <label class="password-toggle"><input id="showRecoveryPassword" type="checkbox"> הצג סיסמה</label>
+                <button type="submit" class="primary">איפוס סיסמה</button>
             </form>
-            <form id="resetPasswordForm" hidden>
-                <label for="newPassword">סיסמה חדשה</label><input id="newPassword" type="password" minlength="8" required><label class="password-toggle"><input id="showNewPassword" type="checkbox"> הצג סיסמה</label>
-                <button type="submit" class="primary">עדכון סיסמה</button>
-            </form>
+            <div id="recoveryCodeNotice" class="auth-card" hidden role="status">
+                <h3>קוד שחזור אישי</h3>
+                <p>שמרי את הקוד במקום בטוח. הוא יוצג פעם אחת בלבד, ומאפשר איפוס סיסמה ללא מייל.</p>
+                <code id="recoveryCodeValue" dir="ltr"></code>
+                <button id="copyRecoveryCode" type="button" class="secondary">העתקת קוד</button>
+                <button id="closeRecoveryCode" type="button" class="secondary">שמרתי את הקוד</button>
+            </div>
             <p id="authMessage" class="message"
                role="status" aria-live="polite"></p>
         </section>
