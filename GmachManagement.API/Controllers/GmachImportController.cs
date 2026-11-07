@@ -24,6 +24,7 @@ public sealed class GmachImportController : ControllerBase {
  private static List<(string Name,string Description)> ParseExcel(Stream stream){
   using var zip=new ZipArchive(stream,ZipArchiveMode.Read);
   XNamespace ns="http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+  if(zip.Entries.Sum(e=>e.Length)>8_000_000)throw new InvalidDataException("קובץ Excel גדול מדי לאחר פתיחה.");
   var shared=new List<string>();
   var sharedEntry=zip.GetEntry("xl/sharedStrings.xml");
   if(sharedEntry!=null){using var reader=sharedEntry.Open();var doc=XDocument.Load(reader);shared=doc.Descendants(ns+"si").Select(x=>string.Concat(x.Descendants(ns+"t").Select(t=>t.Value))).ToList();}
