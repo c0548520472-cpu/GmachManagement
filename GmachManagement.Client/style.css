@@ -424,3 +424,12 @@ dialog::backdrop {background:#093b4b99;backdrop-filter:blur(3px);}
     .items-grid,#adminItems,#adminLoans,#personalList {grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));}
 }
 @media(prefers-reduced-motion:reduce) {.item-card,button {transition:none;} .item-card:hover {transform:none;}}
+
+/* Unified homepage search bar */
+.home-filters {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto;align-items:center;gap:12px;margin:20px 0 26px;}
+.home-filters input {width:100%;min-width:0;margin:0;}
+.home-filters button {white-space:nowrap;min-height:46px;}
+#gmachDirectory {max-width:none;}
+#legacyCatalog {display:none !important;}
+@media(max-width:700px){.home-filters {grid-template-columns:repeat(2,minmax(0,1fr));}.home-filters button {width:100%;}}
+@media(max-width:420px){.home-filters {grid-template-columns:1fr;}}
