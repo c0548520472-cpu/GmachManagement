@@ -21,7 +21,7 @@ public sealed class GmachRepository : IGmachRepository {
   var existing=await db.Items.Where(i=>i.GmachId==gmachId).ToListAsync(ct);
   var lookup=existing.GroupBy(i=>(NormalizeItemText(i.Name),NormalizeItemText(i.Description)))
    .ToDictionary(g=>g.Key,g=>g.OrderByDescending(i=>i.IsActive).ThenBy(i=>i.Id).First());
-  var distinct=new HashSet<int>();
+  var distinct=new HashSet<Item>();
   foreach(var row in rows){
    var name=row.Name.Trim();var description=row.Description.Trim();
    var key=(NormalizeItemText(name),NormalizeItemText(description));
@@ -29,7 +29,7 @@ public sealed class GmachRepository : IGmachRepository {
     item=new Item{Name=name,Description=description,GmachId=gmachId};
     db.Items.Add(item);lookup.Add(key,item);
    }
-   distinct.Add(item.Id==0 ? -lookup.Count : item.Id);
+   distinct.Add(item);
    for(var n=0;n<row.Quantity;n++)item.Copies.Add(new ItemCopy{Status=GmachManagement.Core.Enums.ItemStatus.Available});
   }
   await db.SaveChangesAsync(ct);
