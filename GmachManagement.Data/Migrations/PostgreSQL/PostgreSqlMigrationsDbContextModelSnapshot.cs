@@ -81,6 +81,7 @@ namespace GmachManagement.Data.Migrations.PostgreSQL
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
                     b.Property<string>("Name").IsRequired().HasMaxLength(150).HasColumnType("character varying(150)");
                     b.Property<string>("City").IsRequired().HasMaxLength(100).HasColumnType("character varying(100)");
+                    b.Property<string>("Type").IsRequired().HasMaxLength(100).HasDefaultValue("").HasColumnType("character varying(100)");
                     b.Property<string>("Description").HasColumnType("text");
                     b.Property<int>("OwnerId").HasColumnType("integer");
                     b.HasKey("Id");
