@@ -264,6 +264,8 @@ namespace GmachManagement.Data.Migrations.PostgreSQL
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email").IsUnique();
+
                     b.ToTable("Users");
 
                     b.HasData(
