@@ -7,6 +7,7 @@ public sealed class GmachService {
  public Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct)=>repo.SearchAsync(city,search,ct);
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>repo.GetAsync(id,ct);
  public Task<Gmach?> GetMineAsync(int ownerId,CancellationToken ct)=>repo.GetByOwnerAsync(ownerId,ct);
+ public Task<int> ImportItemsAsync(int gmachId,IReadOnlyList<(string Name,string Description)> rows,CancellationToken ct)=>repo.ImportItemsAsync(gmachId,rows,ct);
  public Task<Item> AddItemAsync(int gmachId,string name,string description,CancellationToken ct)=>repo.AddItemAsync(gmachId,name,description,ct);
  public Task<int?> GetItemIdForCopyAsync(int copyId,CancellationToken ct)=>repo.GetItemIdForCopyAsync(copyId,ct);
  public Task<bool> OwnsLoanAsync(int ownerId,int loanId,CancellationToken ct)=>repo.OwnsLoanAsync(ownerId,loanId,ct);
