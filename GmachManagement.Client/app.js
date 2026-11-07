@@ -27,8 +27,10 @@ function showDashboard() {
     document.getElementById("logoutBtn").hidden = false;
     document.getElementById("welcomeText").textContent =
         "מחובר למערכת";
+    updateNavigation();
     loadItems();
     loadPersonalTransactions();
+    loadMyLoans();
     initializeAdmin();
 }
 
@@ -37,6 +39,7 @@ function showLogin() {
     dashboardSection.hidden = true;
     document.getElementById("logoutBtn").hidden = true;
     document.getElementById("welcomeText").textContent = "";
+    updateNavigation();
 }
 
 function logout() {
@@ -44,6 +47,7 @@ function logout() {
     token = null;
     currentItems = [];
     showLogin();
+    showHome();
 }
 
 async function apiRequest(path, options = {}) {
@@ -70,7 +74,7 @@ async function apiRequest(path, options = {}) {
         );
     }
 
-    if (response.status === 401 && token) {
+    if (response.status === 401 && token && !path.toLowerCase().includes("/auth/")) {
         logout();
         throw new Error(
             "יש להתחבר מחדש למערכת."
@@ -312,8 +316,10 @@ function renderItems(items) {
         borrowButton.className = "primary";
         borrowButton.textContent = "השאלת פריט";
         borrowButton.disabled = !available;
+        if (!token) borrowButton.textContent = "התחברות להשאלה";
 
         borrowButton.addEventListener("click", () => {
+            if (!token) { showLogin(); authSection.scrollIntoView({behavior:"smooth"}); return; }
             openBorrowDialog(item);
         });
 
@@ -456,6 +462,7 @@ document.getElementById("borrowForm").addEventListener(
             selectedCopyId = null;
 
             await loadItems();
+            await loadMyLoans();
             showMessage(
                 itemsMessage,
                 "הפריט הושאל בהצלחה!",
@@ -486,7 +493,7 @@ borrowDialog.addEventListener("close", () => {
 if (token) {
     showDashboard();
 } else {
-    showLogin();
+    showHome();
 }
 
 
@@ -572,6 +579,7 @@ function isAdminToken() {
 async function initializeAdmin() {
     const section = document.getElementById("adminSection");
     section.hidden = !isAdminToken();
+    updateNavigation();
     if (!section.hidden) await refreshAdmin();
 }
 async function refreshAdmin() {
@@ -654,3 +662,43 @@ document.getElementById("adminItemForm").addEventListener("submit",async event =
         showMessage(message,"הפריט נוסף","success");
     } catch(e){showMessage(message,e.message,"error");}
 });
+
+
+// Public catalog and the two role-based user journeys.
+function showHome() {
+    authSection.hidden = true;
+    dashboardSection.hidden = false;
+    document.getElementById("logoutBtn").hidden = !token;
+    updateNavigation();
+    loadItems();
+    document.getElementById("personalSection").hidden = !token;
+    document.getElementById("myLoansSection").hidden = !token;
+    document.getElementById("adminSection").hidden = !token || !isAdminToken();
+}
+function updateNavigation() {
+    document.getElementById("loginNav").hidden = !!token;
+    document.getElementById("myLoansNav").hidden = !token;
+    document.getElementById("adminNav").hidden = !token || !isAdminToken();
+    document.getElementById("personalSection").hidden = !token;
+    document.getElementById("myLoansSection").hidden = !token;
+}
+document.getElementById("homeNav").addEventListener("click", () => { showHome(); window.scrollTo({top:0,behavior:"smooth"}); });
+document.getElementById("loginNav").addEventListener("click", () => { showLogin(); authSection.scrollIntoView({behavior:"smooth"}); });
+document.getElementById("myLoansNav").addEventListener("click", () => { showHome(); document.getElementById("myLoansSection").scrollIntoView({behavior:"smooth"}); });
+document.getElementById("adminNav").addEventListener("click", () => { showHome(); document.getElementById("adminSection").scrollIntoView({behavior:"smooth"}); });
+async function loadMyLoans() {
+    if (!token) return;
+    const list = document.getElementById("myLoansList");
+    const message = document.getElementById("myLoansMessage");
+    list.replaceChildren();
+    try {
+        const loans = await apiRequest("/Loans/my");
+        showMessage(message, loans.length ? "" : "עדיין אין השאלות מהגמ״ח.");
+        for (const loan of loans) {
+            const row = document.createElement("article"); row.className = "item-card";
+            const title = document.createElement("h3"); title.textContent = "השאלה מספר " + loan.id;
+            const details = document.createElement("p"); details.textContent = "עותק " + loan.itemCopyId + " | החזרה צפויה: " + new Date(loan.expectedReturnDate).toLocaleDateString("he-IL");
+            row.append(title,details); list.append(row);
+        }
+    } catch (error) { showMessage(message,error.message,"error"); }
+}
