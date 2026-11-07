@@ -219,6 +219,7 @@ function switchAuthMode(mode) {
     // Password recovery belongs to login only, never to registration.
     document.getElementById("forgotPasswordBtn").hidden = mode !== "login";
     document.getElementById("forgotPasswordForm").hidden = true;
+    document.getElementById("password").setAttribute("autocomplete", mode === "register" ? "new-password" : "current-password");
 
     document.getElementById("authSubmit").textContent =
         mode === "login" ? "התחברות" : "הרשמה";
@@ -787,3 +788,10 @@ document.getElementById("claimGmachForm").addEventListener("submit",async event=
   showMessage(document.getElementById("adminMessage"),"הגמ״ח שויך לחשבון בהצלחה.","success");
  }catch(error){showMessage(document.getElementById("adminMessage"),error.message,"error");}
 });
+
+// Password visibility is local to each password field.
+for (const [checkboxId, inputId] of [["showPassword","password"],["showNewPassword","newPassword"]]) {
+    document.getElementById(checkboxId).addEventListener("change", event => {
+        document.getElementById(inputId).type = event.target.checked ? "text" : "password";
+    });
+}
