@@ -18,8 +18,8 @@ public sealed class GmachImportController : ControllerBase {
   List<(string Name,string Description)> rows;
   try {using var stream=file.OpenReadStream();rows=ParseExcel(stream);}catch(Exception ex) when(ex is InvalidDataException or System.Xml.XmlException or ArgumentException){return BadRequest(new {message="קובץ Excel אינו תקין: "+ex.Message});}
   if(rows.Count==0)return BadRequest(new {message="אין שורות לייבוא."});
-  foreach(var row in rows)await service.AddItemAsync(g.Id,row.Name,row.Description,ct);
-  return Ok(new {imported=rows.Count});
+  var imported=await service.ImportItemsAsync(g.Id,rows,ct);
+  return Ok(new {imported});
  }
  private static List<(string Name,string Description)> ParseExcel(Stream stream){
   using var zip=new ZipArchive(stream,ZipArchiveMode.Read);
