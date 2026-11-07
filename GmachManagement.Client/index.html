@@ -87,7 +87,18 @@
                 </div>
             </div>
 
-            <section class="auth-card wide-card" id="gmachDirectory"><h2>גמ״חים לפי עיר</h2><div class="toolbar"><input id="citySearch" placeholder="חיפוש לפי עיר"><input id="gmachSearch" placeholder="שם גמ״ח"><button id="findGmachs" type="button" class="primary">חיפוש גמ״חים</button></div><div id="gmachList" class="items-grid"></div><div id="gmachDetails" class="items-grid"></div></section>
+            <section class="auth-card wide-card" id="gmachDirectory">
+                <h2>חיפוש גמ״חים ופריטים זמינים</h2>
+                <div class="home-filters">
+                    <input id="citySearch" type="search" placeholder="עיר" aria-label="סינון לפי עיר">
+                    <input id="gmachSearch" type="search" placeholder="שם גמ״ח" aria-label="סינון לפי שם גמ״ח">
+                    <input id="homeItemSearch" type="search" placeholder="שם פריט" aria-label="סינון לפי שם פריט">
+                    <button id="findGmachs" type="button" class="primary">חיפוש</button>
+                </div>
+                <div id="gmachList" class="items-grid"></div>
+                <div id="gmachDetails" class="items-grid"></div>
+            </section>
+            <div id="legacyCatalog" hidden>
             <div class="toolbar">
                 <input id="searchInput" type="search"
                        placeholder="חיפוש פריט...">
@@ -120,6 +131,7 @@
             </div>
 
 
+            </div>
         </section>
 
         <section id="accountPage" class="account-page" hidden>
