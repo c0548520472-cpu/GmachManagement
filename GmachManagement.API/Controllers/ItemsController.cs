@@ -6,6 +6,8 @@ using GmachManagement.Core.Entities;
 using GmachManagement.Core.Enums;
 using GmachManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using GmachManagement.Service.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GmachManagement.API.Controllers;
@@ -15,11 +17,14 @@ namespace GmachManagement.API.Controllers;
 public class ItemsController : ControllerBase
 {
     private readonly IItemService _itemService;
+    private readonly GmachService _gmachService;
+    private int OwnerId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    public ItemsController(IItemService itemService)
+    public ItemsController(IItemService itemService, GmachService gmachService)
     {
         
         _itemService = itemService;
+        _gmachService = gmachService;
     }
 
 
@@ -71,8 +76,9 @@ public class ItemsController : ControllerBase
         [FromBody] CreateItemDto dto,
         CancellationToken cancellationToken)
     {
-        var item = await _itemService.AddAsync(
-            dto.Name, dto.Description, cancellationToken);
+        var gmach = await _gmachService.GetMineAsync(OwnerId, cancellationToken);
+        if (gmach == null) return Forbid();
+        var item = await _gmachService.AddItemAsync(gmach.Id, dto.Name.Trim(), dto.Description.Trim(), cancellationToken);
 
         return CreatedAtAction(
             nameof(GetById),
@@ -87,6 +93,7 @@ public class ItemsController : ControllerBase
         [FromBody] CreateItemDto dto,
         CancellationToken cancellationToken)
     {
+        if (!await _gmachService.OwnsItemAsync(OwnerId,id,cancellationToken)) return Forbid();
         var updated = await _itemService.UpdateAsync(
             id, dto.Name, dto.Description, cancellationToken);
 
@@ -123,6 +130,7 @@ public class ItemsController : ControllerBase
         int id,
         CancellationToken cancellationToken)
     {
+        if (!await _gmachService.OwnsItemAsync(OwnerId,id,cancellationToken)) return Forbid();
         var copy = await _itemService.AddCopyAsync(
             id, cancellationToken);
 
@@ -160,6 +168,8 @@ public class ItemsController : ControllerBase
     {
         try
         {
+            var itemId = await _gmachService.GetItemIdForCopyAsync(copyId, ct);
+            if (itemId == null || !await _gmachService.OwnsItemAsync(OwnerId,itemId.Value,ct)) return Forbid();
             var updated = await _itemService.UpdateCopyStatusAsync(
                 copyId, dto.Status, ct);
 
@@ -192,6 +202,7 @@ public class ItemsController : ControllerBase
         [FromQuery] bool isActive,
         CancellationToken ct)
     {
+        if (!await _gmachService.OwnsItemAsync(OwnerId,id,ct)) return Forbid();
         var updated = await _itemService.SetActiveAsync(
             id, isActive, ct);
 
@@ -226,6 +237,7 @@ public class ItemsController : ControllerBase
         int categoryId,
         CancellationToken ct)
     {
+        if (!await _gmachService.OwnsItemAsync(OwnerId,id,ct)) return Forbid();
         var result = await _itemService.AddCategoryAsync(
             id, categoryId, ct);
 
@@ -239,6 +251,7 @@ public class ItemsController : ControllerBase
         int categoryId,
         CancellationToken ct)
     {
+        if (!await _gmachService.OwnsItemAsync(OwnerId,id,ct)) return Forbid();
         var result = await _itemService.RemoveCategoryAsync(
             id, categoryId, ct);
 
