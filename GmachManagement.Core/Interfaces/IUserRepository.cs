@@ -14,6 +14,8 @@ namespace GmachManagement.Core.Interfaces
             CancellationToken cancellationToken = default);
     
     
+        Task<(User? User, string? Error)> UpdateProfileAsync(int userId, string name, string email, string? passwordHash, bool isOwner, string? gmachName, string? city, CancellationToken cancellationToken = default);
+
         Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
         Task<bool> SetRecoveryCodeHashAsync(int userId, string codeHash, CancellationToken cancellationToken = default);
