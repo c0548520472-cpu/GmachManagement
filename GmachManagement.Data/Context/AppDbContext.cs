@@ -27,6 +27,7 @@ namespace GmachManagement.Data.Context
         public DbSet<Item> Items { get; set; }
         public DbSet<ItemCopy> ItemCopies { get; set; }
         public DbSet<Loan> Loans { get; set; }
+        public DbSet<ManagedLoan> ManagedLoans { get; set; }
         public DbSet<PersonalTransaction> PersonalTransactions { get; set; }
         public DbSet<Category> Categories { get; set; }
 
@@ -93,6 +94,7 @@ namespace GmachManagement.Data.Context
                 .HasOne(l => l.ItemCopy)
                 .WithMany(c => c.Loans)
                 .HasForeignKey(l => l.ItemCopyId);
+            modelBuilder.Entity<ManagedLoan>(entity => { entity.HasKey(x=>x.Id); entity.Property(x=>x.BorrowerName).HasMaxLength(150).IsRequired(); entity.Property(x=>x.BorrowerPhone).HasMaxLength(30); entity.Property(x=>x.BorrowerEmail).HasMaxLength(254); entity.HasIndex(x=>x.GmachId); entity.HasIndex(x=>x.ItemCopyId); });
             SeedData.Seed(modelBuilder);
         }
     }
