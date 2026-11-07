@@ -842,7 +842,7 @@ function showPage(page, push = true) {
         else url.searchParams.set("page", page);
         history.pushState({page}, "", url);
     }
-    if (page === "home") { loadItems(); findGmachs(); }
+    if (page === "home") { findGmachs(); }
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); }
     if (page === "owner") refreshAdmin();
     window.scrollTo({top:0,behavior:"instant"});
@@ -899,14 +899,19 @@ ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerField
 async function findGmachs(){
  const list=document.getElementById("gmachList");list.replaceChildren();document.getElementById("gmachDetails").replaceChildren();
  const query=new URLSearchParams({city:document.getElementById("citySearch").value.trim(),search:document.getElementById("gmachSearch").value.trim()});
+ const itemTerm=document.getElementById("homeItemSearch").value.trim().toLocaleLowerCase("he");
  try {const groups=await apiRequest("/gmachs?"+query);
-  for(const group of groups){const card=document.createElement("article");card.className="item-card";
+  let matches=0;
+  for(const group of groups){
+   if(itemTerm){const details=await apiRequest("/gmachs/"+group.id);if(!details.items.some(item=>item.isActive&&item.availableCopies>0&&item.name.toLocaleLowerCase("he").includes(itemTerm)))continue;}
+   matches++;
+   const card=document.createElement("article");card.className="item-card";
    const heading=document.createElement("h3");heading.textContent=group.name;
    const city=document.createElement("p");city.textContent=group.city;
    const button=document.createElement("button");button.className="primary";button.textContent="דף הגמ״ח";button.addEventListener("click",()=>showGmach(group.id));
    card.append(heading,city,button);list.append(card);
   }
-  if(!groups.length){const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";list.append(empty);}
+  if(!matches){const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";list.append(empty);}
  }catch(e){showMessage(itemsMessage,e.message,"error");}
 }
 async function showGmach(id){
@@ -915,7 +920,7 @@ async function showGmach(id){
  try {const g=await apiRequest("/gmachs/"+id);const section=document.createElement("section");section.className="auth-card wide-card";
  const title=document.createElement("h2");title.textContent=g.name+" — "+g.city;section.append(title);
  const desc=document.createElement("p");desc.textContent=g.description||"";section.append(desc);
- for(const item of g.items){const card=document.createElement("article");card.className="item-card";
+ for(const item of g.items.filter(item=>item.isActive&&item.availableCopies>0&&item.name.toLocaleLowerCase("he").includes(document.getElementById("homeItemSearch").value.trim().toLocaleLowerCase("he")))){const card=document.createElement("article");card.className="item-card";
  const name=document.createElement("h3");name.textContent=item.name;
  const info=document.createElement("p");info.textContent=(item.description||"")+" | עותקים זמינים: "+item.availableCopies;
  const button=document.createElement("button");button.textContent="השאלה";button.disabled=!item.isActive||item.availableCopies<1;
@@ -925,6 +930,7 @@ async function showGmach(id){
  }catch(e){showMessage(itemsMessage,e.message,"error");}
 }
 document.getElementById("findGmachs").addEventListener("click",findGmachs);
+for(const id of ["citySearch","gmachSearch","homeItemSearch"])document.getElementById(id).addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();findGmachs();}});
 findGmachs();
 const directGmachId=Number(new URLSearchParams(location.search).get("gmach"));
 if(Number.isInteger(directGmachId)&&directGmachId>0)showGmach(directGmachId);
