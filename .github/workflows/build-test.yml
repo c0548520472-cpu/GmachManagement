@@ -16,5 +16,7 @@ jobs:
         run: dotnet restore GmachManagement.slnx
       - name: Build
         run: dotnet build GmachManagement.slnx --no-restore
+      - name: Validate client JavaScript
+        run: node --check GmachManagement.Client/app.js
       - name: Test
         run: dotnet test GmachManagement.slnx --no-build --verbosity normal
