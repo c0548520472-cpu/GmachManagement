@@ -33,7 +33,7 @@ namespace GmachManagement.Service.Services
             CancellationToken cancellationToken = default)
         {
             var user = await _userRepository.GetByEmailAsync(
-                request.Email,
+                request.Email.Trim().ToLowerInvariant(),
                 cancellationToken);
 
             if (user == null ||
