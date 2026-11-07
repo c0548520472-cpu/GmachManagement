@@ -272,6 +272,8 @@ namespace GmachManagement.Data.Migrations.PostgreSQL
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("RecoveryCodeHash").HasColumnType("text");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
