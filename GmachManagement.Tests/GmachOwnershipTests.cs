@@ -11,6 +11,15 @@ public class GmachOwnershipTests {
   protected override void OnModelCreating(ModelBuilder builder){base.OnModelCreating(builder);builder.Entity<ItemCopy>().Ignore(c=>c.RowVersion);}
  }
 
+ [Fact] public async Task EmailLookupIsCaseInsensitive(){
+  await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
+  var options=new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+  await using var db=new TestDbContext(options);await db.Database.EnsureCreatedAsync();
+  db.Users.Add(new User{Id=301,Name="Test",Email="registered@example.com",PasswordHash="test"});
+  await db.SaveChangesAsync();
+  var users=new UserRepository(db);
+  Assert.NotNull(await users.GetByEmailAsync(" REGISTERED@EXAMPLE.COM ",CancellationToken.None));
+ }
  [Fact] public async Task ExcelBatchIsAssignedOnlyToItsGmach(){
   await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
   var options=new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
