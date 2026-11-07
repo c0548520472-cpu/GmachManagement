@@ -12,7 +12,7 @@
     <header class="header">
         <div class="header-content">
             <h1>ניהול הגמ"ח</h1>
-            <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button></nav><div id="userArea"><button id="newRecoveryCodeBtn" class="secondary" type="button" hidden>קוד שחזור</button>
+            <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button></nav><div id="userArea"><button id="profileNav" class="secondary" type="button" hidden>הפרטים שלי</button>
                 <span id="welcomeText"></span>
                 <button id="logoutBtn" class="secondary" hidden>
                     התנתקות
@@ -56,23 +56,7 @@
             </form>
 
             <button id="forgotPasswordBtn" type="button" class="secondary">שכחתי סיסמה</button>
-            <form id="forgotPasswordForm" class="reset-form" hidden>
-                <h3>בחירת סיסמה חדשה</h3>
-                <p class="muted">הזיני כתובת אימייל וסיסמה חדשה. לאימות בעלות על החשבון נדרש קוד שחזור אישי שנשמר מראש. לא ייווצר משתמש נוסף.</p>
-                <label for="resetEmail">כתובת אימייל</label><input id="resetEmail" type="email" required autocomplete="email">
-                <label for="recoveryCode">קוד שחזור לאימות זהות</label><input id="recoveryCode" type="text" required autocomplete="off" spellcheck="false">
-                <label for="recoveryNewPassword">סיסמה חדשה</label><input id="recoveryNewPassword" type="password" minlength="8" maxlength="128" required autocomplete="new-password">
-                <label class="password-toggle"><input id="showRecoveryPassword" type="checkbox"> הצג סיסמה</label>
-                <button type="submit" class="primary full-width">שמירת סיסמה חדשה</button>
-                <button type="button" id="cancelRecovery" class="secondary">חזרה להתחברות</button>
-            </form>
-            <div id="recoveryCodeNotice" class="auth-card" hidden role="status">
-                <h3>קוד שחזור אישי</h3>
-                <p>שמרי את הקוד במקום בטוח. הוא יוצג פעם אחת בלבד, ומאפשר איפוס סיסמה ללא מייל.</p>
-                <code id="recoveryCodeValue" dir="ltr"></code>
-                <button id="copyRecoveryCode" type="button" class="secondary">העתקת קוד</button>
-                <button id="closeRecoveryCode" type="button" class="secondary">שמרתי את הקוד</button>
-            </div>
+            <p id="forgotPasswordNotice" class="message" hidden>איפוס סיסמה ללא התחברות אינו זמין כרגע. שינוי סיסמה אפשרי מתוך ״הפרטים שלי״ לאחר התחברות.</p>
             <p id="authMessage" class="message"
                role="status" aria-live="polite"></p>
         </section>
@@ -132,6 +116,25 @@
 
 
             </div>
+        </section>
+
+        <section id="profilePage" class="auth-card wide-card" hidden>
+            <h2>עריכת הפרטים האישיים שלי</h2>
+            <form id="profileForm">
+                <label for="profileName">שם מלא</label><input id="profileName" maxlength="150" required>
+                <label for="profileEmail">כתובת מייל</label><input id="profileEmail" type="email" required>
+                <label><input id="profileIsOwner" type="checkbox"> אני בעל/ת גמ״ח</label>
+                <div id="profileGmachFields" hidden>
+                    <label for="profileGmachName">שם הגמ״ח</label><input id="profileGmachName" maxlength="150">
+                    <label for="profileGmachType">סוג הגמ״ח</label><input id="profileGmachType" maxlength="100" placeholder="למשל כלי עבודה">
+                    <label for="profileCity">עיר</label><input id="profileCity" maxlength="100">
+                </div>
+                <label for="profileNewPassword">סיסמה חדשה (להשאיר ריק אם לא משנים)</label><input id="profileNewPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password">
+                <label for="profileCurrentPassword">סיסמה נוכחית לאישור השינויים (חובה)</label><input id="profileCurrentPassword" type="password" required autocomplete="current-password">
+                <label><input id="profileShowPasswords" type="checkbox"> הצגת סיסמאות</label>
+                <button class="primary" type="submit">שמירת השינויים</button>
+            </form>
+            <p id="profileMessage" class="message" role="status"></p>
         </section>
 
         <section id="accountPage" class="account-page" hidden>
