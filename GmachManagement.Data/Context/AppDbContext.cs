@@ -80,10 +80,6 @@ namespace GmachManagement.Data.Context
             }
 
             modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
-
-            modelBuilder.Entity<User>()
                 .HasMany(u => u.Loans)
                 .WithOne(l => l.User)
                 .HasForeignKey(l => l.UserId);
