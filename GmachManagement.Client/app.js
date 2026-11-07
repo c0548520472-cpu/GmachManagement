@@ -99,44 +99,9 @@ async function apiRequest(path, options = {}) {
     return response.json();
 }
 
-const forgotForm=document.getElementById("forgotPasswordForm");
-const recoveryNotice=document.getElementById("recoveryCodeNotice");
-function displayRecoveryCode(code){
- document.getElementById("recoveryCodeValue").textContent=code;
- recoveryNotice.hidden=false;
-}
-document.getElementById("closeRecoveryCode").addEventListener("click",()=>{
- document.getElementById("recoveryCodeValue").textContent="";recoveryNotice.hidden=true;
-});
-document.getElementById("copyRecoveryCode").addEventListener("click",async()=>{
- try{await navigator.clipboard.writeText(document.getElementById("recoveryCodeValue").textContent);}catch(e){showMessage(authMessage,"לא ניתן להעתיק אוטומטית. העתיקי ידנית.","error");}
-});
-document.getElementById("newRecoveryCodeBtn").addEventListener("click",async()=>{
- if(!confirm("יצירת קוד חדש תבטל את קוד השחזור הקודם. להמשיך?"))return;
- try{const result=await apiRequest("/Auth/my-recovery-code",{method:"POST"});displayRecoveryCode(result.recoveryCode);}
- catch(e){showMessage(authMessage,e.message,"error");}
-});
-document.getElementById("showRecoveryPassword").addEventListener("change",e=>{
- document.getElementById("recoveryNewPassword").type=e.target.checked?"text":"password";
-});
 document.getElementById("forgotPasswordBtn").addEventListener("click",()=>{
- forgotForm.hidden=false;
- authForm.hidden=true;
- document.querySelector("#authSection .tabs").hidden=true;
- document.getElementById("forgotPasswordBtn").hidden=true;
- document.getElementById("resetEmail").value=document.getElementById("email").value;
- document.getElementById("recoveryNewPassword").value="";
- document.getElementById("recoveryCode").value="";
- showMessage(authMessage,"");
- document.getElementById("resetEmail").focus();
-});
-forgotForm.addEventListener("submit",async event=>{
- event.preventDefault();
- try{
-  await apiRequest("/Auth/reset-with-recovery",{method:"POST",body:JSON.stringify({email:document.getElementById("resetEmail").value.trim(),recoveryCode:document.getElementById("recoveryCode").value.trim(),newPassword:document.getElementById("recoveryNewPassword").value})});
-  forgotForm.reset();switchAuthMode("login");
-  showMessage(authMessage,"הסיסמה עודכנה. אפשר להתחבר. קוד השחזור נוצל.","success");
- }catch(e){showMessage(authMessage,e.message,"error");}
+ const notice=document.getElementById("forgotPasswordNotice");
+ notice.hidden=false;
 });
 
 // התחברות
@@ -157,7 +122,7 @@ authForm.addEventListener("submit", async (event) => {
             });
 
             switchAuthMode("login");
-            if(registration.recoveryCode)displayRecoveryCode(registration.recoveryCode);
+
 
             showMessage(
                 authMessage,
@@ -212,7 +177,7 @@ function switchAuthMode(mode) {
     document.getElementById("ownerRegistration").hidden = mode !== "register";
     // Password recovery belongs to login only, never to registration.
     document.getElementById("forgotPasswordBtn").hidden = mode !== "login";
-    document.getElementById("forgotPasswordForm").hidden = true;
+    document.getElementById("forgotPasswordNotice").hidden = true;
     document.getElementById("password").setAttribute("autocomplete", mode === "register" ? "new-password" : "current-password");
 
     document.getElementById("authSubmit").textContent =
@@ -821,16 +786,17 @@ document.getElementById("adminItemForm").addEventListener("submit",async event =
 
 // Separate public catalog, login, personal account and owner management views.
 function showPage(page, push = true) {
-    if ((page === "account" || page === "owner") && !token) page = "login";
+    if ((page === "account" || page === "owner" || page === "profile") && !token) page = "login";
     if (page === "owner" && !isAdminToken()) page = "account";
     authSection.hidden = page !== "login";
     dashboardSection.hidden = page !== "home";
     document.getElementById("accountPage").hidden = page !== "account";
+    document.getElementById("profilePage").hidden = page !== "profile";
     document.getElementById("openLoansSection").hidden = page !== "account";
     document.getElementById("ownerPage").hidden = page !== "owner";
     document.getElementById("adminSection").hidden = page !== "owner";
     document.getElementById("logoutBtn").hidden = !token;
-    document.getElementById("newRecoveryCodeBtn").hidden = !token;
+    document.getElementById("profileNav").hidden = !token;
     document.getElementById("welcomeText").textContent = token ? "מחובר למערכת" : "";
     document.getElementById("loginNav").hidden = !!token;
     document.getElementById("myLoansNav").hidden = !token;
@@ -845,9 +811,48 @@ function showPage(page, push = true) {
     if (page === "home") { findGmachs(); }
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); }
     if (page === "owner") refreshAdmin();
+    if (page === "profile") loadProfile();
     window.scrollTo({top:0,behavior:"instant"});
 }
 function showHome() { showPage("home"); }
+
+async function loadProfile(){
+ const msg=document.getElementById("profileMessage");showMessage(msg,"");
+ try{
+  const p=await apiRequest("/Auth/profile");
+  document.getElementById("profileName").value=p.name||"";
+  document.getElementById("profileEmail").value=p.email||"";
+  document.getElementById("profileIsOwner").checked=!!p.isGmachOwner;
+  document.getElementById("profileGmachName").value=p.gmachName||"";
+  document.getElementById("profileGmachType").value=p.gmachType||"";
+  document.getElementById("profileCity").value=p.city||"";
+  document.getElementById("profileGmachFields").hidden=!p.isGmachOwner;
+  document.getElementById("profileCurrentPassword").value="";
+  document.getElementById("profileNewPassword").value="";
+ }catch(e){showMessage(msg,e.message,"error");}
+}
+document.getElementById("profileIsOwner").addEventListener("change",e=>{
+ document.getElementById("profileGmachFields").hidden=!e.target.checked;
+});
+document.getElementById("profileShowPasswords").addEventListener("change",e=>{
+ for(const id of ["profileCurrentPassword","profileNewPassword"])document.getElementById(id).type=e.target.checked?"text":"password";
+});
+document.getElementById("profileForm").addEventListener("submit",async e=>{
+ e.preventDefault();const owner=document.getElementById("profileIsOwner").checked;
+ const msg=document.getElementById("profileMessage");
+ const payload={name:document.getElementById("profileName").value.trim(),email:document.getElementById("profileEmail").value.trim(),isGmachOwner:owner,
+ gmachName:owner?document.getElementById("profileGmachName").value.trim():null,
+ gmachType:owner?document.getElementById("profileGmachType").value.trim():null,
+ city:owner?document.getElementById("profileCity").value.trim():null,
+ currentPassword:document.getElementById("profileCurrentPassword").value,
+ newPassword:document.getElementById("profileNewPassword").value||null};
+ try{
+  const result=await apiRequest("/Auth/profile",{method:"PUT",body:JSON.stringify(payload)});
+  if(!result.accessToken)throw new Error("נדרש להתחבר מחדש.");
+  token=result.accessToken;sessionStorage.setItem("gmachToken",token);
+  updateNavigation();await loadProfile();showMessage(msg,"הפרטים עודכנו בהצלחה.","success");
+ }catch(err){showMessage(msg,err.message,"error");}
+});
 function updateNavigation() {
     document.getElementById("loginNav").hidden = !!token;
     document.getElementById("myLoansNav").hidden = !token;
@@ -857,9 +862,10 @@ document.getElementById("homeNav").addEventListener("click", showHome);
 document.getElementById("loginNav").addEventListener("click", showLogin);
 document.getElementById("myLoansNav").addEventListener("click", () => showPage("account"));
 document.getElementById("adminNav").addEventListener("click", () => showPage("owner"));
+document.getElementById("profileNav").addEventListener("click",()=>showPage("profile"));
 window.addEventListener("popstate", () => {
     const page = new URLSearchParams(location.search).get("page") || "home";
-    showPage(["login","account","owner"].includes(page) ? page : "home", false);
+    showPage(["login","account","owner","profile"].includes(page) ? page : "home", false);
 });
 
 async function loadMyLoans() {
@@ -935,7 +941,7 @@ findGmachs();
 const directGmachId=Number(new URLSearchParams(location.search).get("gmach"));
 if(Number.isInteger(directGmachId)&&directGmachId>0)showGmach(directGmachId);
 const initialPage=new URLSearchParams(location.search).get("page");
-showPage(["login","account","owner"].includes(initialPage)?initialPage:"home",false);
+showPage(["login","account","owner","profile"].includes(initialPage)?initialPage:"home",false);
 document.getElementById("excelImportForm").addEventListener("submit",async event=>{
  event.preventDefault();const file=document.getElementById("excelFile").files[0];if(!file)return;
  const form=new FormData();form.append("file",file);
