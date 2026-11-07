@@ -216,6 +216,9 @@ function switchAuthMode(mode) {
     document.getElementById("nameGroup").hidden =
         mode !== "register";
     document.getElementById("ownerRegistration").hidden = mode !== "register";
+    // Password recovery belongs to login only, never to registration.
+    document.getElementById("forgotPasswordBtn").hidden = mode !== "login";
+    document.getElementById("forgotPasswordForm").hidden = true;
 
     document.getElementById("authSubmit").textContent =
         mode === "login" ? "התחברות" : "הרשמה";
