@@ -50,6 +50,7 @@ namespace GmachManagement.Data.Repositories
                     cancellationToken);
         }
 
+        public Task<Gmach?> GetOwnedGmachAsync(int userId,CancellationToken ct=default)=>_context.Gmachs.AsNoTracking().FirstOrDefaultAsync(g=>g.OwnerId==userId,ct);
         public Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default) => _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
         public async Task<bool> UpdatePasswordHashAsync(int userId, string expectedHash, string newHash, CancellationToken cancellationToken = default)
