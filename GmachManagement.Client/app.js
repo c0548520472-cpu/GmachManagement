@@ -587,6 +587,53 @@ async function initializeAdmin() {
     updateNavigation();
     if (isAdminToken()) await refreshAdmin();
 }
+const selectedAdminItems = new Map();
+function updateBulkToolbar() {
+    const count=selectedAdminItems.size;
+    document.getElementById("bulkItemActions").hidden = count===0;
+    document.getElementById("selectedItemsCount").textContent = count + " פריטים נבחרו";
+}
+async function editAdminItem(item) {
+    const name=prompt("שם הפריט",item.name);
+    if(name===null||!name.trim())return;
+    const description=prompt("תיאור",item.description||"");
+    if(description===null)return;
+    try {
+        await apiRequest("/items/"+item.id,{method:"PUT",body:JSON.stringify({name:name.trim(),description})});
+        await refreshAdmin();await loadItems();
+    } catch(e){showMessage(document.getElementById("adminMessage"),e.message,"error");}
+}
+function askCopyQuantity() {
+    const input=prompt("כמה עותקים להוסיף לכל פריט? (1–1000)","1");
+    if(input===null)return null;
+    const quantity=Number(input);
+    if(!Number.isInteger(quantity)||quantity<1||quantity>1000){
+        showMessage(document.getElementById("adminMessage"),"יש להזין כמות שלמה בין 1 ל־1000.","error");
+        return null;
+    }
+    return quantity;
+}
+async function addAdminCopies(items) {
+    const quantity=askCopyQuantity();if(quantity===null)return;
+    try {
+        for(const item of items) await apiRequest("/items/"+item.id+"/copies/batch?quantity="+quantity,{method:"POST"});
+        await refreshAdmin();await loadItems();
+        showMessage(document.getElementById("adminMessage"),"העותקים נוספו בהצלחה.","success");
+    }catch(e){showMessage(document.getElementById("adminMessage"),e.message,"error");}
+}
+document.getElementById("bulkEditItems").addEventListener("click",async()=>{
+    const items=[...selectedAdminItems.values()];
+    for(const item of items)await editAdminItem(item);
+});
+document.getElementById("bulkAddCopies").addEventListener("click",()=>addAdminCopies([...selectedAdminItems.values()]));
+document.getElementById("bulkRemoveItems").addEventListener("click",async()=>{
+    const items=[...selectedAdminItems.values()];
+    if(!confirm("להסיר "+items.length+" פריטים מהרשימה הפעילה? ניתן לשחזר אותם בהמשך."))return;
+    try {
+        for(const item of items)await apiRequest("/items/"+item.id+"/active?isActive=false",{method:"PUT"});
+        await refreshAdmin();await loadItems();
+    }catch(e){showMessage(document.getElementById("adminMessage"),e.message,"error");}
+});
 async function refreshAdmin() {
     const items = document.getElementById("adminItems");
     const loans = document.getElementById("adminLoans");
@@ -606,37 +653,50 @@ async function refreshAdmin() {
         document.getElementById("ownerManagement").hidden = false;
         document.getElementById("ownerGmachInfo").textContent = "הגמ״ח שלי: " + gmach.name + " — " + gmach.city;
         const catalog = gmach.items;
+        const removedList = document.getElementById("removedAdminItems");
+        removedList.replaceChildren();
+        selectedAdminItems.clear();
+        updateBulkToolbar();
         for (const item of catalog) {
             const row = document.createElement("article");
             row.className = "item-card";
             const title = document.createElement("h3");
             title.textContent = item.name;
-            const edit = document.createElement("button");
-            edit.textContent = "עריכת פריט";
-            edit.onclick = async () => {
-                const name = prompt("שם", item.name);
-                if (!name || !name.trim()) return;
-                const description = prompt("תיאור", item.description || "");
-                if (description === null) return;
-                try {
-                    await apiRequest("/items/" + item.id, {method:"PUT",body:JSON.stringify({name,description})});
-                    await refreshAdmin(); await loadItems();
-                } catch(e) {showMessage(message,e.message,"error");}
-            };
-            const copy = document.createElement("button");
-            copy.textContent = "הוספת עותק";
-            copy.onclick = async () => {
-                try {await apiRequest("/items/"+item.id+"/copies",{method:"POST"});await refreshAdmin();await loadItems();}
-                catch(e){showMessage(message,e.message,"error");}
-            };
+            const details = document.createElement("p");
+            details.textContent = (item.description || "") + " | עותקים: " + item.totalCopies + " | זמינים: " + item.availableCopies;
             const active = document.createElement("button");
             active.textContent = item.isActive ? "הסרת פריט" : "שחזור פריט";
             active.onclick = async () => {
-                try {await apiRequest("/items/"+item.id+"/active?isActive="+(!item.isActive),{method:"PUT"});await refreshAdmin();await loadItems();}
+                try { await apiRequest("/items/"+item.id+"/active?isActive="+(!item.isActive),{method:"PUT"}); await refreshAdmin(); await loadItems(); }
                 catch(e){showMessage(message,e.message,"error");}
             };
-            row.append(title,edit,copy,active);
-            items.append(row);
+            row.append(title,details);
+            if (item.isActive) {
+                const selection = document.createElement("label");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.setAttribute("aria-label", "בחירת " + item.name);
+                checkbox.addEventListener("change", () => {
+                    if (checkbox.checked) selectedAdminItems.set(item.id,item);
+                    else selectedAdminItems.delete(item.id);
+                    updateBulkToolbar();
+                });
+                selection.append(checkbox,document.createTextNode(" בחירה"));
+                const edit = document.createElement("button");
+                edit.textContent = "עריכת פריט";
+                edit.onclick = () => editAdminItem(item);
+                const copy = document.createElement("button");
+                copy.textContent = "הוספת עותקים";
+                copy.onclick = () => addAdminCopies([item]);
+                row.append(selection,edit,copy,active);
+                items.append(row);
+            } else {
+                row.append(active);
+                removedList.append(row);
+            }
+        }
+        if (!removedList.childElementCount) {
+            const empty=document.createElement("p"); empty.textContent="אין פריטים לשחזור."; removedList.append(empty);
         }
         const activeLoans = await apiRequest("/Loans/active");
         for (const loan of activeLoans) {
