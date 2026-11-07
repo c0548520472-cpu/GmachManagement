@@ -92,18 +92,24 @@ namespace GmachManagement.Service.Services
             }
 
 
+            if (request.IsGmachOwner && (string.IsNullOrWhiteSpace(request.GmachName) || string.IsNullOrWhiteSpace(request.City)))
+                throw new ArgumentException("Gmach name and city are required for owners.");
+
             var user = new User
             {
                 Name = request.Name.Trim(),
                 Email = request.Email.Trim().ToLowerInvariant(),
-                Role = UserRole.User
+                Role = request.IsGmachOwner ? UserRole.GmachAdmin : UserRole.User
             };
 
             user.PasswordHash = _passwordService.HashPassword(
                 user,
                 request.Password);
 
-            await _userRepository.AddAsync(user, cancellationToken);
+            if (request.IsGmachOwner)
+                await _userRepository.AddWithGmachAsync(user, new Gmach { Name = request.GmachName!.Trim(), City = request.City!.Trim() }, cancellationToken);
+            else
+                await _userRepository.AddAsync(user, cancellationToken);
 
             return true;
 
