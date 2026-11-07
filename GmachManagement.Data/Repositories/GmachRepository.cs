@@ -15,13 +15,38 @@ public sealed class GmachRepository : IGmachRepository {
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>db.Gmachs.AsNoTracking().Include(g=>g.Items).ThenInclude(i=>i.Copies).FirstOrDefaultAsync(g=>g.Id==id,ct);
  public Task<Gmach?> GetByOwnerAsync(int ownerId,CancellationToken ct)=>db.Gmachs.AsNoTracking().FirstOrDefaultAsync(g=>g.OwnerId==ownerId,ct);
  public async Task<Gmach> CreateAsync(Gmach g,CancellationToken ct){db.Gmachs.Add(g);await db.SaveChangesAsync(ct);return g;}
- public async Task<int> ImportItemsAsync(int gmachId,IReadOnlyList<(string Name,string Description,int Quantity)> rows,CancellationToken ct){
-  var items=rows.Select(r=>new Item{Name=r.Name,Description=r.Description,GmachId=gmachId,Copies=Enumerable.Range(0,r.Quantity).Select(_=>new ItemCopy{Status=GmachManagement.Core.Enums.ItemStatus.Available}).ToList()}).ToList();
-  db.Items.AddRange(items);
+ private static string NormalizeItemText(string? value)=> (value??string.Empty).Trim().ToUpperInvariant();
+ private async Task<int> UpsertItemsAsync(int gmachId,IReadOnlyList<(string Name,string Description,int Quantity)> rows,CancellationToken ct){
+  // Match by gmach, name and description; merge duplicates in the same upload as well.
+  var existing=await db.Items.Where(i=>i.GmachId==gmachId).ToListAsync(ct);
+  var lookup=existing.GroupBy(i=>(NormalizeItemText(i.Name),NormalizeItemText(i.Description)))
+   .ToDictionary(g=>g.Key,g=>g.OrderByDescending(i=>i.IsActive).ThenBy(i=>i.Id).First());
+  var distinct=new HashSet<int>();
+  foreach(var row in rows){
+   var name=row.Name.Trim();var description=row.Description.Trim();
+   var key=(NormalizeItemText(name),NormalizeItemText(description));
+   if(!lookup.TryGetValue(key,out var item)){
+    item=new Item{Name=name,Description=description,GmachId=gmachId};
+    db.Items.Add(item);lookup.Add(key,item);
+   }
+   distinct.Add(item.Id==0 ? -lookup.Count : item.Id);
+   for(var n=0;n<row.Quantity;n++)item.Copies.Add(new ItemCopy{Status=GmachManagement.Core.Enums.ItemStatus.Available});
+  }
   await db.SaveChangesAsync(ct);
-  return items.Count;
+  return distinct.Count;
  }
- public async Task<Item> AddItemAsync(int gmachId,string name,string description,CancellationToken ct){var item=new Item{Name=name,Description=description,GmachId=gmachId};db.Items.Add(item);await db.SaveChangesAsync(ct);return item;}
+ public Task<int> ImportItemsAsync(int gmachId,IReadOnlyList<(string Name,string Description,int Quantity)> rows,CancellationToken ct)
+  =>UpsertItemsAsync(gmachId,rows,ct);
+ public async Task<Item> AddItemAsync(int gmachId,string name,string description,CancellationToken ct){
+  var keyName=NormalizeItemText(name);var keyDescription=NormalizeItemText(description);
+  var existing=await db.Items.Where(i=>i.GmachId==gmachId).ToListAsync(ct);
+  var item=existing.OrderByDescending(i=>i.IsActive).ThenBy(i=>i.Id)
+   .FirstOrDefault(i=>NormalizeItemText(i.Name)==keyName && NormalizeItemText(i.Description)==keyDescription);
+  if(item==null){item=new Item{Name=name.Trim(),Description=description.Trim(),GmachId=gmachId};db.Items.Add(item);}
+  db.ItemCopies.Add(new ItemCopy{Item=item,Status=GmachManagement.Core.Enums.ItemStatus.Available});
+  await db.SaveChangesAsync(ct);
+  return item;
+ }
  public async Task<int> AddCopiesAsync(int itemId,int quantity,CancellationToken ct){
   if(!await db.Items.AnyAsync(i=>i.Id==itemId && i.IsActive,ct))return 0;
   db.ItemCopies.AddRange(Enumerable.Range(0,quantity).Select(_=>new ItemCopy{ItemId=itemId,Status=GmachManagement.Core.Enums.ItemStatus.Available}));
