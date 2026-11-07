@@ -47,6 +47,34 @@ public sealed class GmachRepository : IGmachRepository {
   await db.SaveChangesAsync(ct);
   return item;
  }
+ public async Task<ManagedLoan?> MarkBorrowedAsync(int ownerId,int itemId,string name,string? phone,string? email,CancellationToken ct){
+  var gmach=await db.Gmachs.FirstOrDefaultAsync(g=>g.OwnerId==ownerId,ct);
+  if(gmach==null)return null;
+  await using var transaction=await db.Database.BeginTransactionAsync(ct);
+  var copy=await db.ItemCopies.Include(c=>c.Item).FirstOrDefaultAsync(c=>c.ItemId==itemId && c.Item.GmachId==gmach.Id && c.Item.IsActive && c.Status==GmachManagement.Core.Enums.ItemStatus.Available,ct);
+  if(copy==null)return null;
+  copy.Status=GmachManagement.Core.Enums.ItemStatus.Borrowed;
+  var record=new ManagedLoan{GmachId=gmach.Id,ItemCopyId=copy.Id,BorrowerName=name,BorrowerPhone=phone,BorrowerEmail=email,BorrowedAt=DateTime.UtcNow};
+  db.ManagedLoans.Add(record);
+  try {await db.SaveChangesAsync(ct);await transaction.CommitAsync(ct);return record;}
+  catch(DbUpdateConcurrencyException){throw new GmachManagement.Core.Exceptions.ConcurrencyConflictException();}
+ }
+ public async Task<bool> ReturnManagedLoanAsync(int ownerId,int id,CancellationToken ct){
+  var gmach=await db.Gmachs.FirstOrDefaultAsync(g=>g.OwnerId==ownerId,ct);
+  if(gmach==null)return false;
+  await using var transaction=await db.Database.BeginTransactionAsync(ct);
+  var record=await db.ManagedLoans.FirstOrDefaultAsync(l=>l.Id==id && l.GmachId==gmach.Id && l.ReturnedAt==null,ct);
+  if(record==null)return false;
+  var copy=await db.ItemCopies.FirstOrDefaultAsync(c=>c.Id==record.ItemCopyId,ct);
+  if(copy==null)return false;
+  record.ReturnedAt=DateTime.UtcNow;copy.Status=GmachManagement.Core.Enums.ItemStatus.Available;
+  try {await db.SaveChangesAsync(ct);await transaction.CommitAsync(ct);return true;}
+  catch(DbUpdateConcurrencyException){throw new GmachManagement.Core.Exceptions.ConcurrencyConflictException();}
+ }
+ public async Task<List<ManagedLoan>> GetManagedLoansAsync(int ownerId,CancellationToken ct){
+  var gmach=await db.Gmachs.AsNoTracking().FirstOrDefaultAsync(g=>g.OwnerId==ownerId,ct);
+  return gmach==null?new List<ManagedLoan>():await db.ManagedLoans.AsNoTracking().Where(l=>l.GmachId==gmach.Id && l.ReturnedAt==null).OrderByDescending(l=>l.BorrowedAt).ToListAsync(ct);
+ }
  public async Task<int> AddCopiesAsync(int itemId,int quantity,CancellationToken ct){
   if(!await db.Items.AnyAsync(i=>i.Id==itemId && i.IsActive,ct))return 0;
   db.ItemCopies.AddRange(Enumerable.Range(0,quantity).Select(_=>new ItemCopy{ItemId=itemId,Status=GmachManagement.Core.Enums.ItemStatus.Available}));
