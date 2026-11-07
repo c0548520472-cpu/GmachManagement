@@ -161,10 +161,23 @@
                 <div id="adminItems"></div>
                 <details id="removedItemsDetails"><summary>פריטים שהוסרו — לשחזור</summary><div id="removedAdminItems"></div></details>
                 <h3>השאלות פעילות</h3>
+                <div id="managedLoans"></div>
                 <div id="adminLoans"></div>
             </section>
         </section>
 
+        <dialog id="ownerBorrowDialog">
+            <form id="ownerBorrowForm">
+                <h2>סימון פריט כהושאל</h2>
+                <p id="ownerBorrowItemName"></p>
+                <label for="ownerBorrowName">שם השואל (חובה)</label><input id="ownerBorrowName" maxlength="150" required>
+                <label for="ownerBorrowPhone">טלפון</label><input id="ownerBorrowPhone" type="tel" maxlength="30">
+                <label for="ownerBorrowEmail">אימייל</label><input id="ownerBorrowEmail" type="email" maxlength="254">
+                <p class="muted">חובה למלא לפחות אחד: טלפון או אימייל.</p>
+                <p id="ownerBorrowMessage" class="message" role="status"></p>
+                <div class="dialog-actions"><button id="cancelOwnerBorrow" type="button" class="secondary">ביטול</button><button class="primary" type="submit">שמירת השאלה</button></div>
+            </form>
+        </dialog>
         <dialog id="borrowDialog">
             <form id="borrowForm">
                 <h2>השאלת פריט</h2>
