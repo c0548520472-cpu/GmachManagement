@@ -78,9 +78,39 @@ namespace GmachManagement.Service.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public async Task<bool> RegisterAsync(
+        private static string CreateRecoveryCode() => Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(24));
+        private static string HashRecoveryCode(string code) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(code)));
+        public async Task<string?> RegisterWithRecoveryAsync(RegisterDto request,CancellationToken cancellationToken=default)
+        {
+            var code=CreateRecoveryCode();
+            var success=await RegisterInternalAsync(request,HashRecoveryCode(code),cancellationToken);
+            return success?code:null;
+        }
+        public async Task<string?> GenerateRecoveryCodeAsync(int userId,CancellationToken cancellationToken=default)
+        {
+            var user=await _userRepository.GetByIdAsync(userId,cancellationToken);
+            if(user==null)return null;
+            var code=CreateRecoveryCode();
+            return await _userRepository.SetRecoveryCodeHashAsync(userId,HashRecoveryCode(code),cancellationToken)?code:null;
+        }
+        public async Task<bool> ResetWithRecoveryAsync(string email,string code,string newPassword,CancellationToken cancellationToken=default)
+        {
+            if(string.IsNullOrWhiteSpace(email)||string.IsNullOrWhiteSpace(code)||newPassword.Length<8 || newPassword.Length>128)return false;
+            var normalizedEmail=email.Trim().ToLowerInvariant();
+            var user=await _userRepository.GetByEmailAsync(normalizedEmail,cancellationToken);
+            if(user==null)return false;
+            var passwordHash=_passwordService.HashPassword(user,newPassword);
+            return await _userRepository.ConsumeRecoveryCodeAsync(normalizedEmail,HashRecoveryCode(code.Trim().ToUpperInvariant()),passwordHash,cancellationToken);
+        }
+        public Task<bool> RegisterAsync(RegisterDto request,CancellationToken cancellationToken=default)=>RegisterInternalAsync(request,null,cancellationToken);
+        private async Task<bool> RegisterInternalAsync(RegisterDto request,string? recoveryHash,CancellationToken cancellationToken)
+        {return await RegisterCoreAsync(request,recoveryHash,cancellationToken);}
+        private async Task<bool> RegisterCoreAsync(RegisterDto request,string? recoveryHash,CancellationToken cancellationToken)
+        {return await RegisterImplAsync(request,recoveryHash,cancellationToken);}
+        private async Task<bool> RegisterImplAsync(
             RegisterDto request,
-            CancellationToken cancellationToken = default)
+            string? recoveryHash,
+            CancellationToken cancellationToken)
         {
             var existingUser = await _userRepository.GetByEmailAsync(
                 request.Email,
@@ -99,7 +129,8 @@ namespace GmachManagement.Service.Services
             {
                 Name = request.Name.Trim(),
                 Email = request.Email.Trim().ToLowerInvariant(),
-                Role = request.IsGmachOwner ? UserRole.GmachAdmin : UserRole.User
+                Role = request.IsGmachOwner ? UserRole.GmachAdmin : UserRole.User,
+                RecoveryCodeHash = recoveryHash
             };
 
             user.PasswordHash = _passwordService.HashPassword(
