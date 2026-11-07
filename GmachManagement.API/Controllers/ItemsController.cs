@@ -142,6 +142,16 @@ public class ItemsController : ControllerBase
 
 
 
+    [HttpPost("{id:int}/copies/batch")]
+    [Authorize(Roles = "GmachAdmin")]
+    public async Task<IActionResult> AddCopies(int id,[FromQuery] int quantity,CancellationToken ct)
+    {
+        if(quantity<1||quantity>1000)return BadRequest(new {message="יש לבחור כמות בין 1 ל־1000."});
+        if(!await _gmachService.OwnsItemAsync(OwnerId,id,ct))return Forbid();
+        var added=await _gmachService.AddCopiesAsync(id,quantity,ct);
+        return added==0?NotFound():Ok(new {added});
+    }
+
     private static ItemDto ToDto(Item item)
     {
         return new ItemDto
