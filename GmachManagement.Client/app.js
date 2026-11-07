@@ -593,7 +593,16 @@ async function refreshAdmin() {
     items.replaceChildren();
     loans.replaceChildren();
     try {
-        const gmach = await apiRequest("/gmachs/mine");
+        let gmach;
+        try { gmach = await apiRequest("/gmachs/mine"); }
+        catch (error) {
+            document.getElementById("claimGmachForm").hidden = false;
+            document.getElementById("ownerManagement").hidden = true;
+            showMessage(message,"יש לשייך גמ״ח לחשבון לפני ניהול פריטים.","");
+            return;
+        }
+        document.getElementById("claimGmachForm").hidden = true;
+        document.getElementById("ownerManagement").hidden = false;
         document.getElementById("ownerGmachInfo").textContent = "הגמ״ח שלי: " + gmach.name + " — " + gmach.city;
         const catalog = gmach.items;
         for (const item of catalog) {
@@ -765,4 +774,13 @@ document.getElementById("excelImportForm").addEventListener("submit",async event
  const result=await response.json();if(!response.ok)throw new Error(result.message||"ייבוא נכשל");
  showMessage(document.getElementById("adminMessage"),"יובאו "+result.imported+" פריטים בהצלחה","success");await refreshAdmin();await loadItems();await findGmachs();
  }catch(e){showMessage(document.getElementById("adminMessage"),e.message,"error");}
+});
+
+document.getElementById("claimGmachForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ try {
+  await apiRequest("/gmachs/mine",{method:"POST",body:JSON.stringify({name:document.getElementById("claimGmachName").value.trim(),city:document.getElementById("claimGmachCity").value.trim()})});
+  await refreshAdmin();await findGmachs();
+  showMessage(document.getElementById("adminMessage"),"הגמ״ח שויך לחשבון בהצלחה.","success");
+ }catch(error){showMessage(document.getElementById("adminMessage"),error.message,"error");}
 });
