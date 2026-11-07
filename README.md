@@ -66,4 +66,4 @@ For local SQL Server:
 dotnet ef database update --context AppDbContext --project GmachManagement.Data --startup-project GmachManagement.API
 ```
 
-The deployment does not automatically run migrations. Verify the migration has completed before testing owner registration, gmach search or Excel import on the public site.
+The API now applies pending PostgreSQL migrations on startup. Confirm Render logs show a successful startup and verify the new tables before testing owner registration, gmach search or Excel import. The manual command above remains available for local use.
