@@ -613,6 +613,29 @@ async function initializeAdmin() {
     updateNavigation();
     if (isAdminToken()) await refreshAdmin();
 }
+let ownerBorrowItemId=null;
+const ownerBorrowDialog=document.getElementById("ownerBorrowDialog");
+function openOwnerBorrow(item){
+ ownerBorrowItemId=item.id;
+ document.getElementById("ownerBorrowForm").reset();
+ document.getElementById("ownerBorrowItemName").textContent=item.name;
+ showMessage(document.getElementById("ownerBorrowMessage"),"");
+ ownerBorrowDialog.showModal();
+}
+document.getElementById("cancelOwnerBorrow").addEventListener("click",()=>ownerBorrowDialog.close());
+document.getElementById("ownerBorrowForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ const borrowerName=document.getElementById("ownerBorrowName").value.trim();
+ const borrowerPhone=document.getElementById("ownerBorrowPhone").value.trim();
+ const borrowerEmail=document.getElementById("ownerBorrowEmail").value.trim();
+ const message=document.getElementById("ownerBorrowMessage");
+ if(!borrowerName){showMessage(message,"חובה למלא שם שואל.","error");return;}
+ if(!borrowerPhone&&!borrowerEmail){showMessage(message,"חובה למלא לפחות טלפון או אימייל.","error");return;}
+ try{
+  await apiRequest("/gmachs/mine/items/"+ownerBorrowItemId+"/borrow",{method:"POST",body:JSON.stringify({borrowerName,borrowerPhone:borrowerPhone||null,borrowerEmail:borrowerEmail||null})});
+  ownerBorrowDialog.close();await refreshAdmin();await loadItems();
+ }catch(error){showMessage(message,error.message,"error");}
+});
 const selectedAdminItems = new Map();
 function updateBulkToolbar() {
     const count=selectedAdminItems.size;
@@ -715,7 +738,11 @@ async function refreshAdmin() {
                 const copy = document.createElement("button");
                 copy.textContent = "הוספת עותקים";
                 copy.onclick = () => addAdminCopies([item]);
-                row.append(selection,edit,copy,active);
+                const borrow = document.createElement("button");
+                borrow.textContent = "סימון כהושאל";
+                borrow.disabled = item.availableCopies < 1;
+                borrow.onclick = () => openOwnerBorrow(item);
+                row.append(selection,edit,copy,borrow,active);
                 items.append(row);
             } else {
                 row.append(active);
@@ -725,6 +752,17 @@ async function refreshAdmin() {
         applyAdminItemSearch();
         if (!removedList.childElementCount) {
             const empty=document.createElement("p"); empty.textContent="אין פריטים לשחזור."; removedList.append(empty);
+        }
+        const managedContainer=document.getElementById("managedLoans");
+        managedContainer.replaceChildren();
+        const managedLoans=await apiRequest("/gmachs/mine/managed-loans");
+        for(const record of managedLoans){
+          const row=document.createElement("article");row.className="item-card";
+          const details=document.createElement("p");
+          details.textContent="עותק "+record.itemCopyId+" | "+record.borrowerName+" | "+(record.borrowerPhone||"")+" | "+(record.borrowerEmail||"");
+          const returned=document.createElement("button");returned.textContent="הוחזר";
+          returned.onclick=async()=>{try{await apiRequest("/gmachs/mine/managed-loans/"+record.id+"/return",{method:"POST"});await refreshAdmin();await loadItems();}catch(e){showMessage(message,e.message,"error");}};
+          row.append(details,returned);managedContainer.append(row);
         }
         const activeLoans = await apiRequest("/Loans/active");
         for (const loan of activeLoans) {
