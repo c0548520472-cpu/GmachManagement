@@ -288,3 +288,8 @@ dialog {
 .wide-card { max-width:1150px; margin:24px auto; }
 #adminItems, #adminLoans, #personalList { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
 @media(max-width:700px){ .header-content{flex-wrap:wrap} .site-nav{order:3;width:100%} }
+
+/* Respect the hidden state of auth-only controls and forms. */
+[hidden] { display: none !important; }
+.password-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-weight: 400; cursor: pointer; }
+.password-toggle input { width: auto; margin: 0; }
