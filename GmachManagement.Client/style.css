@@ -496,3 +496,33 @@ dialog::backdrop {background:#093b4b99;backdrop-filter:blur(3px);}
 @media(max-width:1100px){.gmach-items-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
 @media(max-width:780px){.gmach-items-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}}
 @media(max-width:480px){.gmach-items-grid{grid-template-columns:minmax(0,1fr);}}
+
+/* Site-wide centered layout and typography, retaining RTL reading direction. */
+html {direction:rtl;}
+body {text-align:center;}
+.container {width:min(100% - 32px,1220px);max-width:1220px;margin:32px auto;padding:0;min-width:0;}
+.header-content {justify-content:center;flex-wrap:wrap;text-align:center;}
+.site-nav,#userArea {justify-content:center;align-items:center;}
+.page-heading {justify-content:center;text-align:center;}
+.page-heading > div {margin-inline:auto;}
+.auth-card,.wide-card,#gmachDirectory,#gmachPage {margin-inline:auto;text-align:center;}
+.item-card,#gmachList > .item-card,.gmach-items-grid > .item-card {text-align:center;align-items:center;}
+.item-card > *,#gmachList > .item-card > *,.gmach-items-grid > .item-card > * {max-width:100%;}
+.item-card button {align-self:stretch;}
+.toolbar,.home-filters,.pagination,.tabs,.dialog-actions {justify-content:center;}
+form {max-width:100%;margin-inline:auto;}
+form label,form .muted,form .message {text-align:center;}
+input,select,textarea {text-align:center;max-width:100%;}
+input[type="checkbox"],input[type="radio"] {width:auto;}
+.checkbox-label,.password-toggle {justify-content:center;align-items:center;}
+.message,.muted,section > h2,section > h3,section > p {text-align:center;}
+#bulkItemActions.auth-card {justify-content:center;}
+#selectedItemsCount {margin-inline:0;}
+#gmachList,.gmach-items-grid,.items-grid {margin-inline:auto;}
+dialog {text-align:center;}
+@media(max-width:700px){
+ .container {width:calc(100% - 24px);margin:18px auto;}
+ .header-content,.site-nav,#userArea {justify-content:center;}
+ .page-heading {flex-direction:column;align-items:center;}
+ .auth-card,.wide-card,#gmachDirectory,#gmachPage {max-width:100%;margin-inline:auto;}
+}
