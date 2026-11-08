@@ -114,7 +114,7 @@ authForm.addEventListener("submit", async (event) => {
         const password = document.getElementById("password").value;
 
         if (password.length < 8) {
-            showMessage(authMessage, "הסיסמה חייבת להכיל לפחות 8 תווים.", "error");
+            showMessage(authMessage, "הסיסמא חייבת להכיל 8 תוים לפחות", "error");
             document.getElementById("password").focus();
             return;
         }
@@ -184,8 +184,7 @@ function switchAuthMode(mode) {
     document.getElementById("forgotPasswordBtn").hidden = mode !== "login";
     document.getElementById("forgotPasswordNotice").hidden = true;
     document.getElementById("password").setAttribute("autocomplete", mode === "register" ? "new-password" : "current-password");
-    document.getElementById("password").minLength = mode === "register" ? 8 : 0;
-    document.getElementById("passwordHelp").hidden = mode !== "register";
+    document.getElementById("password").minLength = 0;
 
     document.getElementById("authSubmit").textContent =
         mode === "login" ? "התחברות" : "הרשמה";
@@ -798,6 +797,7 @@ function showPage(page, push = true) {
     if (page === "owner" && !isAdminToken()) page = "account";
     authSection.hidden = page !== "login";
     dashboardSection.hidden = page !== "home";
+    document.getElementById("gmachPage").hidden = page !== "gmach";
     document.getElementById("accountPage").hidden = page !== "account";
     document.getElementById("profilePage").hidden = page !== "profile";
     document.getElementById("openLoansSection").hidden = page !== "account";
@@ -811,12 +811,13 @@ function showPage(page, push = true) {
     document.getElementById("adminNav").hidden = !token || !isAdminToken();
     if (push) {
         const url = new URL(location.href);
-        url.searchParams.delete("gmach");
-        if (page === "home") url.searchParams.delete("page");
+        if (page !== "gmach") url.searchParams.delete("gmach");
+        if (page === "home" || page === "gmach") url.searchParams.delete("page");
         else url.searchParams.set("page", page);
         history.pushState({page}, "", url);
     }
     if (page === "home") { findGmachs(); }
+    if (page === "gmach") { const id=Number(new URLSearchParams(location.search).get("gmach")); if(Number.isInteger(id)&&id>0)renderGmach(id);else showPage("home",true); }
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); }
     if (page === "owner") refreshAdmin();
     if (page === "profile") loadProfile();
@@ -872,8 +873,9 @@ document.getElementById("myLoansNav").addEventListener("click", () => showPage("
 document.getElementById("adminNav").addEventListener("click", () => showPage("owner"));
 document.getElementById("profileNav").addEventListener("click",()=>showPage("profile"));
 window.addEventListener("popstate", () => {
-    const page = new URLSearchParams(location.search).get("page") || "home";
-    showPage(["login","account","owner","profile"].includes(page) ? page : "home", false);
+    const params=new URLSearchParams(location.search);
+    const page=params.has("gmach")?"gmach":params.get("page")||"home";
+    showPage(["login","account","owner","profile","gmach"].includes(page) ? page : "home", false);
 });
 
 async function loadMyLoans() {
@@ -928,10 +930,14 @@ async function findGmachs(){
   if(!matches){const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";list.append(empty);}
  }catch(e){showMessage(itemsMessage,e.message,"error");}
 }
-async function showGmach(id){
- const url=new URL(location.href);url.searchParams.delete("page");url.searchParams.set("gmach",id);history.pushState(null,"",url);
+function showGmach(id){
+ const url=new URL(location.href);url.searchParams.delete("page");url.searchParams.set("gmach",id);history.pushState({page:"gmach"},"",url);
+ showPage("gmach",false);
+}
+async function renderGmach(id){
  const container=document.getElementById("gmachDetails");container.replaceChildren();
- try {const g=await apiRequest("/gmachs/"+id);const section=document.createElement("section");section.className="auth-card wide-card";
+ try {const g=await apiRequest("/gmachs/"+id);const section=document.createElement("section");section.className="gmach-content";
+ const grid=document.createElement("div");grid.className="gmach-items-grid";
  const title=document.createElement("h2");title.textContent=g.name+" — "+g.city;section.append(title);
  const desc=document.createElement("p");desc.textContent=g.description||"";section.append(desc);
  for(const item of g.items.filter(item=>item.isActive&&item.availableCopies>0&&item.name.toLocaleLowerCase("he").includes(document.getElementById("homeItemSearch").value.trim().toLocaleLowerCase("he")))){const card=document.createElement("article");card.className="item-card";
@@ -939,17 +945,17 @@ async function showGmach(id){
  const info=document.createElement("p");info.textContent=(item.description||"")+" | עותקים זמינים: "+item.availableCopies;
  const button=document.createElement("button");button.textContent="השאלה";button.disabled=!item.isActive||item.availableCopies<1;
  button.addEventListener("click",()=>{if(!token){showLogin();authSection.scrollIntoView();}else openBorrowDialog(item);});
- card.append(name,info,button);section.append(card);}
- container.append(section);container.scrollIntoView({behavior:"smooth"});
+ card.append(name,info,button);grid.append(card);}
+ section.append(grid);
+ container.append(section);
  }catch(e){showMessage(itemsMessage,e.message,"error");}
 }
+document.getElementById("backToGmachs").addEventListener("click",showHome);
 document.getElementById("findGmachs").addEventListener("click",findGmachs);
 for(const id of ["citySearch","gmachSearch","homeItemSearch"])document.getElementById(id).addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();findGmachs();}});
-findGmachs();
-const directGmachId=Number(new URLSearchParams(location.search).get("gmach"));
-if(Number.isInteger(directGmachId)&&directGmachId>0)showGmach(directGmachId);
-const initialPage=new URLSearchParams(location.search).get("page");
-showPage(["login","account","owner","profile"].includes(initialPage)?initialPage:"home",false);
+const startupParams=new URLSearchParams(location.search);
+const initialPage=startupParams.has("gmach")?"gmach":startupParams.get("page");
+showPage(["login","account","owner","profile","gmach"].includes(initialPage)?initialPage:"home",false);
 document.getElementById("excelImportForm").addEventListener("submit",async event=>{
  event.preventDefault();const file=document.getElementById("excelFile").files[0];if(!file)return;
  const form=new FormData();form.append("file",file);
