@@ -467,3 +467,32 @@ dialog::backdrop {background:#093b4b99;backdrop-filter:blur(3px);}
 @media(max-width:1100px){#gmachList {grid-template-columns:repeat(3,minmax(0,1fr));}}
 @media(max-width:780px){#gmachList {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}}
 @media(max-width:480px){#gmachList {grid-template-columns:minmax(0,1fr);}}
+
+/* Dedicated gmach page: four item cards per row on desktop. */
+#gmachPage {width:100%;max-width:none;min-width:0;margin-inline:0;}
+#gmachPage #backToGmachs {margin-bottom:20px;}
+.gmach-content {width:100%;min-width:0;}
+.gmach-content > h2 {margin:0 0 12px;}
+.gmach-items-grid {
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ align-items:stretch;
+ gap:18px;
+ margin-top:22px;
+ width:100%;
+ min-width:0;
+}
+.gmach-items-grid > .item-card {
+ min-width:0;
+ width:100%;
+ margin:0;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+ overflow-wrap:anywhere;
+}
+.gmach-items-grid > .item-card p {flex:1;margin:0;}
+.gmach-items-grid > .item-card button {margin-top:auto;width:100%;}
+@media(max-width:1100px){.gmach-items-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:780px){.gmach-items-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}}
+@media(max-width:480px){.gmach-items-grid{grid-template-columns:minmax(0,1fr);}}
