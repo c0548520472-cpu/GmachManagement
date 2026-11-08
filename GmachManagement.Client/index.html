@@ -48,7 +48,6 @@
 
                 <label for="password">סיסמה</label>
                 <div class="password-field"><input id="password" type="password" required autocomplete="current-password"><label class="password-toggle"><input id="showPassword" type="checkbox"> הצג סיסמה</label></div>
-                <p id="passwordHelp" class="muted" hidden>הסיסמה חייבת להכיל לפחות 8 תווים.</p>
 
                 <button type="submit" class="primary full-width"
                         id="authSubmit">
@@ -81,7 +80,6 @@
                     <button id="findGmachs" type="button" class="primary">חיפוש</button>
                 </div>
                 <div id="gmachList" class="items-grid"></div>
-                <div id="gmachDetails" class="items-grid"></div>
             </section>
             <div id="legacyCatalog" hidden>
             <div class="toolbar">
@@ -117,6 +115,11 @@
 
 
             </div>
+        </section>
+
+        <section id="gmachPage" class="auth-card wide-card" hidden>
+            <button id="backToGmachs" class="secondary" type="button">חזרה לרשימת הגמ״חים</button>
+            <div id="gmachDetails"></div>
         </section>
 
         <section id="profilePage" class="auth-card wide-card" hidden>
