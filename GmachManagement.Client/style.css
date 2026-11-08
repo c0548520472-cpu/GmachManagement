@@ -526,3 +526,34 @@ dialog {text-align:center;}
  .page-heading {flex-direction:column;align-items:center;}
  .auth-card,.wide-card,#gmachDirectory,#gmachPage {max-width:100%;margin-inline:auto;}
 }
+
+/* Login and registration: restore the original right-aligned layout.
+   Override the global centering rules, including headings and labels. */
+#authSection.auth-card,
+#authSection.auth-card h2,
+#authSection.auth-card > p,
+#authSection #authForm,
+#authSection #authForm *,
+#authSection #authMessage,
+#authSection #forgotPasswordNotice {
+    text-align: right;
+}
+#authSection #authForm input:not([type="checkbox"]),
+#authSection #authForm select,
+#authSection #authForm textarea {
+    text-align: right;
+    direction: rtl;
+}
+#authSection .password-field,
+#authSection .password-toggle,
+#authSection #ownerRegistration > label,
+#authSection .checkbox-label {
+    justify-content: flex-start;
+    text-align: right;
+}
+#authSection .tabs {
+    justify-content: flex-start;
+}
+#authSection #authSubmit {
+    text-align: center;
+}
