@@ -433,3 +433,37 @@ dialog::backdrop {background:#093b4b99;backdrop-filter:blur(3px);}
 #legacyCatalog {display:none !important;}
 @media(max-width:700px){.home-filters {grid-template-columns:repeat(2,minmax(0,1fr));}.home-filters button {width:100%;}}
 @media(max-width:420px){.home-filters {grid-template-columns:1fr;}}
+
+/* Home directory: responsive multi-column cards, never a narrow single strip. */
+#dashboardSection, #gmachDirectory {width:100%;min-width:0;max-width:none;}
+#gmachDirectory {display:block;margin-inline:0;}
+#gmachList {
+ display:grid;
+ width:100%;
+ min-width:0;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:20px;
+ align-items:stretch;
+}
+#gmachList > .item-card {
+ display:flex;
+ flex-direction:column;
+ min-width:0;
+ width:100%;
+ max-width:none;
+ margin:0;
+ padding:22px;
+ border:1px solid #d1edf0;
+ border-top:4px solid #12aeb5;
+ border-radius:20px;
+ background:linear-gradient(160deg,#ffffff,#f6fdfd);
+ box-shadow:0 6px 22px #086a7b12;
+ text-align:right;
+}
+#gmachList > .item-card h3 {font-size:19px;line-height:1.4;margin:0 0 12px;overflow-wrap:anywhere;}
+#gmachList > .item-card p {font-size:15px;line-height:1.6;margin:0 0 18px;overflow-wrap:anywhere;flex:1;}
+#gmachList > .item-card button {width:100%;margin-top:auto;}
+#gmachDetails {width:100%;min-width:0;margin-top:22px;}
+@media(max-width:1100px){#gmachList {grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:780px){#gmachList {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}}
+@media(max-width:480px){#gmachList {grid-template-columns:minmax(0,1fr);}}
