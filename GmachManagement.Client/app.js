@@ -113,6 +113,11 @@ authForm.addEventListener("submit", async (event) => {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
+        if (password.length < 8) {
+            showMessage(authMessage, "הסיסמה חייבת להכיל לפחות 8 תווים.", "error");
+            document.getElementById("password").focus();
+            return;
+        }
         showMessage(authMessage, "מבצע הרשמה...");
 
         try {
@@ -179,6 +184,8 @@ function switchAuthMode(mode) {
     document.getElementById("forgotPasswordBtn").hidden = mode !== "login";
     document.getElementById("forgotPasswordNotice").hidden = true;
     document.getElementById("password").setAttribute("autocomplete", mode === "register" ? "new-password" : "current-password");
+    document.getElementById("password").minLength = mode === "register" ? 8 : 0;
+    document.getElementById("passwordHelp").hidden = mode !== "register";
 
     document.getElementById("authSubmit").textContent =
         mode === "login" ? "התחברות" : "הרשמה";
@@ -186,7 +193,6 @@ function switchAuthMode(mode) {
     showMessage(authMessage, "");
 }
 
-document.getElementById("cancelRecovery").addEventListener("click",()=>switchAuthMode("login"));
 
 document.getElementById("loginTab").addEventListener(
     "click", () => switchAuthMode("login")
@@ -195,6 +201,8 @@ document.getElementById("loginTab").addEventListener(
 document.getElementById("registerTab").addEventListener(
     "click", () => switchAuthMode("register")
 );
+
+document.getElementById("password").addEventListener("input",()=>{if(authMode==="register"&&document.getElementById("password").value.length>=8)showMessage(authMessage,"");});
 
 document.getElementById("logoutBtn").addEventListener(
     "click", logout
