@@ -1,6 +1,7 @@
 
 const API_BASE = "https://gmachmanagement-api.onrender.com/api";
 const PAGE_SIZE = 6;
+const normalizeCity = value => String(value ?? "").replaceAll("ירושליים","ירושלים");
 
 const authSection = document.getElementById("authSection");
 const dashboardSection = document.getElementById("dashboardSection");
@@ -123,7 +124,7 @@ authForm.addEventListener("submit", async (event) => {
         try {
             const registration = await apiRequest("/Auth/register", {
                 method: "POST",
-                body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), city: document.getElementById("gmachCity").value.trim() })
+                body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), city: normalizeCity(document.getElementById("gmachCity").value.trim()) })
             });
 
             switchAuthMode("login");
@@ -834,7 +835,7 @@ async function loadProfile(){
   document.getElementById("profileIsOwner").checked=!!p.isGmachOwner;
   document.getElementById("profileGmachName").value=p.gmachName||"";
   document.getElementById("profileGmachType").value=p.gmachType||"";
-  document.getElementById("profileCity").value=p.city||"";
+  document.getElementById("profileCity").value=normalizeCity(p.city);
   document.getElementById("profileGmachFields").hidden=!p.isGmachOwner;
   document.getElementById("profileCurrentPassword").value="";
   document.getElementById("profileNewPassword").value="";
@@ -852,7 +853,7 @@ document.getElementById("profileForm").addEventListener("submit",async e=>{
  const payload={name:document.getElementById("profileName").value.trim(),email:document.getElementById("profileEmail").value.trim(),isGmachOwner:owner,
  gmachName:owner?document.getElementById("profileGmachName").value.trim():null,
  gmachType:owner?document.getElementById("profileGmachType").value.trim():null,
- city:owner?document.getElementById("profileCity").value.trim():null,
+ city:owner?normalizeCity(document.getElementById("profileCity").value.trim()):null,
  currentPassword:document.getElementById("profileCurrentPassword").value,
  newPassword:document.getElementById("profileNewPassword").value||null};
  try{
@@ -914,7 +915,7 @@ const ownerCheckbox=document.getElementById("registerOwner");
 ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerFields").hidden=!ownerCheckbox.checked;});
 async function findGmachs(){
  const list=document.getElementById("gmachList");list.replaceChildren();document.getElementById("gmachDetails").replaceChildren();
- const query=new URLSearchParams({city:document.getElementById("citySearch").value.trim(),search:document.getElementById("gmachSearch").value.trim()});
+ const query=new URLSearchParams({city:normalizeCity(document.getElementById("citySearch").value.trim()),search:document.getElementById("gmachSearch").value.trim()});
  const itemTerm=document.getElementById("homeItemSearch").value.trim().toLocaleLowerCase("he");
  try {const groups=await apiRequest("/gmachs?"+query);
   let matches=0;
@@ -923,7 +924,7 @@ async function findGmachs(){
    matches++;
    const card=document.createElement("article");card.className="item-card";
    const heading=document.createElement("h3");heading.textContent=group.name;
-   const city=document.createElement("p");city.textContent=group.city;
+   const city=document.createElement("p");city.textContent=normalizeCity(group.city);
    const button=document.createElement("button");button.className="primary";button.textContent="דף הגמ״ח";button.addEventListener("click",()=>showGmach(group.id));
    card.append(heading,city,button);list.append(card);
   }
@@ -938,7 +939,7 @@ async function renderGmach(id){
  const container=document.getElementById("gmachDetails");container.replaceChildren();
  try {const g=await apiRequest("/gmachs/"+id);const section=document.createElement("section");section.className="gmach-content";
  const grid=document.createElement("div");grid.className="gmach-items-grid";
- const title=document.createElement("h2");title.textContent=g.name+" — "+g.city;section.append(title);
+ const title=document.createElement("h2");title.textContent=g.name+" — "+normalizeCity(g.city);section.append(title);
  const desc=document.createElement("p");desc.textContent=g.description||"";section.append(desc);
  for(const item of g.items.filter(item=>item.isActive&&item.availableCopies>0&&item.name.toLocaleLowerCase("he").includes(document.getElementById("homeItemSearch").value.trim().toLocaleLowerCase("he")))){const card=document.createElement("article");card.className="item-card";
  const name=document.createElement("h3");name.textContent=item.name;
@@ -948,7 +949,7 @@ async function renderGmach(id){
  card.append(name,info,button);grid.append(card);}
  section.append(grid);
  container.append(section);
- }catch(e){showMessage(itemsMessage,e.message,"error");}
+ }catch(e){const message=document.createElement("p");message.className="message error";message.textContent=e.message;container.append(message);}
 }
 document.getElementById("backToGmachs").addEventListener("click",showHome);
 document.getElementById("findGmachs").addEventListener("click",findGmachs);
@@ -968,7 +969,7 @@ document.getElementById("excelImportForm").addEventListener("submit",async event
 document.getElementById("claimGmachForm").addEventListener("submit",async event=>{
  event.preventDefault();
  try {
-  await apiRequest("/gmachs/mine",{method:"POST",body:JSON.stringify({name:document.getElementById("claimGmachName").value.trim(),city:document.getElementById("claimGmachCity").value.trim()})});
+  await apiRequest("/gmachs/mine",{method:"POST",body:JSON.stringify({name:document.getElementById("claimGmachName").value.trim(),city:normalizeCity(document.getElementById("claimGmachCity").value.trim())})});
   await refreshAdmin();await findGmachs();
   showMessage(document.getElementById("adminMessage"),"הגמ״ח שויך לחשבון בהצלחה.","success");
  }catch(error){showMessage(document.getElementById("adminMessage"),error.message,"error");}
