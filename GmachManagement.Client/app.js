@@ -285,7 +285,7 @@ function renderItems(items) {
 
         const borrowButton = document.createElement("button");
         borrowButton.className = "primary";
-        borrowButton.textContent = "בקשה להשאלת פריט";
+        borrowButton.textContent = "השאלת פריט";
         borrowButton.disabled = !available;
 
         borrowButton.addEventListener("click", () => {
@@ -425,7 +425,7 @@ document.getElementById("borrowForm").addEventListener(
             await loadItems();
             showMessage(
                 itemsMessage,
-                "הפרטים הועברו לבעל הגמ״ח והוא יצור איתך קשר.",
+                "הבקשה נשלחה בהצלחה! בעל הגמ״ח יצור איתך קשר.",
                 "success"
             );
 
