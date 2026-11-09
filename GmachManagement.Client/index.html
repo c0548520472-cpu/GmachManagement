@@ -58,12 +58,13 @@
                role="status" aria-live="polite"></p>
         </section>
 
-        <section id="dashboardSection" hidden>
+        <button id="openLoginBtn" class="secondary">כניסה לבעלי גמ״חים</button>
+        <section id="dashboardSection">
             <div class="page-heading">
                 <div>
                     <h2>קטלוג הפריטים</h2>
                     <p class="muted">
-                        חיפוש פריטים והשאלת עותקים זמינים
+                        חיפוש פריטים ושליחת בקשות השאלה
                     </p>
                 </div>
             </div>
@@ -99,15 +100,16 @@
             </div>
         </section>
 
+        <section id="ownerRequestsSection" hidden><h2>בקשות השאלה שממתינות לטיפולך</h2><p id="ownerRequestsMessage" class="message"></p><div id="ownerRequestsGrid" class="items-grid"></div></section>
         <dialog id="borrowDialog">
             <form id="borrowForm">
-                <h2>השאלת פריט</h2>
+                <h2>בקשה להשאלת פריט</h2>
                 <p id="borrowItemName"></p>
 
-                <label for="returnDate">
-                    תאריך החזרה צפוי
-                </label>
-                <input id="returnDate" type="date" required>
+                <label for="applicantName">שם מלא</label><input id="applicantName" type="text" maxlength="100" required>
+                <label for="applicantPhone">טלפון</label><input id="applicantPhone" type="tel" maxlength="30">
+                <label for="applicantEmail">אימייל</label><input id="applicantEmail" type="email" maxlength="254">
+                <p class="muted">יש להזין לפחות טלפון או אימייל.</p>
 
                 <p id="borrowMessage" class="message"
                    role="status" aria-live="polite"></p>
@@ -118,7 +120,7 @@
                         ביטול
                     </button>
                     <button type="submit" class="primary">
-                        אישור השאלה
+                        שליחת בקשה
                     </button>
                 </div>
             </form>
