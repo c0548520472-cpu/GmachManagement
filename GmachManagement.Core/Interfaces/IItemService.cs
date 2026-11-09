@@ -16,6 +16,8 @@ public interface IItemService
         CancellationToken cancellationToken = default);
 
 
+    Task<bool> IsOwnedByAsync(int itemId, int ownerId, CancellationToken ct);
+
     Task<Item?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default);
