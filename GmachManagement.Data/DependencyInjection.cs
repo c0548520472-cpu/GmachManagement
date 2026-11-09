@@ -22,6 +22,7 @@ namespace GmachManagement.Data
             services.AddScoped<ILoanRepository, LoanRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IItemRepository, ItemRepository>();
+            services.AddScoped<IBorrowRequestRepository, BorrowRequestRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
 
             return services;
