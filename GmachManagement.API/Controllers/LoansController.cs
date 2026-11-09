@@ -31,6 +31,7 @@ namespace GmachManagement.API.Controllers
         public async Task<ActionResult<List<LoanDto>>> GetActiveLoans(
             CancellationToken cancellationToken)
         {
+            return Forbid();
             var loans = await _loanService.GetActiveLoansAsync(
                 cancellationToken);
 
@@ -42,6 +43,7 @@ namespace GmachManagement.API.Controllers
         public async Task<ActionResult<List<LoanDto>>> GetOverdueLoans(
             CancellationToken cancellationToken)
         {
+            return Forbid();
             var loans = await _loanService.GetOverdueLoansAsync(
                 cancellationToken);
 
@@ -97,6 +99,7 @@ namespace GmachManagement.API.Controllers
         public async Task<ActionResult<List<LoanDto>>> GetAll(
             CancellationToken cancellationToken)
         {
+            return Forbid();
             var loans = await _loanService.GetAllLoansAsync(
                 cancellationToken);
 
@@ -111,6 +114,8 @@ namespace GmachManagement.API.Controllers
             [FromBody] BorrowItemDto request,
             CancellationToken cancellationToken)
         {
+            return StatusCode(410, new { message = "יש לשלוח בקשת השאלה במקום לבצע השאלה ישירה" });
+
             var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdValue, out int userId) || userId <= 0)
