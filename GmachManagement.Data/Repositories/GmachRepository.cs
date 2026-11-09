@@ -6,6 +6,29 @@ namespace GmachManagement.Data.Repositories;
 public sealed class GmachRepository : IGmachRepository {
  private readonly AppDbContext db;
  public GmachRepository(AppDbContext db) => this.db=db;
+ public async Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct) {
+  var available=await db.Items.AnyAsync(i=>i.Id==itemId && i.IsActive && i.GmachId!=null && i.Copies.Any(c=>c.Status==GmachManagement.Core.Enums.ItemStatus.Available),ct);
+  if(!available)return null;
+  var request=new BorrowRequest{ItemId=itemId,ApplicantName=name.Trim(),Phone=phone?.Trim(),Email=email?.Trim(),CreatedAt=DateTime.UtcNow};
+  db.BorrowRequests.Add(request);await db.SaveChangesAsync(ct);return request;
+ }
+ public Task<List<BorrowRequest>> GetBorrowRequestsAsync(int ownerId,CancellationToken ct)=>
+  db.BorrowRequests.AsNoTracking().Include(r=>r.Item)
+   .Where(r=>r.FulfilledAt==null && r.Item.Gmach!=null && r.Item.Gmach.OwnerId==ownerId)
+   .OrderByDescending(r=>r.CreatedAt).ToListAsync(ct);
+ public async Task<bool> FulfillBorrowRequestAsync(int ownerId,int requestId,CancellationToken ct) {
+  await using var tx=await db.Database.BeginTransactionAsync(ct);
+  var request=await db.BorrowRequests.Include(r=>r.Item).ThenInclude(i=>i.Gmach)
+   .FirstOrDefaultAsync(r=>r.Id==requestId && r.FulfilledAt==null && r.Item.Gmach!=null && r.Item.Gmach.OwnerId==ownerId,ct);
+  if(request==null || request.Item.Gmach==null || !request.Item.IsActive)return false;
+  var copy=await db.ItemCopies.FirstOrDefaultAsync(c=>c.ItemId==request.ItemId && c.Status==GmachManagement.Core.Enums.ItemStatus.Available,ct);
+  if(copy==null)return false;
+  copy.Status=GmachManagement.Core.Enums.ItemStatus.Borrowed;
+  db.ManagedLoans.Add(new ManagedLoan{GmachId=request.Item.Gmach.Id,ItemCopyId=copy.Id,BorrowerName=request.ApplicantName,BorrowerPhone=request.Phone,BorrowerEmail=request.Email,BorrowedAt=DateTime.UtcNow});
+  request.FulfilledAt=DateTime.UtcNow;
+  try{await db.SaveChangesAsync(ct);await tx.CommitAsync(ct);return true;}
+  catch(DbUpdateConcurrencyException){throw new GmachManagement.Core.Exceptions.ConcurrencyConflictException();}
+ }
  public Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct) {
   var q=db.Gmachs.AsNoTracking().AsQueryable();
   if(!string.IsNullOrWhiteSpace(city)) q=q.Where(g=>g.City.Contains(city.Trim()));
