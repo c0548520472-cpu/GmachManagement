@@ -1,7 +1,7 @@
 name: Build and test
 on:
   push:
-    branches: [main, feature/personal-borrowing]
+    branches: [main, feature/personal-borrowing, feature/anonymous-borrow-requests-render]
   pull_request:
     branches: [main, feature/personal-borrowing]
 jobs:
