@@ -70,6 +70,9 @@ public class ItemRepository : IItemRepository
     }
 
 
+    public Task<int?> GetCopyOwnerItemIdAsync(int copyId, CancellationToken ct) =>
+        _context.ItemCopies.Where(c => c.Id == copyId).Select(c => (int?)c.ItemId).FirstOrDefaultAsync(ct);
+
     public Task<bool> IsOwnedByAsync(int itemId, int ownerId, CancellationToken ct) =>
         _context.Items.AnyAsync(i => i.Id == itemId && i.OwnerId == ownerId, ct);
 
