@@ -35,6 +35,9 @@ public class ItemService : IItemService
     }
 
 
+    public Task<int?> GetCopyOwnerItemIdAsync(int copyId, CancellationToken ct) =>
+        _itemRepository.GetCopyOwnerItemIdAsync(copyId, ct);
+
     public Task<bool> IsOwnedByAsync(int itemId, int ownerId, CancellationToken ct) =>
         _itemRepository.IsOwnedByAsync(itemId, ownerId, ct);
 
