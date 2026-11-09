@@ -37,6 +37,21 @@ namespace GmachManagement.Data.Migrations.PostgreSQL
                     b.ToTable("CategoryItem");
                 });
 
+            modelBuilder.Entity("GmachManagement.Core.Entities.BorrowRequest", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("integer");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<int>("ItemId").HasColumnType("integer");
+                    b.Property<string>("ApplicantName").IsRequired().HasMaxLength(150).HasColumnType("character varying(150)");
+                    b.Property<string>("Phone").HasMaxLength(30).HasColumnType("character varying(30)");
+                    b.Property<string>("Email").HasMaxLength(254).HasColumnType("character varying(254)");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("FulfilledAt").HasColumnType("timestamp with time zone");
+                    b.HasKey("Id");
+                    b.HasIndex("ItemId");
+                    b.ToTable("BorrowRequests");
+                });
+
             modelBuilder.Entity("GmachManagement.Core.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -310,6 +325,16 @@ namespace GmachManagement.Data.Migrations.PostgreSQL
                         .HasForeignKey("ItemsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GmachManagement.Core.Entities.BorrowRequest", b =>
+                {
+                    b.HasOne("GmachManagement.Core.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("GmachManagement.Core.Entities.Gmach", b =>
