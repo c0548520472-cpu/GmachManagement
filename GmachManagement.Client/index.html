@@ -188,6 +188,7 @@
                 <div id="bulkItemActions" class="auth-card" hidden><span id="selectedItemsCount"></span> <button id="bulkEditItems" type="button">עריכת פריטים נבחרים</button> <button id="bulkAddCopies" type="button">הוספת עותקים לנבחרים</button> <button id="bulkRemoveItems" type="button">הסרת פריטים נבחרים</button></div>
                 <div id="adminItems"></div>
                 <details id="removedItemsDetails"><summary>פריטים שהוסרו — לשחזור</summary><div id="removedAdminItems"></div></details>
+                <h3>בקשות השאלה ממתינות</h3><p id="borrowRequestsMessage" class="message" role="status"></p><div id="borrowRequestsList" class="items-grid"></div>
                 <h3>השאלות פעילות</h3>
                 <label for="managedLoansSort">מיון לפי מועד ההשאלה</label>
                 <select id="managedLoansSort"><option value="newest">מהחדש ביותר לישן ביותר</option><option value="oldest">מהישן ביותר לחדש ביותר</option></select>
@@ -213,10 +214,10 @@
                 <h2>השאלת פריט</h2>
                 <p id="borrowItemName"></p>
 
-                <label for="returnDate">
-                    תאריך החזרה צפוי
-                </label>
-                <input id="returnDate" type="date" required>
+                <label for="requestName">שם מלא</label><input id="requestName" maxlength="150" required>
+                <label for="requestPhone">טלפון</label><input id="requestPhone" type="tel" maxlength="30">
+                <label for="requestEmail">אימייל</label><input id="requestEmail" type="email" maxlength="254">
+                <p class="muted">יש להזין טלפון או אימייל.</p>
 
                 <p id="borrowMessage" class="message"
                    role="status" aria-live="polite"></p>
@@ -227,7 +228,7 @@
                         ביטול
                     </button>
                     <button type="submit" class="primary">
-                        אישור השאלה
+                        שליחת בקשה
                     </button>
                 </div>
             </form>
