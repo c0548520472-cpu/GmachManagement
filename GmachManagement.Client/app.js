@@ -28,11 +28,16 @@ function showDashboard() {
     document.getElementById("welcomeText").textContent =
         "מחובר למערכת";
     loadItems();
+    document.getElementById("ownerRequestsSection").hidden = false;
+    document.getElementById("openLoginBtn").hidden = true;
+    loadOwnerRequests();
 }
 
 function showLogin() {
     authSection.hidden = false;
-    dashboardSection.hidden = true;
+    dashboardSection.hidden = false;
+    document.getElementById("ownerRequestsSection").hidden = true;
+    document.getElementById("openLoginBtn").hidden = true;
     document.getElementById("logoutBtn").hidden = true;
     document.getElementById("welcomeText").textContent = "";
 }
@@ -41,7 +46,16 @@ function logout() {
     sessionStorage.removeItem("gmachToken");
     token = null;
     currentItems = [];
-    showLogin();
+    showPublic();
+}
+
+function showPublic() {
+    authSection.hidden = true;
+    dashboardSection.hidden = false;
+    document.getElementById("ownerRequestsSection").hidden = true;
+    document.getElementById("openLoginBtn").hidden = false;
+    document.getElementById("logoutBtn").hidden = true;
+    loadItems();
 }
 
 async function apiRequest(path, options = {}) {
@@ -69,7 +83,7 @@ async function apiRequest(path, options = {}) {
     }
 
     if (response.status === 401) {
-        logout();
+        if (token) logout();
         throw new Error(
             "יש להתחבר מחדש למערכת."
         );
@@ -271,7 +285,7 @@ function renderItems(items) {
 
         const borrowButton = document.createElement("button");
         borrowButton.className = "primary";
-        borrowButton.textContent = "השאלת פריט";
+        borrowButton.textContent = "בקשה להשאלת פריט";
         borrowButton.disabled = !available;
 
         borrowButton.addEventListener("click", () => {
@@ -361,16 +375,7 @@ async function openBorrowDialog(item) {
         document.getElementById("borrowItemName").textContent =
             item.name;
 
-        const returnDate = document.getElementById("returnDate");
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const year = tomorrow.getFullYear();
-        const month = String(tomorrow.getMonth() + 1).padStart(2, "0");
-        const day = String(tomorrow.getDate()).padStart(2, "0");
-
-        returnDate.min = `${year}-${month}-${day}`;
-        returnDate.value = returnDate.min;
+        document.getElementById("borrowForm").reset();
 
         showMessage(borrowMessage, "");
         showMessage(itemsMessage, "");
@@ -390,11 +395,10 @@ document.getElementById("borrowForm").addEventListener(
             return;
         }
 
-        const dateValue =
-            document.getElementById("returnDate").value;
-
-        const expectedReturnDate =
-            new Date(`${dateValue}T12:00:00`).toISOString();
+        const applicantName = document.getElementById("applicantName").value.trim();
+        const phone = document.getElementById("applicantPhone").value.trim();
+        const email = document.getElementById("applicantEmail").value.trim();
+        if (!phone && !email) { showMessage(borrowMessage, "יש להזין טלפון או אימייל", "error"); return; }
 
         const submitButton =
             document.querySelector(
@@ -402,14 +406,16 @@ document.getElementById("borrowForm").addEventListener(
             );
 
         submitButton.disabled = true;
-        showMessage(borrowMessage, "מבצע השאלה...");
+        showMessage(borrowMessage, "שולח בקשה...");
 
         try {
-            await apiRequest("/Loans", {
+            await apiRequest("/borrow-requests", {
                 method: "POST",
                 body: JSON.stringify({
                     itemCopyId: selectedCopyId,
-                    expectedReturnDate
+                    applicantName,
+                    phone: phone || null,
+                    email: email || null
                 })
             });
 
@@ -419,7 +425,7 @@ document.getElementById("borrowForm").addEventListener(
             await loadItems();
             showMessage(
                 itemsMessage,
-                "הפריט הושאל בהצלחה!",
+                "הפרטים הועברו לבעל הגמ״ח והוא יצור איתך קשר.",
                 "success"
             );
 
@@ -443,9 +449,46 @@ borrowDialog.addEventListener("close", () => {
     selectedCopyId = null;
 });
 
+async function loadOwnerRequests() {
+    const grid = document.getElementById("ownerRequestsGrid");
+    const message = document.getElementById("ownerRequestsMessage");
+    grid.replaceChildren();
+    try {
+        const requests = await apiRequest("/borrow-requests/pending");
+        showMessage(message, requests.length ? "" : "אין בקשות ממתינות.");
+        for (const request of requests) {
+            const card = document.createElement("article");
+            card.className = "item-card";
+            const title = document.createElement("h3");
+            title.textContent = request.itemName;
+            const details = document.createElement("p");
+            details.textContent = [request.applicantName, request.phone, request.email].filter(Boolean).join(" | ");
+            const button = document.createElement("button");
+            button.className = "primary";
+            button.textContent = "סימון הפריט כהושאל";
+            button.addEventListener("click", async () => {
+                button.disabled = true;
+                try {
+                    await apiRequest("/borrow-requests/" + request.id + "/fulfill", { method: "POST" });
+                    await loadOwnerRequests();
+                    await loadItems();
+                } catch (error) {
+                    showMessage(message, error.message, "error");
+                    button.disabled = false;
+                }
+            });
+            card.append(title, details, button);
+            grid.appendChild(card);
+        }
+    } catch (error) {
+        showMessage(message, error.message, "error");
+    }
+}
+document.getElementById("openLoginBtn").addEventListener("click", showLogin);
+
 // פתיחת המערכת
 if (token) {
     showDashboard();
 } else {
-    showLogin();
+    showPublic();
 }
