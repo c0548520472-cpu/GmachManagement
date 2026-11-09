@@ -68,13 +68,15 @@ public class ItemService : IItemService
         int id,
         string name,
         string description,
+        int ownerId,
         CancellationToken cancellationToken = default)
     {
         var item = new Item
         {
             Id = id,
             Name = name.Trim(),
-            Description = description.Trim()
+            Description = description.Trim(),
+            OwnerId = ownerId
         };
 
         return _itemRepository.UpdateAsync(item, cancellationToken);
