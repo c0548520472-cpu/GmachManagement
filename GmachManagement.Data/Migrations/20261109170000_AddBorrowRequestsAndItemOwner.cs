@@ -14,6 +14,8 @@ public partial class AddBorrowRequestsAndItemOwner : Migration
     protected override void Up(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.AddColumn<int>(name: "OwnerId", table: "Items", type: "int", nullable: true);
+        migrationBuilder.Sql(@"UPDATE Items SET OwnerId = (SELECT MIN(Id) FROM Users WHERE Role = 2)
+WHERE OwnerId IS NULL AND (SELECT COUNT(*) FROM Users WHERE Role = 2) = 1;");
         migrationBuilder.CreateIndex(name: "IX_Items_OwnerId", table: "Items", column: "OwnerId");
         migrationBuilder.AddForeignKey(name: "FK_Items_Users_OwnerId", table: "Items", column: "OwnerId",
             principalTable: "Users", principalColumn: "Id", onDelete: ReferentialAction.Restrict);
