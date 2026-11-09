@@ -1,10 +1,14 @@
 using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using GmachManagement.Data.Context;
 
 #nullable disable
 
 namespace GmachManagement.Data.Migrations;
 
+[DbContext(typeof(AppDbContext))]
+[Migration("20261109170000_AddBorrowRequestsAndItemOwner")]
 public partial class AddBorrowRequestsAndItemOwner : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
