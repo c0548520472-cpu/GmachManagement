@@ -20,7 +20,7 @@ public class BorrowRequestsController : ControllerBase
     {
         var request = await _service.CreateAsync(dto.ItemCopyId, dto.ApplicantName, dto.Phone, dto.Email, ct);
         if (request == null) return NotFound(new { message = "הפריט אינו זמין לבקשה" });
-        return StatusCode(201, new { message = "הפרטים הועברו לבעל הגמ״ח והוא יצור איתך קשר" });
+        return StatusCode(201, new { message = "הבקשה נשלחה בהצלחה! בעל הגמ״ח יצור איתך קשר" });
     }
 
     [HttpGet("pending"), Authorize(Roles = "GmachAdmin")]
