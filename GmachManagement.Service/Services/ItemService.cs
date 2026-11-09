@@ -35,6 +35,9 @@ public class ItemService : IItemService
     }
 
 
+    public Task<bool> IsOwnedByAsync(int itemId, int ownerId, CancellationToken ct) =>
+        _itemRepository.IsOwnedByAsync(itemId, ownerId, ct);
+
     public Task<Item?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default)
@@ -45,12 +48,14 @@ public class ItemService : IItemService
     public Task<Item> AddAsync(
         string name,
         string description,
+        int ownerId,
         CancellationToken cancellationToken = default)
     {
         var item = new Item
         {
             Name = name.Trim(),
-            Description = description.Trim()
+            Description = description.Trim(),
+            OwnerId = ownerId
         };
 
         return _itemRepository.AddAsync(item, cancellationToken);
