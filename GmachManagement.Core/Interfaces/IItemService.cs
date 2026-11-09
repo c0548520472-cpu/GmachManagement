@@ -34,6 +34,7 @@ public interface IItemService
         int id,
         string name,
         string description,
+        int ownerId,
         CancellationToken cancellationToken = default);
 
     Task<List<ItemCopy>> GetCopiesAsync(
