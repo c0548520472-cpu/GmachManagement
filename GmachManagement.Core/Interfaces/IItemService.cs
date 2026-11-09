@@ -23,6 +23,7 @@ public interface IItemService
     Task<Item> AddAsync(
         string name,
         string description,
+        int ownerId,
         CancellationToken cancellationToken = default);
 
     Task<bool> UpdateAsync(
