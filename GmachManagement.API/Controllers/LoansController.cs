@@ -143,6 +143,8 @@ namespace GmachManagement.API.Controllers
             [FromBody] BorrowItemDto request,
             CancellationToken cancellationToken)
         {
+            return StatusCode(410, new { message = "יש לשלוח בקשת השאלה. רק בעל הגמ״ח יכול לסמן פריט כהושאל." });
+#pragma warning disable CS0162
             var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdValue, out int userId) || userId <= 0)
@@ -169,6 +171,7 @@ namespace GmachManagement.API.Controllers
             var result = _mapper.Map<LoanDto>(loan);
 
             return StatusCode(201, result);
+#pragma warning restore CS0162
         }
 
         [HttpPost("{loanId:int}/return")]
