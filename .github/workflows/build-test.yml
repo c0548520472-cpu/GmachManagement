@@ -3,7 +3,7 @@ on:
   push:
     branches: [main, feature/personal-borrowing]
   pull_request:
-    branches: [main]
+    branches: [main, feature/personal-borrowing]
 jobs:
   test:
     runs-on: ubuntu-latest
