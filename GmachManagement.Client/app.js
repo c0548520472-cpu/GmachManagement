@@ -292,10 +292,9 @@ function renderItems(items) {
         borrowButton.className = "primary";
         borrowButton.textContent = "השאלת פריט";
         borrowButton.disabled = !available;
-        if (!token) borrowButton.textContent = "התחברות להשאלה";
+
 
         borrowButton.addEventListener("click", () => {
-            if (!token) { showLogin(); authSection.scrollIntoView({behavior:"smooth"}); return; }
             openBorrowDialog(item);
         });
 
@@ -359,16 +358,7 @@ async function openBorrowDialog(item) {
     showMessage(itemsMessage, "בודק עותקים זמינים...");
 
     try {
-        const copies = await apiRequest(
-            `/items/${item.id}/copies`
-        );
-
-        // ItemStatus.Available = 1
-        const availableCopy = copies.find(
-            copy => copy.status === 1
-        );
-
-        if (!availableCopy) {
+        if (!item.availableCopies) {
             showMessage(
                 itemsMessage,
                 "אין כרגע עותק זמין להשאלה.",
@@ -378,21 +368,12 @@ async function openBorrowDialog(item) {
             return;
         }
 
-        selectedCopyId = availableCopy.id;
+        selectedCopyId = item.id;
 
         document.getElementById("borrowItemName").textContent =
             item.name;
 
-        const returnDate = document.getElementById("returnDate");
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const year = tomorrow.getFullYear();
-        const month = String(tomorrow.getMonth() + 1).padStart(2, "0");
-        const day = String(tomorrow.getDate()).padStart(2, "0");
-
-        returnDate.min = `${year}-${month}-${day}`;
-        returnDate.value = returnDate.min;
+        document.getElementById("borrowForm").reset();
 
         showMessage(borrowMessage, "");
         showMessage(itemsMessage, "");
@@ -412,11 +393,10 @@ document.getElementById("borrowForm").addEventListener(
             return;
         }
 
-        const dateValue =
-            document.getElementById("returnDate").value;
-
-        const expectedReturnDate =
-            new Date(`${dateValue}T12:00:00`).toISOString();
+        const applicantName = document.getElementById("requestName").value.trim();
+        const phone = document.getElementById("requestPhone").value.trim();
+        const email = document.getElementById("requestEmail").value.trim();
+        if (!phone && !email) { showMessage(borrowMessage, "יש להזין טלפון או אימייל.", "error"); return; }
 
         const submitButton =
             document.querySelector(
@@ -424,14 +404,16 @@ document.getElementById("borrowForm").addEventListener(
             );
 
         submitButton.disabled = true;
-        showMessage(borrowMessage, "מבצע השאלה...");
+        showMessage(borrowMessage, "שולח בקשה...");
 
         try {
-            await apiRequest("/Loans", {
+            await apiRequest("/borrow-requests", {
                 method: "POST",
                 body: JSON.stringify({
-                    itemCopyId: selectedCopyId,
-                    expectedReturnDate
+                    itemId: selectedCopyId,
+                    applicantName,
+                    phone: phone || null,
+                    email: email || null
                 })
             });
 
@@ -439,10 +421,9 @@ document.getElementById("borrowForm").addEventListener(
             selectedCopyId = null;
 
             await loadItems();
-            await loadMyLoans();
             showMessage(
                 itemsMessage,
-                "הפריט הושאל בהצלחה!",
+                "הבקשה נשלחה בהצלחה! בעל הגמ״ח יצור איתך קשר.",
                 "success"
             );
 
@@ -681,6 +662,7 @@ async function refreshAdmin() {
         document.getElementById("claimGmachForm").hidden = true;
         document.getElementById("ownerManagement").hidden = false;
         document.getElementById("ownerGmachInfo").textContent = "הגמ״ח שלי: " + gmach.name + " — " + gmach.city;
+        await loadBorrowRequests();
         const catalog = gmach.items;
         const removedList = document.getElementById("removedAdminItems");
         removedList.replaceChildren();
@@ -945,7 +927,7 @@ async function renderGmach(id){
  const name=document.createElement("h3");name.textContent=item.name;
  const info=document.createElement("p");info.textContent=(item.description||"")+" | עותקים זמינים: "+item.availableCopies;
  const button=document.createElement("button");button.textContent="השאלה";button.disabled=!item.isActive||item.availableCopies<1;
- button.addEventListener("click",()=>{if(!token){showLogin();authSection.scrollIntoView();}else openBorrowDialog(item);});
+ button.addEventListener("click",()=>openBorrowDialog(item));
  card.append(name,info,button);grid.append(card);}
  section.append(grid);
  container.append(section);
@@ -980,4 +962,26 @@ for (const [checkboxId, inputId] of [["showPassword","password"],["showNewPasswo
     document.getElementById(checkboxId).addEventListener("change", event => {
         document.getElementById(inputId).type = event.target.checked ? "text" : "password";
     });
+}
+
+async function loadBorrowRequests() {
+ const list=document.getElementById("borrowRequestsList");
+ const message=document.getElementById("borrowRequestsMessage");
+ list.replaceChildren();
+ try {
+  const requests=await apiRequest("/borrow-requests/mine");
+  showMessage(message,requests.length?"":"אין בקשות ממתינות.");
+  for(const request of requests){
+   const card=document.createElement("article");card.className="item-card";
+   const heading=document.createElement("h3");heading.textContent=request.itemName;
+   const contact=document.createElement("p");contact.textContent=[request.applicantName,request.phone,request.email].filter(Boolean).join(" | ");
+   const button=document.createElement("button");button.className="primary";button.textContent="סימון כהושאל";
+   button.addEventListener("click",async()=>{
+    button.disabled=true;
+    try{await apiRequest("/borrow-requests/mine/"+request.id+"/fulfill",{method:"POST"});await refreshAdmin();}
+    catch(e){showMessage(message,e.message,"error");button.disabled=false;}
+   });
+   card.append(heading,contact,button);list.append(card);
+  }
+ }catch(e){showMessage(message,e.message,"error");}
 }

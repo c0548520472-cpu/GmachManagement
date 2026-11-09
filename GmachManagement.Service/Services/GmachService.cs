@@ -4,6 +4,9 @@ namespace GmachManagement.Service.Services;
 public sealed class GmachService {
  private readonly IGmachRepository repo;
  public GmachService(IGmachRepository repo)=>this.repo=repo;
+ public Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct)=>repo.AddBorrowRequestAsync(itemId,name,phone,email,ct);
+ public Task<List<BorrowRequest>> GetBorrowRequestsAsync(int ownerId,CancellationToken ct)=>repo.GetBorrowRequestsAsync(ownerId,ct);
+ public Task<bool> FulfillBorrowRequestAsync(int ownerId,int requestId,CancellationToken ct)=>repo.FulfillBorrowRequestAsync(ownerId,requestId,ct);
  public Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct)=>repo.SearchAsync(city,search,ct);
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>repo.GetAsync(id,ct);
  public Task<Gmach> CreateAsync(Gmach g,CancellationToken ct)=>repo.CreateAsync(g,ct);
