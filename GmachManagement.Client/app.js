@@ -1092,11 +1092,15 @@ async function loadSiteAdmin(keepMessage=false) {
         const itemsList=document.getElementById("siteAdminItems");
         usersList.replaceChildren();gmachsList.replaceChildren();itemsList.replaceChildren();
         for(const u of users) {
-            const card=document.createElement("article");card.className="item-card";
-            const title=document.createElement("h3");title.textContent=u.name+" — "+u.role;
-            const email=document.createElement("p");email.textContent=u.email;
-            card.append(title,email);
-            card.append(adminActionButton("עריכת שם",async()=>{
+            const card=document.createElement("details");card.className="site-admin-user-row";
+            card.dataset.search=(u.name+" "+u.email+" "+u.role).toLocaleLowerCase();
+            const heading=document.createElement("summary");
+            const label=document.createElement("span");label.textContent=u.name;
+            const meta=document.createElement("span");meta.className="site-admin-user-meta";meta.textContent=u.email+" | "+(u.role==="SiteAdmin"?"מנהל אתר":u.role==="GmachAdmin"?"בעל גמ״ח":"משתמש");
+            heading.append(label,meta);card.append(heading);
+            const actions=document.createElement("div");actions.className="site-admin-user-actions";
+            // All management actions appear only when the user row is expanded.
+            actions.append(adminActionButton("עריכת שם",async()=>{
                 const name=prompt("שם חדש",u.name);
                 if(name===null)return;
                 if(!name.trim()){showMessage(siteAdminMessage,"יש להזין שם.","error");return;}
@@ -1122,6 +1126,7 @@ async function loadSiteAdmin(keepMessage=false) {
                         await adminPerform("/site-admin/users/"+u.id,{method:"DELETE"},"המשתמש נמחק.");
                 },true));
             }
+            card.append(actions);
             usersList.append(card);
         }
         for(const g of gmachs) {
@@ -1159,6 +1164,7 @@ async function loadSiteAdmin(keepMessage=false) {
             },true));
             itemsList.append(card);
         }
+        filterSiteAdminUsers();
         if(!keepMessage)showMessage(siteAdminMessage,"");
     }catch(error){showMessage(siteAdminMessage,error.message,"error");}
 }
@@ -1169,3 +1175,12 @@ document.getElementById("siteAdminGrantForm").addEventListener("submit",async ev
     await adminPerform("/site-admin/administrators",{method:"POST",body:JSON.stringify({email,enabled:true})},"המנהל נוסף בהצלחה. עליו להתחבר מחדש.");
     document.getElementById("siteAdminEmail").value="";
 });
+
+function filterSiteAdminUsers(){
+    const query=document.getElementById("siteAdminUserSearch").value.trim().toLocaleLowerCase();
+    const rows=document.querySelectorAll("#siteAdminUsers .site-admin-user-row");
+    let visible=0;
+    rows.forEach(row=>{const match=row.dataset.search.includes(query);row.hidden=!match;if(match)visible++;});
+    document.getElementById("siteAdminUserCount").textContent="מוצגים "+visible+" מתוך "+rows.length+" משתמשים";
+}
+document.getElementById("siteAdminUserSearch").addEventListener("input",filterSiteAdminUsers);
