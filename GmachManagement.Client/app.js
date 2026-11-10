@@ -1101,7 +1101,7 @@ async function loadSiteAdmin(keepMessage=false) {
                 card.append(adminActionButton("עריכת אימייל",async()=>{
                     const next=prompt("כתובת אימייל חדשה",u.email);
                     if(next===null)return;
-                    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(next.trim())){showMessage(siteAdminMessage,"יש להזין כתובת אימייל תקינה.","error");return;}
+                    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next.trim())){showMessage(siteAdminMessage,"יש להזין כתובת אימייל תקינה.","error");return;}
                     await adminPerform("/site-admin/users/"+u.id+"/email",{method:"PUT",body:JSON.stringify({email:next.trim()})},"כתובת האימייל עודכנה. המשתמש יצטרך להתחבר מחדש.");
                 }));
                 if(u.role==="SiteAdmin")card.append(adminActionButton("הסרת הרשאת מנהל",async()=>{
