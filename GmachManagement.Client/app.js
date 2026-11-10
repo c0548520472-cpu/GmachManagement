@@ -609,7 +609,8 @@ function isAdminToken() {
     try {
         const encoded = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
         const data = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
-        return (data.role || data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]) === "GmachAdmin";
+        const role=data.role || data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        return role === "GmachAdmin" || (Array.isArray(role) && role.includes("GmachAdmin"));
     } catch { return false; }
 }
 async function initializeAdmin() {
