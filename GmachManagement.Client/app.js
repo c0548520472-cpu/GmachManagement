@@ -24,9 +24,6 @@ function showMessage(element, message, type = "") {
 
 function showDashboard() {
     showHome();
-    loadMyLoans();
-    loadPersonalTransactions();
-    if (isAdminToken()) refreshAdmin();
 }
 
 function showLogin() {
@@ -37,11 +34,21 @@ function logout() {
     sessionStorage.removeItem("gmachToken");
     token = null;
     currentItems = [];
+    publicRequestCache.clear();
     document.getElementById("welcomeText").textContent = "";
     showHome();
 }
 
+// Cache only public, non-sensitive GET responses for a short time.
+const publicRequestCache = new Map();
+const PUBLIC_CACHE_MS = 30000;
 async function apiRequest(path, options = {}) {
+    const isPublicRead = !token && (!options.method || options.method.toUpperCase() === "GET")
+        && (/^\/gmachs(?:\?|\/\d+$)/.test(path) || /^\/categories(?:\?|$)/.test(path) || /^\/items\?/.test(path));
+    const cacheKey = isPublicRead ? path : null;
+    const cached = cacheKey && publicRequestCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+    if (options.method && options.method.toUpperCase() !== "GET") publicRequestCache.clear();
     const headers = new Headers(options.headers || {});
 
     if (token) {
@@ -97,7 +104,9 @@ async function apiRequest(path, options = {}) {
         return null;
     }
 
-    return response.json();
+    const result = await response.json();
+    if (cacheKey) publicRequestCache.set(cacheKey, {value:result, expiresAt:Date.now()+PUBLIC_CACHE_MS});
+    return result;
 }
 
 document.getElementById("forgotPasswordBtn").addEventListener("click",()=>{
@@ -662,7 +671,7 @@ async function refreshAdmin() {
         document.getElementById("claimGmachForm").hidden = true;
         document.getElementById("ownerManagement").hidden = false;
         document.getElementById("ownerGmachInfo").textContent = "הגמ״ח שלי: " + gmach.name + " — " + gmach.city;
-        await loadBorrowRequests();
+        const pendingRequests = loadBorrowRequests();
         const catalog = gmach.items;
         const removedList = document.getElementById("removedAdminItems");
         removedList.replaceChildren();
@@ -717,7 +726,7 @@ async function refreshAdmin() {
         }
         const managedContainer=document.getElementById("managedLoans");
         managedContainer.replaceChildren();
-        const managedLoans=await apiRequest("/gmachs/mine/managed-loans");
+        const [managedLoans, activeLoans] = await Promise.all([apiRequest("/gmachs/mine/managed-loans"), apiRequest("/Loans/active")]);
         const sortDirection=document.getElementById("managedLoansSort").value;
         managedLoans.sort((a,b)=>sortDirection==="oldest"
           ? new Date(a.borrowedAt)-new Date(b.borrowedAt)
@@ -732,7 +741,6 @@ async function refreshAdmin() {
           returned.onclick=async()=>{try{await apiRequest("/gmachs/mine/managed-loans/"+record.id+"/return",{method:"POST"});await refreshAdmin();await loadItems();}catch(e){showMessage(message,e.message,"error");}};
           row.append(details,borrowedDate,returned);managedContainer.append(row);
         }
-        const activeLoans = await apiRequest("/Loans/active");
         for (const loan of activeLoans) {
             const row = document.createElement("article");
             row.className = "item-card";
@@ -757,6 +765,7 @@ async function refreshAdmin() {
             row.append(info,returned,due);
             loans.append(row);
         }
+        await pendingRequests;
     } catch(e) {showMessage(message,e.message,"error");}
 }
 document.getElementById("adminItemForm").addEventListener("submit",async event => {
@@ -895,23 +904,28 @@ loadCategories();
 // Gmach directory and owner onboarding
 const ownerCheckbox=document.getElementById("registerOwner");
 ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerFields").hidden=!ownerCheckbox.checked;});
+let gmachSearchSequence = 0;
 async function findGmachs(){
- const list=document.getElementById("gmachList");list.replaceChildren();document.getElementById("gmachDetails").replaceChildren();
+ const sequence=++gmachSearchSequence;
+ const list=document.getElementById("gmachList");
+ list.replaceChildren();
  const query=new URLSearchParams({city:normalizeCity(document.getElementById("citySearch").value.trim()),search:document.getElementById("gmachSearch").value.trim()});
- const itemTerm=document.getElementById("homeItemSearch").value.trim().toLocaleLowerCase("he");
- try {const groups=await apiRequest("/gmachs?"+query);
-  let matches=0;
+ const itemTerm=document.getElementById("homeItemSearch").value.trim();
+ if(itemTerm) query.set("itemSearch",itemTerm);
+ const loading=document.createElement("p");loading.textContent="טוען גמ״חים...";list.append(loading);
+ try {
+  const groups=await apiRequest("/gmachs?"+query);
+  if(sequence!==gmachSearchSequence)return;
+  list.replaceChildren();
   for(const group of groups){
-   if(itemTerm){const details=await apiRequest("/gmachs/"+group.id);if(!details.items.some(item=>item.isActive&&item.availableCopies>0&&item.name.toLocaleLowerCase("he").includes(itemTerm)))continue;}
-   matches++;
    const card=document.createElement("article");card.className="item-card";
    const heading=document.createElement("h3");heading.textContent=group.name;
    const city=document.createElement("p");city.textContent=normalizeCity(group.city);
    const button=document.createElement("button");button.className="primary";button.textContent="דף הגמ״ח";button.addEventListener("click",()=>showGmach(group.id));
    card.append(heading,city,button);list.append(card);
   }
-  if(!matches){const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";list.append(empty);}
- }catch(e){showMessage(itemsMessage,e.message,"error");}
+  if(!groups.length){const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";list.append(empty);}
+ }catch(e){if(sequence===gmachSearchSequence){list.replaceChildren();showMessage(itemsMessage,e.message,"error");}}
 }
 function showGmach(id){
  const url=new URL(location.href);url.searchParams.delete("page");url.searchParams.set("gmach",id);history.pushState({page:"gmach"},"",url);
