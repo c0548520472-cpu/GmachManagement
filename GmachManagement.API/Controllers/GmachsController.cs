@@ -21,7 +21,15 @@ public sealed class GmachsController : ControllerBase {
   });
   return Ok(result);
  }
- [HttpGet("{id:int}"),AllowAnonymous] public async Task<IActionResult> Details(int id,CancellationToken ct){var g=await service.GetAsync(id,ct);return g==null?NotFound():Ok(Project(g));}
+ [HttpGet("{id:int}"),AllowAnonymous] public async Task<IActionResult> Details(int id,CancellationToken ct){
+  var result=await cache.GetOrCreateAsync("public-gmach-details:"+id,async entry=>{
+   entry.AbsoluteExpirationRelativeToNow=TimeSpan.FromSeconds(10);
+   var g=await service.GetAsync(id,ct);
+   if(g==null){entry.AbsoluteExpirationRelativeToNow=TimeSpan.FromSeconds(2);return null;}
+   return Project(g);
+  });
+  return result==null?NotFound():Ok(result);
+ }
  [HttpPost("mine"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> CreateMine([FromBody]GmachDto dto,CancellationToken ct){
   if(await service.GetMineAsync(UserId,ct)!=null)return Conflict(new {message="כבר קיים גמ״ח המשויך לחשבון."});
