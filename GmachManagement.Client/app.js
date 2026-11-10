@@ -609,7 +609,8 @@ function isAdminToken() {
     try {
         const encoded = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
         const data = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
-        return (data.role || data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]) === "GmachAdmin";
+        const role=data.role || data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        return role === "GmachAdmin" || (Array.isArray(role) && role.includes("GmachAdmin"));
     } catch { return false; }
 }
 async function initializeAdmin() {
@@ -821,7 +822,8 @@ document.getElementById("adminItemForm").addEventListener("submit",async event =
 
 // Separate public catalog, login, personal account and owner management views.
 function showPage(page, push = true) {
-    if ((page === "account" || page === "owner" || page === "profile") && !token) page = "login";
+    if ((page === "account" || page === "owner" || page === "profile" || page === "siteAdmin") && !token) page = "login";
+    if (page === "siteAdmin" && !isSiteAdminToken()) page = "home";
     if (page === "owner" && !isAdminToken()) page = "account";
     authSection.hidden = page !== "login";
     dashboardSection.hidden = page !== "home";
@@ -830,6 +832,7 @@ function showPage(page, push = true) {
     document.getElementById("profilePage").hidden = page !== "profile";
     document.getElementById("openLoansSection").hidden = page !== "account";
     document.getElementById("ownerPage").hidden = page !== "owner";
+    document.getElementById("siteAdminPage").hidden = page !== "siteAdmin";
     document.getElementById("adminSection").hidden = page !== "owner";
     document.getElementById("logoutBtn").hidden = !token;
     document.getElementById("profileNav").hidden = !token;
@@ -837,6 +840,7 @@ function showPage(page, push = true) {
     document.getElementById("loginNav").hidden = !!token;
     document.getElementById("myLoansNav").hidden = !token;
     document.getElementById("adminNav").hidden = !token || !isAdminToken();
+    document.getElementById("siteAdminNav").hidden = !token || !isSiteAdminToken();
     if (push) {
         const url = new URL(location.href);
         if (page !== "gmach") url.searchParams.delete("gmach");
@@ -849,6 +853,7 @@ function showPage(page, push = true) {
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); }
     if (page === "owner") refreshAdmin();
     if (page === "profile") loadProfile();
+    if (page === "siteAdmin") loadSiteAdmin();
     window.scrollTo({top:0,behavior:"instant"});
 }
 function showHome() { showPage("home"); }
@@ -894,16 +899,18 @@ function updateNavigation() {
     document.getElementById("loginNav").hidden = !!token;
     document.getElementById("myLoansNav").hidden = !token;
     document.getElementById("adminNav").hidden = !token || !isAdminToken();
+    document.getElementById("siteAdminNav").hidden = !token || !isSiteAdminToken();
 }
 document.getElementById("homeNav").addEventListener("click", showHome);
 document.getElementById("loginNav").addEventListener("click", showLogin);
 document.getElementById("myLoansNav").addEventListener("click", () => showPage("account"));
 document.getElementById("adminNav").addEventListener("click", () => showPage("owner"));
+document.getElementById("siteAdminNav").addEventListener("click", () => showPage("siteAdmin"));
 document.getElementById("profileNav").addEventListener("click",()=>showPage("profile"));
 window.addEventListener("popstate", () => {
     const params=new URLSearchParams(location.search);
     const page=params.has("gmach")?"gmach":params.get("page")||"home";
-    showPage(["login","account","owner","profile","gmach"].includes(page) ? page : "home", false);
+    showPage(["login","account","owner","profile","gmach","siteAdmin"].includes(page) ? page : "home", false);
 });
 
 async function loadMyLoans() {
@@ -1041,3 +1048,119 @@ async function loadBorrowRequests() {
   }
  }catch(e){showMessage(message,e.message,"error");}
 }
+
+function isSiteAdminToken() {
+    if (!token) return false;
+    try {
+        const encoded=token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+        const data=JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length/4)*4,"=")));
+        const role=data.role||data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        return role==="SiteAdmin" || (Array.isArray(role) && role.includes("SiteAdmin"));
+    } catch { return false; }
+}
+const siteAdminMessage=document.getElementById("siteAdminMessage");
+function adminActionButton(label, handler, destructive=false) {
+    const button=document.createElement("button");
+    button.type="button";button.textContent=label;
+    button.className=destructive?"secondary":"primary";
+    button.addEventListener("click",handler);
+    return button;
+}
+async function adminPerform(path,options,success) {
+    try {
+        await apiRequest(path,options);
+        showMessage(siteAdminMessage,success,"success");
+        await loadSiteAdmin(true);
+    } catch(error) { showMessage(siteAdminMessage,error.message,"error"); }
+}
+async function loadSiteAdmin(keepMessage=false) {
+    if(!isSiteAdminToken())return;
+    if(!keepMessage)showMessage(siteAdminMessage,"טוען נתוני ניהול...");
+    try {
+        const [users,gmachs,items]=await Promise.all([
+            apiRequest("/site-admin/users"),
+            apiRequest("/site-admin/gmachs"),
+            apiRequest("/site-admin/items")
+        ]);
+        const usersList=document.getElementById("siteAdminUsers");
+        const gmachsList=document.getElementById("siteAdminGmachs");
+        const itemsList=document.getElementById("siteAdminItems");
+        usersList.replaceChildren();gmachsList.replaceChildren();itemsList.replaceChildren();
+        for(const u of users) {
+            const card=document.createElement("article");card.className="item-card";
+            const title=document.createElement("h3");title.textContent=u.name+" — "+u.role;
+            const email=document.createElement("p");email.textContent=u.email;
+            card.append(title,email);
+            card.append(adminActionButton("עריכת שם",async()=>{
+                const name=prompt("שם חדש",u.name);
+                if(name===null)return;
+                if(!name.trim()){showMessage(siteAdminMessage,"יש להזין שם.","error");return;}
+                await adminPerform("/site-admin/users/"+u.id,{method:"PUT",body:JSON.stringify({name:name.trim()})},"שם המשתמש עודכן.");
+            }));
+            if(!u.isPrimary) {
+                card.append(adminActionButton("עריכת אימייל",async()=>{
+                    const next=prompt("כתובת אימייל חדשה",u.email);
+                    if(next===null)return;
+                    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next.trim())){showMessage(siteAdminMessage,"יש להזין כתובת אימייל תקינה.","error");return;}
+                    await adminPerform("/site-admin/users/"+u.id+"/email",{method:"PUT",body:JSON.stringify({email:next.trim()})},"כתובת האימייל עודכנה. המשתמש יצטרך להתחבר מחדש.");
+                }));
+                if(u.role==="SiteAdmin")card.append(adminActionButton("הסרת הרשאת מנהל",async()=>{
+                    if(confirm("להסיר את הרשאת ניהול האתר מהחשבון "+u.email+"?"))
+                        await adminPerform("/site-admin/administrators",{method:"POST",body:JSON.stringify({email:u.email,enabled:false})},"הרשאת המנהל הוסרה.");
+                },true));
+                else card.append(adminActionButton("הפיכה למנהל אתר",async()=>{
+                    if(confirm("לתת הרשאת ניהול מלאה לחשבון "+u.email+"?"))
+                        await adminPerform("/site-admin/administrators",{method:"POST",body:JSON.stringify({email:u.email,enabled:true})},"הרשאת מנהל נוספה.");
+                }));
+                card.append(adminActionButton("מחיקת משתמש",async()=>{
+                    if(confirm("למחוק לצמיתות את החשבון "+u.email+"?"))
+                        await adminPerform("/site-admin/users/"+u.id,{method:"DELETE"},"המשתמש נמחק.");
+                },true));
+            }
+            usersList.append(card);
+        }
+        for(const g of gmachs) {
+            const card=document.createElement("article");card.className="item-card";
+            const title=document.createElement("h3");title.textContent=g.name;
+            const details=document.createElement("p");details.textContent=g.city+" | בעלים מספר "+g.ownerId;
+            card.append(title,details);
+            card.append(adminActionButton("עריכת פרטי גמ״ח",async()=>{
+                const name=prompt("שם הגמ״ח",g.name);if(name===null)return;
+                const city=prompt("עיר",g.city);if(city===null)return;
+                const description=prompt("תיאור",g.description||"");if(description===null)return;
+                if(!name.trim()||!city.trim()){showMessage(siteAdminMessage,"שם ועיר הם שדות חובה.","error");return;}
+                await adminPerform("/site-admin/gmachs/"+g.id,{method:"PUT",body:JSON.stringify({name:name.trim(),city:city.trim(),description})},"הגמ״ח עודכן.");
+            }));
+            card.append(adminActionButton("מחיקת גמ״ח",async()=>{
+                if(confirm("למחוק את הגמ״ח "+g.name+"? הפעולה בלתי הפיכה."))
+                    await adminPerform("/site-admin/gmachs/"+g.id,{method:"DELETE"},"הגמ״ח נמחק.");
+            },true));
+            gmachsList.append(card);
+        }
+        for(const item of items) {
+            const card=document.createElement("article");card.className="item-card";
+            const title=document.createElement("h3");title.textContent=item.name;
+            const details=document.createElement("p");details.textContent="גמ״ח מספר "+(item.gmachId||"ללא שיוך");
+            card.append(title,details);
+            card.append(adminActionButton("עריכת פריט",async()=>{
+                const name=prompt("שם הפריט",item.name);if(name===null)return;
+                const description=prompt("תיאור",item.description||"");if(description===null)return;
+                if(!name.trim()){showMessage(siteAdminMessage,"יש להזין שם פריט.","error");return;}
+                await adminPerform("/site-admin/items/"+item.id,{method:"PUT",body:JSON.stringify({name:name.trim(),description})},"הפריט עודכן.");
+            }));
+            card.append(adminActionButton("מחיקת פריט",async()=>{
+                if(confirm("למחוק את הפריט "+item.name+"? הפעולה בלתי הפיכה."))
+                    await adminPerform("/site-admin/items/"+item.id,{method:"DELETE"},"הפריט נמחק.");
+            },true));
+            itemsList.append(card);
+        }
+        if(!keepMessage)showMessage(siteAdminMessage,"");
+    }catch(error){showMessage(siteAdminMessage,error.message,"error");}
+}
+document.getElementById("siteAdminGrantForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    const email=document.getElementById("siteAdminEmail").value.trim();
+    if(!confirm("להעניק הרשאת ניהול מלאה לכתובת "+email+"?"))return;
+    await adminPerform("/site-admin/administrators",{method:"POST",body:JSON.stringify({email,enabled:true})},"המנהל נוסף בהצלחה. עליו להתחבר מחדש.");
+    document.getElementById("siteAdminEmail").value="";
+});
