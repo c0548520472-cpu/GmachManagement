@@ -34,7 +34,8 @@ namespace GmachManagement.Data.Repositories
             user.Name=name;
             user.Email=email;
             if(passwordHash!=null)user.PasswordHash=passwordHash;
-            user.Role=isOwner?GmachManagement.Core.Enums.UserRole.GmachAdmin:GmachManagement.Core.Enums.UserRole.User;
+            if(user.Role!=GmachManagement.Core.Enums.UserRole.SiteAdmin)
+                user.Role=isOwner?GmachManagement.Core.Enums.UserRole.GmachAdmin:GmachManagement.Core.Enums.UserRole.User;
             if(isOwner){
                 if(gmach==null){gmach=new Gmach{OwnerId=userId,Name=gmachName!,City=city!,Type=gmachType??""};_context.Gmachs.Add(gmach);}
                 else{gmach.Name=gmachName!;gmach.City=city!;gmach.Type=gmachType??"";}
