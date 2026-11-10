@@ -15,6 +15,7 @@ let token = sessionStorage.getItem("gmachToken");
 let currentPage = 1;
 let currentItems = [];
 let selectedCopyId = null;
+let gmachSearchSequence = 0;
 let authMode = "login";
 
 function showMessage(element, message, type = "") {
@@ -904,7 +905,6 @@ loadCategories();
 // Gmach directory and owner onboarding
 const ownerCheckbox=document.getElementById("registerOwner");
 ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerFields").hidden=!ownerCheckbox.checked;});
-let gmachSearchSequence = 0;
 async function findGmachs(){
  const sequence=++gmachSearchSequence;
  const list=document.getElementById("gmachList");
@@ -973,8 +973,10 @@ document.getElementById("claimGmachForm").addEventListener("submit",async event=
 
 // Password visibility is local to each password field.
 for (const [checkboxId, inputId] of [["showPassword","password"],["showNewPassword","newPassword"]]) {
-    document.getElementById(checkboxId).addEventListener("change", event => {
-        document.getElementById(inputId).type = event.target.checked ? "text" : "password";
+    const checkbox = document.getElementById(checkboxId);
+    const input = document.getElementById(inputId);
+    if (checkbox && input) checkbox.addEventListener("change", event => {
+        input.type = event.target.checked ? "text" : "password";
     });
 }
 
