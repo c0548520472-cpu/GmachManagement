@@ -64,7 +64,7 @@ async function apiRequest(path, options = {}) {
     const pending = publicPendingRequests.get(cacheKey);
     if (pending) return pending;
     const request = requestFromServer(path, options).then(result => {
-        publicRequestCache.set(cacheKey, {value: result, expiresAt: Date.now() + PUBLIC_CACHE_MS});
+        if (publicPendingRequests.get(cacheKey) === request) publicRequestCache.set(cacheKey, {value: result, expiresAt: Date.now() + PUBLIC_CACHE_MS});
         return result;
     }).finally(() => {
         if (publicPendingRequests.get(cacheKey) === request) publicPendingRequests.delete(cacheKey);
