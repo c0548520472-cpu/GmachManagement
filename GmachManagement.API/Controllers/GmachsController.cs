@@ -11,7 +11,7 @@ public sealed class GmachsController : ControllerBase {
  public GmachsController(GmachService service)=>this.service=service;
  private int UserId=>int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
  private static object Project(Gmach g)=>new {g.Id,g.Name,g.City,g.Description,Items=g.Items.Where(i=>i.IsActive).Select(i=>new {i.Id,i.Name,i.Description,i.IsActive,AvailableCopies=i.Copies.Count(c=>c.Status==GmachManagement.Core.Enums.ItemStatus.Available)})};
- [HttpGet,AllowAnonymous] public async Task<IActionResult> Search([FromQuery]string? city,[FromQuery]string? search,CancellationToken ct)=>Ok((await service.SearchAsync(city,search,ct)).Select(g=>new {g.Id,g.Name,g.City,g.Description}));
+ [HttpGet,AllowAnonymous] public async Task<IActionResult> Search([FromQuery]string? city,[FromQuery]string? search,[FromQuery]string? itemSearch,CancellationToken ct)=>Ok((await service.SearchAsync(city,search,itemSearch,ct)).Select(g=>new {g.Id,g.Name,g.City,g.Description}));
  [HttpGet("{id:int}"),AllowAnonymous] public async Task<IActionResult> Details(int id,CancellationToken ct){var g=await service.GetAsync(id,ct);return g==null?NotFound():Ok(Project(g));}
  [HttpPost("mine"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> CreateMine([FromBody]GmachDto dto,CancellationToken ct){
