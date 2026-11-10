@@ -116,6 +116,14 @@ namespace GmachManagement.API.Controllers
                 cancellationToken);
 
             var result = _mapper.Map<List<LoanDto>>(loans);
+            for (var i = 0; i < loans.Count; i++)
+            {
+                var item = loans[i].ItemCopy?.Item;
+                result[i].ItemName = item?.Name;
+                result[i].GmachName = item?.Gmach?.Name;
+                result[i].GmachCity = item?.Gmach?.City;
+                result[i].GmachDescription = item?.Gmach?.Description;
+            }
 
             return Ok(result);
         }
