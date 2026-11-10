@@ -1078,7 +1078,7 @@ async function loadBorrowRequests() {
     try{
       const due=prompt("תאריך החזרה צפוי (YYYY-MM-DD)");
       if(due===null){button.disabled=false;return;}
-      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(due)||due<=new Date().toISOString().slice(0,10)){showMessage(message,"יש להזין תאריך החזרה עתידי בפורמט YYYY-MM-DD","error");button.disabled=false;return;}
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(due)||due<=new Date().toISOString().slice(0,10)){showMessage(message,"יש להזין תאריך החזרה עתידי בפורמט YYYY-MM-DD","error");button.disabled=false;return;}
       await apiRequest("/borrow-requests/mine/"+request.id+"/fulfill",{method:"POST",body:JSON.stringify({expectedReturnDate:due})});await refreshAdmin();}
     catch(e){showMessage(message,e.message,"error");button.disabled=false;}
    });
