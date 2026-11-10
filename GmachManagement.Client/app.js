@@ -16,6 +16,7 @@ let currentPage = 1;
 let currentItems = [];
 let selectedCopyId = null;
 let gmachSearchSequence = 0;
+let itemsRequestSequence = 0;
 let authMode = "login";
 
 function showMessage(element, message, type = "") {
@@ -36,20 +37,42 @@ function logout() {
     token = null;
     currentItems = [];
     publicRequestCache.clear();
+    publicPendingRequests.clear();
     document.getElementById("welcomeText").textContent = "";
     showHome();
 }
 
-// Cache only public, non-sensitive GET responses for a short time.
+// Only cache public catalog endpoints. Never cache account or owner data.
 const publicRequestCache = new Map();
-const PUBLIC_CACHE_MS = 30000;
+const publicPendingRequests = new Map();
+const PUBLIC_CACHE_MS = 60000;
+function publicCacheKey(path, options) {
+    if (options.method && options.method.toUpperCase() !== "GET") return null;
+    return /^\/(?:gmachs(?:\?|\/\d+$)|categories(?:\?|$)|items\?)/.test(path) ? path : null;
+}
 async function apiRequest(path, options = {}) {
-    const isPublicRead = !token && (!options.method || options.method.toUpperCase() === "GET")
-        && (/^\/gmachs(?:\?|\/\d+$)/.test(path) || /^\/categories(?:\?|$)/.test(path) || /^\/items\?/.test(path));
-    const cacheKey = isPublicRead ? path : null;
-    const cached = cacheKey && publicRequestCache.get(cacheKey);
+    const cacheKey = publicCacheKey(path, options);
+    if (!cacheKey) {
+        if (options.method && options.method.toUpperCase() !== "GET") {
+            publicRequestCache.clear();
+            publicPendingRequests.clear();
+        }
+        return requestFromServer(path, options);
+    }
+    const cached = publicRequestCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.value;
-    if (options.method && options.method.toUpperCase() !== "GET") publicRequestCache.clear();
+    const pending = publicPendingRequests.get(cacheKey);
+    if (pending) return pending;
+    const request = requestFromServer(path, options).then(result => {
+        if (publicPendingRequests.get(cacheKey) === request) publicRequestCache.set(cacheKey, {value: result, expiresAt: Date.now() + PUBLIC_CACHE_MS});
+        return result;
+    }).finally(() => {
+        if (publicPendingRequests.get(cacheKey) === request) publicPendingRequests.delete(cacheKey);
+    });
+    publicPendingRequests.set(cacheKey, request);
+    return request;
+}
+async function requestFromServer(path, options = {}) {
     const headers = new Headers(options.headers || {});
 
     if (token) {
@@ -106,7 +129,6 @@ async function apiRequest(path, options = {}) {
     }
 
     const result = await response.json();
-    if (cacheKey) publicRequestCache.set(cacheKey, {value:result, expiresAt:Date.now()+PUBLIC_CACHE_MS});
     return result;
 }
 
@@ -237,14 +259,21 @@ async function loadItems() {
     const category = document.getElementById("categoryFilter").value;
     if (category) params.set("categoryId", category);
 
-    grid.replaceChildren();
-    showMessage(itemsMessage, "טוען פריטים...");
+    const requestSequence = ++itemsRequestSequence;
+    const requestPath = `/items?${params.toString()}`;
+    const cachedItems = publicRequestCache.get(requestPath);
+    if (cachedItems && cachedItems.expiresAt > Date.now()) {
+        renderItems(cachedItems.value);
+        showMessage(itemsMessage, "");
+    } else if (!currentItems.length) {
+        showMessage(itemsMessage, "טוען פריטים...");
+    }
 
     try {
         const items = await apiRequest(
-            `/items?${params.toString()}`
+            requestPath
         );
-
+        if (requestSequence !== itemsRequestSequence) return;
         currentItems = items;
         renderItems(items);
 
@@ -263,7 +292,7 @@ async function loadItems() {
             items.length < PAGE_SIZE;
 
     } catch (error) {
-        showMessage(itemsMessage, error.message, "error");
+        if (requestSequence === itemsRequestSequence) showMessage(itemsMessage, error.message, "error");
     }
 }
 
@@ -908,11 +937,11 @@ ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerField
 async function findGmachs(){
  const sequence=++gmachSearchSequence;
  const list=document.getElementById("gmachList");
- list.replaceChildren();
  const query=new URLSearchParams({city:normalizeCity(document.getElementById("citySearch").value.trim()),search:document.getElementById("gmachSearch").value.trim()});
  const itemTerm=document.getElementById("homeItemSearch").value.trim();
  if(itemTerm) query.set("itemSearch",itemTerm);
- const loading=document.createElement("p");loading.textContent="טוען גמ״חים...";list.append(loading);
+ const cacheKey="/gmachs?"+query;
+ if (!publicRequestCache.has(cacheKey) && !list.children.length) {const loading=document.createElement("p");loading.textContent="טוען גמ״חים...";list.append(loading);}
  try {
   const groups=await apiRequest("/gmachs?"+query);
   if(sequence!==gmachSearchSequence)return;
