@@ -1107,21 +1107,21 @@ async function loadSiteAdmin(keepMessage=false) {
                 await adminPerform("/site-admin/users/"+u.id,{method:"PUT",body:JSON.stringify({name:name.trim()})},"שם המשתמש עודכן.");
             }));
             if(!u.isPrimary) {
-                card.append(adminActionButton("עריכת אימייל",async()=>{
+                actions.append(adminActionButton("עריכת אימייל",async()=>{
                     const next=prompt("כתובת אימייל חדשה",u.email);
                     if(next===null)return;
                     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next.trim())){showMessage(siteAdminMessage,"יש להזין כתובת אימייל תקינה.","error");return;}
                     await adminPerform("/site-admin/users/"+u.id+"/email",{method:"PUT",body:JSON.stringify({email:next.trim()})},"כתובת האימייל עודכנה. המשתמש יצטרך להתחבר מחדש.");
                 }));
-                if(u.role==="SiteAdmin")card.append(adminActionButton("הסרת הרשאת מנהל",async()=>{
+                if(u.role==="SiteAdmin")actions.append(adminActionButton("הסרת הרשאת מנהל",async()=>{
                     if(confirm("להסיר את הרשאת ניהול האתר מהחשבון "+u.email+"?"))
                         await adminPerform("/site-admin/administrators",{method:"POST",body:JSON.stringify({email:u.email,enabled:false})},"הרשאת המנהל הוסרה.");
                 },true));
-                else card.append(adminActionButton("הפיכה למנהל אתר",async()=>{
+                else actions.append(adminActionButton("הפיכה למנהל אתר",async()=>{
                     if(confirm("לתת הרשאת ניהול מלאה לחשבון "+u.email+"?"))
                         await adminPerform("/site-admin/administrators",{method:"POST",body:JSON.stringify({email:u.email,enabled:true})},"הרשאת מנהל נוספה.");
                 }));
-                card.append(adminActionButton("מחיקת משתמש",async()=>{
+                actions.append(adminActionButton("מחיקת משתמש",async()=>{
                     if(confirm("למחוק לצמיתות את החשבון "+u.email+"?"))
                         await adminPerform("/site-admin/users/"+u.id,{method:"DELETE"},"המשתמש נמחק.");
                 },true));
