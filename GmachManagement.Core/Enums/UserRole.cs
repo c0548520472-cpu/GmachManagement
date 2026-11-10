@@ -8,7 +8,8 @@ namespace GmachManagement.Core.Enums
     public enum UserRole
     {
         User = 1,
-        GmachAdmin = 2
+        GmachAdmin = 2,
+        SiteAdmin = 3
     }
 }
 
