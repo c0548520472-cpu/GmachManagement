@@ -114,6 +114,20 @@ builder.Services.AddControllers();
                         .WithOrigins("http://localhost:5500",
                                      "http://127.0.0.1:5500",
                                      "https://gmachmanagement-client.pages.dev")
+                        // Cloudflare Pages preview deployments use a unique subdomain.
+                        // Accept only our Pages project and its previews, not arbitrary pages.dev sites.
+                        .SetIsOriginAllowed(origin =>
+                        {
+                            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                                return false;
+                            if (uri.Scheme == "http" &&
+                                (uri.Host == "localhost" || uri.Host == "127.0.0.1") &&
+                                uri.Port == 5500)
+                                return true;
+                            return uri.Scheme == "https" &&
+                                (uri.Host.Equals("gmachmanagement-client.pages.dev", StringComparison.OrdinalIgnoreCase) ||
+                                 uri.Host.EndsWith(".gmachmanagement-client.pages.dev", StringComparison.OrdinalIgnoreCase));
+                        })
                         .AllowAnyHeader()
                         .AllowAnyMethod();
                 });
