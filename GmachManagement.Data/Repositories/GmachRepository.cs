@@ -29,10 +29,11 @@ public sealed class GmachRepository : IGmachRepository {
   try{await db.SaveChangesAsync(ct);await tx.CommitAsync(ct);return true;}
   catch(DbUpdateConcurrencyException){throw new GmachManagement.Core.Exceptions.ConcurrencyConflictException();}
  }
- public Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct) {
+ public Task<List<Gmach>> SearchAsync(string? city,string? search,string? itemSearch,CancellationToken ct) {
   var q=db.Gmachs.AsNoTracking().AsQueryable();
   if(!string.IsNullOrWhiteSpace(city)) q=q.Where(g=>g.City.Contains(city.Trim()));
   if(!string.IsNullOrWhiteSpace(search)) q=q.Where(g=>g.Name.Contains(search.Trim()));
+  if(!string.IsNullOrWhiteSpace(itemSearch)) q=q.Where(g=>g.Items.Any(i=>i.IsActive && i.Name.Contains(itemSearch.Trim()) && i.Copies.Any(c=>c.Status==GmachManagement.Core.Enums.ItemStatus.Available)));
   return q.OrderBy(g=>g.Name).ToListAsync(ct);
  }
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>db.Gmachs.AsNoTracking().Include(g=>g.Items).ThenInclude(i=>i.Copies).FirstOrDefaultAsync(g=>g.Id==id,ct);
