@@ -29,6 +29,7 @@ public sealed class GmachRepository : IGmachRepository {
   try{await db.SaveChangesAsync(ct);await tx.CommitAsync(ct);return true;}
   catch(DbUpdateConcurrencyException){throw new GmachManagement.Core.Exceptions.ConcurrencyConflictException();}
  }
+ public Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct)=>SearchAsync(city,search,null,ct);
  public Task<List<Gmach>> SearchAsync(string? city,string? search,string? itemSearch,CancellationToken ct) {
   var q=db.Gmachs.AsNoTracking().AsQueryable();
   if(!string.IsNullOrWhiteSpace(city)) q=q.Where(g=>g.City.Contains(city.Trim()));
