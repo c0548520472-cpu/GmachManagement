@@ -37,7 +37,7 @@ public sealed class GmachRepository : IGmachRepository {
   if(!string.IsNullOrWhiteSpace(itemSearch)) q=q.Where(g=>g.Items.Any(i=>i.IsActive && i.Name.Contains(itemSearch.Trim()) && i.Copies.Any(c=>c.Status==GmachManagement.Core.Enums.ItemStatus.Available)));
   return q.OrderBy(g=>g.Name).ToListAsync(ct);
  }
- public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>db.Gmachs.AsNoTracking().Include(g=>g.Items).ThenInclude(i=>i.Copies).FirstOrDefaultAsync(g=>g.Id==id,ct);
+ public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>db.Gmachs.AsNoTracking().AsSplitQuery().Include(g=>g.Items).ThenInclude(i=>i.Copies).FirstOrDefaultAsync(g=>g.Id==id,ct);
  public Task<Gmach?> GetByOwnerAsync(int ownerId,CancellationToken ct)=>db.Gmachs.AsNoTracking().FirstOrDefaultAsync(g=>g.OwnerId==ownerId,ct);
  public async Task<Gmach> CreateAsync(Gmach g,CancellationToken ct){db.Gmachs.Add(g);await db.SaveChangesAsync(ct);return g;}
  private static string NormalizeItemText(string? value)=> (value??string.Empty).Trim().ToUpperInvariant();
