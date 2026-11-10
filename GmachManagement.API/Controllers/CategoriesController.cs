@@ -5,6 +5,7 @@ using GmachManagement.Core.Entities;
 using GmachManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using GmachManagement.Core.Exceptions;
 
 
@@ -24,6 +25,7 @@ public class CategoriesController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet]
+    [OutputCache(Duration = 60)]
     public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll(
         CancellationToken ct)
     {
