@@ -146,6 +146,12 @@ authForm.addEventListener("submit", async (event) => {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
+        if (!name) {
+            showMessage(authMessage, "יש להזין שם מלא כדי להירשם.", "error");
+            document.getElementById("fullName").focus();
+            return;
+        }
+
         if (password.length < 8) {
             showMessage(authMessage, "הסיסמא חייבת להכיל 8 תוים לפחות", "error");
             document.getElementById("password").focus();
