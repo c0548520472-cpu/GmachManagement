@@ -12,7 +12,7 @@
     <header class="header">
         <div class="header-content">
             <h1>ניהול הגמ"ח</h1>
-            <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button></nav><div id="userArea"><button id="profileNav" class="secondary" type="button" hidden>הפרטים שלי</button>
+            <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button><button id="siteAdminNav" class="secondary" type="button" hidden>ניהול האתר</button></nav><div id="userArea"><button id="profileNav" class="secondary" type="button" hidden>הפרטים שלי</button>
                 <span id="welcomeText"></span>
                 <button id="logoutBtn" class="secondary" hidden>
                     התנתקות
@@ -234,6 +234,22 @@
             </form>
         </dialog>
 
+        <section id="siteAdminPage" hidden>
+            <div class="page-heading"><h2>ניהול האתר</h2><p class="muted">למנהלי האתר בלבד</p></div>
+            <section class="auth-card wide-card">
+                <h3>ניהול הרשאות מנהלים</h3>
+                <p class="muted">כדי להוסיף מנהל, כתובת האימייל צריכה להיות רשומה באתר. ניתן לערוך כתובות של חשבונות קיימים.</p>
+                <form id="siteAdminGrantForm" class="toolbar">
+                    <label for="siteAdminEmail">כתובת אימייל של מנהל חדש</label>
+                    <input id="siteAdminEmail" type="email" required maxlength="254">
+                    <button class="primary" type="submit">הוספת מנהל אתר</button>
+                </form>
+                <p id="siteAdminMessage" class="message" role="status"></p>
+                <h3>משתמשים ומנהלים</h3><div id="siteAdminUsers" class="items-grid"></div>
+                <h3>גמ״חים</h3><div id="siteAdminGmachs" class="items-grid"></div>
+                <h3>פריטים</h3><div id="siteAdminItems" class="items-grid"></div>
+            </section>
+        </section>
     </main>
 
     <script src="app.js"></script>
