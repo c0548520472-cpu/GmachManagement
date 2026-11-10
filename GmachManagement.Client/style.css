@@ -557,3 +557,15 @@ dialog {text-align:center;}
 #authSection #authSubmit {
     text-align: center;
 }
+
+#siteAdminUsers.site-admin-user-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:900px;margin:14px auto 28px;}
+.site-admin-user-row{border:1px solid #cbe3e8;border-radius:14px;background:#fff;overflow:hidden;text-align:right;}
+.site-admin-user-row>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;font-weight:700;list-style:none;text-align:right;}
+.site-admin-user-row>summary::-webkit-details-marker{display:none;}
+.site-admin-user-row>summary::before{content:"⌄";font-size:22px;color:#087e8b;}
+.site-admin-user-row[open]>summary::before{content:"⌃";}
+.site-admin-user-meta{font-size:13px;font-weight:400;color:#58747b;overflow-wrap:anywhere;}
+.site-admin-user-actions{border-top:1px solid #e0edf0;padding:16px;display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-start;}
+.site-admin-user-actions button{width:auto;min-width:130px;}
+#siteAdminUserSearch{display:block;width:100%;max-width:900px;margin:10px auto;text-align:right;}
+@media(max-width:600px){.site-admin-user-row>summary{flex-direction:column;align-items:flex-start;}.site-admin-user-actions button{flex:1 1 100%;}}
