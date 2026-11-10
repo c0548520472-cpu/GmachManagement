@@ -78,7 +78,7 @@ public sealed class SiteAdminRepository(AppDbContext db) : ISiteAdminRepository 
   var item=await db.Items.FirstOrDefaultAsync(x=>x.Id==id,ct);
   if(item==null)return "הפריט לא נמצא.";
   if(await db.ItemCopies.AnyAsync(c=>c.ItemId==id,ct) || await db.BorrowRequests.AnyAsync(r=>r.ItemId==id,ct))
-   return "לא ניתן למחוק פריט עם עותקים או בקשות השאלה. ניתן להסיר אותו מהקטלוג דרך ניהול הגמ״ח.";
+   { item.IsActive=false; await db.SaveChangesAsync(ct); return null; }
   db.Items.Remove(item);await db.SaveChangesAsync(ct);return null;
  }
 }
