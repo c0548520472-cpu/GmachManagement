@@ -42,12 +42,14 @@ public sealed class GmachsController : ControllerBase {
   [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(150)] public string BorrowerName {get;set;} = "";
   [System.ComponentModel.DataAnnotations.EmailAddress] public string? BorrowerEmail {get;set;}
   [System.ComponentModel.DataAnnotations.Phone] public string? BorrowerPhone {get;set;}
+  public DateTime ExpectedReturnDate {get;set;}
  }
  [HttpPost("mine/items/{itemId:int}/borrow"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> MarkBorrowed(int itemId,[FromBody] MarkBorrowedRequest request,CancellationToken ct){
   if(string.IsNullOrWhiteSpace(request.BorrowerName))return BadRequest(new {message="חובה למלא שם שואל."});
   if(string.IsNullOrWhiteSpace(request.BorrowerEmail)&&string.IsNullOrWhiteSpace(request.BorrowerPhone))return BadRequest(new {message="חובה למלא לפחות טלפון או אימייל."});
-  var loan=await service.MarkBorrowedAsync(UserId,itemId,request.BorrowerName.Trim(),string.IsNullOrWhiteSpace(request.BorrowerPhone)?null:request.BorrowerPhone.Trim(),string.IsNullOrWhiteSpace(request.BorrowerEmail)?null:request.BorrowerEmail.Trim(),ct);
+  if(request.ExpectedReturnDate.Date<=DateTime.UtcNow.Date)return BadRequest(new {message="יש לבחור תאריך החזרה עתידי."});
+  var loan=await service.MarkBorrowedAsync(UserId,itemId,request.BorrowerName.Trim(),string.IsNullOrWhiteSpace(request.BorrowerPhone)?null:request.BorrowerPhone.Trim(),string.IsNullOrWhiteSpace(request.BorrowerEmail)?null:request.BorrowerEmail.Trim(),request.ExpectedReturnDate.ToUniversalTime(),ct);
   return loan==null?Conflict(new {message="אין עותק זמין להשאלה."}):Ok(loan);
  }
  [HttpGet("mine/managed-loans"),Authorize(Roles="GmachAdmin")]
@@ -59,7 +61,7 @@ public sealed class GmachsController : ControllerBase {
    .SelectMany(item=>item.Copies.Select(copy=>new {copy.Id,ItemId=item.Id,ItemName=item.Name}))
    .ToDictionary(copy=>copy.Id);
   return Ok(loans.Select(loan=>new {
-   loan.Id,loan.GmachId,loan.ItemCopyId,loan.BorrowerName,loan.BorrowerPhone,loan.BorrowerEmail,loan.BorrowedAt,loan.ReturnedAt,
+   loan.Id,loan.GmachId,loan.ItemCopyId,loan.BorrowerName,loan.BorrowerPhone,loan.BorrowerEmail,loan.BorrowedAt,loan.ReturnedAt,loan.ExpectedReturnDate,
    ItemId=copies.TryGetValue(loan.ItemCopyId,out var copy)?copy.ItemId:(int?)null,
    ItemName=copies.TryGetValue(loan.ItemCopyId,out var namedCopy)?namedCopy.ItemName:null
   }));
