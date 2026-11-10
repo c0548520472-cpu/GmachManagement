@@ -910,9 +910,14 @@ async function loadMyLoans() {
         showMessage(message, loans.length ? "" : "עדיין אין השאלות מהגמ״ח.");
         for (const loan of loans) {
             const row = document.createElement("article"); row.className = "item-card";
-            const title = document.createElement("h3"); title.textContent = "השאלה מספר " + loan.id;
-            const details = document.createElement("p"); details.textContent = "עותק " + loan.itemCopyId + " | החזרה צפויה: " + new Date(loan.expectedReturnDate).toLocaleDateString("he-IL");
-            row.append(title,details); list.append(row);
+            const title = document.createElement("h3");
+            title.textContent = loan.itemName || "פריט מספר " + loan.itemCopyId;
+            const details = document.createElement("p");
+            const gmachDetails = [loan.gmachName, loan.gmachCity, loan.gmachDescription].filter(Boolean).join(" | ");
+            details.textContent = gmachDetails ? "פרטי הגמ״ח: " + gmachDetails : "פרטי הגמ״ח אינם זמינים";
+            const due = document.createElement("p");
+            due.textContent = "החזרה צפויה: " + new Date(loan.expectedReturnDate).toLocaleDateString("he-IL");
+            row.append(title,details,due); list.append(row);
         }
     } catch (error) { showMessage(message,error.message,"error"); }
 }

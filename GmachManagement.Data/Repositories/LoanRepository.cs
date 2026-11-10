@@ -82,6 +82,9 @@ namespace GmachManagement.Data.Repositories
             return await _context.Loans
                 .AsNoTracking()
                 .Where(loan => loan.UserId == userId)
+                .Include(loan => loan.ItemCopy)
+                    .ThenInclude(copy => copy.Item)
+                        .ThenInclude(item => item.Gmach)
                 .OrderByDescending(loan => loan.LoanDate)
                 .ToListAsync(cancellationToken);
         }
