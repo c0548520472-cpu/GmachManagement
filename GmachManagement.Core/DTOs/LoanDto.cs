@@ -13,6 +13,14 @@ namespace GmachManagement.Core.DTOs
 
         public int ItemCopyId { get; set; }
 
+        public string? ItemName { get; set; }
+
+        public string? GmachName { get; set; }
+
+        public string? GmachCity { get; set; }
+
+        public string? GmachDescription { get; set; }
+
         public DateTime LoanDate { get; set; }
 
         public DateTime ExpectedReturnDate { get; set; }
