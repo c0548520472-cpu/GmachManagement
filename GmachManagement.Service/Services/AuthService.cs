@@ -39,6 +39,9 @@ namespace GmachManagement.Service.Services
         {
             var user=await _userRepository.GetByIdAsync(userId,ct);
             if(user==null||!_passwordService.VerifyPassword(user,currentPassword))return (null,"הסיסמה הנוכחית שגויה.");
+            if(string.Equals(user.Email,_configuration["SiteAdmin:BootstrapEmail"],StringComparison.OrdinalIgnoreCase) &&
+               !string.Equals(user.Email,email.Trim(),StringComparison.OrdinalIgnoreCase))
+                return (null,"שינוי כתובת המנהלת הראשית מחייב עדכון בהגדרות השרת.");
             if(string.IsNullOrWhiteSpace(name)||string.IsNullOrWhiteSpace(email))return (null,"יש להזין שם וכתובת מייל.");
             if(isOwner&&(string.IsNullOrWhiteSpace(gmachName)||string.IsNullOrWhiteSpace(city)))return (null,"יש להזין שם גמ״ח ועיר.");
             if(newPassword!=null&&(newPassword.Length<8||newPassword.Length>128))return (null,"הסיסמה החדשה חייבת להכיל 8 עד 128 תווים.");
