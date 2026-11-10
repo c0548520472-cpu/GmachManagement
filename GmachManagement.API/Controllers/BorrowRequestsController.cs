@@ -32,8 +32,10 @@ public class BorrowRequestsController : ControllerBase {
   return Ok(requests.Select(r=>new{r.Id,r.ItemId,ItemName=r.Item.Name,r.ApplicantName,r.Phone,r.Email,r.CreatedAt}));
  }
  [HttpPost("mine/{id:int}/fulfill"),Authorize(Roles="GmachAdmin")]
- public async Task<IActionResult> Fulfill(int id,CancellationToken ct){
+ public sealed record FulfillRequest(DateTime ExpectedReturnDate);
+ public async Task<IActionResult> Fulfill(int id,[FromBody] FulfillRequest request,CancellationToken ct){
+  if(request.ExpectedReturnDate.Date<=DateTime.UtcNow.Date)return BadRequest(new{message="יש לבחור תאריך החזרה עתידי."});
   if(!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var ownerId))return Unauthorized();
-  return await service.FulfillBorrowRequestAsync(ownerId,id,ct)?NoContent():Conflict(new{message="הבקשה או הפריט אינם זמינים."});
+  return await service.FulfillBorrowRequestAsync(ownerId,id,request.ExpectedReturnDate.ToUniversalTime(),ct)?NoContent():Conflict(new{message="הבקשה או הפריט אינם זמינים."});
  }
 }
