@@ -79,7 +79,7 @@ namespace GmachManagement.Service.Services
             {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role.ToString())
+                    new Claim(ClaimTypes.Role, string.Equals(user.Email, _configuration["SiteAdmin:BootstrapEmail"], StringComparison.OrdinalIgnoreCase) ? UserRole.SiteAdmin.ToString() : user.Role.ToString())
                 };
 
             var signingKey = new SymmetricSecurityKey(
