@@ -56,7 +56,17 @@
             </form>
 
             <button id="forgotPasswordBtn" type="button" class="secondary">שכחתי סיסמה</button>
-            <p id="forgotPasswordNotice" class="message" hidden>איפוס סיסמה ללא התחברות אינו זמין כרגע. שינוי סיסמה אפשרי מתוך ״הפרטים שלי״ לאחר התחברות.</p>
+            <form id="forgotPasswordForm" hidden>
+<label for="forgotPasswordEmail">כתובת האימייל הרשומה</label><input id="forgotPasswordEmail" type="email" required>
+<button type="submit" class="primary">שליחת קישור לאיפוס סיסמה</button>
+<p id="forgotPasswordNotice" class="message" role="status"></p>
+</form>
+<form id="resetPasswordForm" hidden>
+<h3>איפוס סיסמה</h3>
+<label for="resetNewPassword">סיסמה חדשה (לפחות 8 תווים)</label><input id="resetNewPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
+<button type="submit" class="primary">עדכון סיסמה</button>
+<p id="resetPasswordMessage" class="message" role="status"></p>
+</form>
             <p id="authMessage" class="message"
                role="status" aria-live="polite"></p>
         </section>
@@ -203,7 +213,9 @@
                 <p id="ownerBorrowItemName"></p>
                 <label for="ownerBorrowName">שם השואל (חובה)</label><input id="ownerBorrowName" maxlength="150" required>
                 <label for="ownerBorrowPhone">טלפון</label><input id="ownerBorrowPhone" type="tel" maxlength="30">
-                <label for="ownerBorrowEmail">אימייל</label><input id="ownerBorrowEmail" type="email" maxlength="254">
+                <label for="ownerBorrowEmail">אימייל לקבלת תזכורות</label><input id="ownerBorrowEmail" type="email" maxlength="254">
+                <label for="ownerExpectedReturnDate">תאריך החזרה צפוי (חובה)</label><input id="ownerExpectedReturnDate" type="date" required>
+                <p class="muted">תזכורות יישלחו יום לפני התאריך ובכל יום לאחר מכן עד לסימון החזרה, אם הוזן אימייל.</p>
                 <p class="muted">חובה למלא לפחות אחד: טלפון או אימייל.</p>
                 <p id="ownerBorrowMessage" class="message" role="status"></p>
                 <div class="dialog-actions"><button id="cancelOwnerBorrow" type="button" class="secondary">ביטול</button><button class="primary" type="submit">שמירת השאלה</button></div>
