@@ -75,12 +75,17 @@ namespace GmachManagement.Service.Services
                 ?? throw new InvalidOperationException(
                     "JWT Audience is missing.");
 
-            var claims = new[]
+            var isSiteAdmin = user.Role == UserRole.SiteAdmin ||
+                string.Equals(user.Email, _configuration["SiteAdmin:BootstrapEmail"], StringComparison.OrdinalIgnoreCase);
+            var claims = new List<Claim>
             {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, string.Equals(user.Email, _configuration["SiteAdmin:BootstrapEmail"], StringComparison.OrdinalIgnoreCase) ? UserRole.SiteAdmin.ToString() : user.Role.ToString())
-                };
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, isSiteAdmin ? UserRole.SiteAdmin.ToString() : user.Role.ToString())
+            };
+            if (isSiteAdmin && (user.Role == UserRole.GmachAdmin ||
+                await _userRepository.GetOwnedGmachAsync(user.Id, cancellationToken) != null))
+                claims.Add(new Claim(ClaimTypes.Role, UserRole.GmachAdmin.ToString()));
 
             var signingKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtKey));
