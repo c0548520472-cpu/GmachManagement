@@ -90,9 +90,14 @@ async function requestFromServer(path, options = {}) {
             ...options,
             headers
         });
-    } catch {
+    } catch (error) {
+        console.error("API connection failed", {
+            endpoint: path,
+            origin: window.location.origin,
+            cause: error instanceof Error ? error.message : String(error)
+        });
         throw new Error(
-            "לא ניתן להתחבר לשרת. ודאי שה־API פועל."
+            "לא ניתן ליצור קשר עם שרת האתר. יש לבדוק את החיבור לאינטרנט ולנסות שוב. אם הבעיה נמשכת, יש לפתוח את כלי המפתחים (F12) ולבדוק את לשונית Network."
         );
     }
 
