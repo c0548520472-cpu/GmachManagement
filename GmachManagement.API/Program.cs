@@ -31,6 +31,7 @@ namespace GmachManagement.API
             }));
     options.RejectionStatusCode = 429;
 });
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
             builder.Services.AddServiceServices();
 
