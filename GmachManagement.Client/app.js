@@ -75,7 +75,9 @@ async function apiRequest(path, options = {}) {
 async function requestFromServer(path, options = {}) {
     const headers = new Headers(options.headers || {});
 
-    if (token) {
+    // Public directory endpoints must work without login or an expired saved token.
+    const publicGmachGet = (!options.method || options.method.toUpperCase() === "GET") && /^\/gmachs(?:\?|\/\d+(?:\?|$))/.test(path);
+    if (token && !publicGmachGet) {
         headers.set("Authorization", `Bearer ${token}`);
     }
 
@@ -977,7 +979,7 @@ async function findGmachs(){
    card.append(heading,city,button);list.append(card);
   }
   if(!groups.length){const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";list.append(empty);}
- }catch(e){if(sequence===gmachSearchSequence){list.replaceChildren();showMessage(itemsMessage,e.message,"error");}}
+ }catch(e){if(sequence===gmachSearchSequence){list.replaceChildren();const error=document.createElement("p");error.className="message error";error.setAttribute("role","alert");error.textContent="טעינת רשימת הגמ״חים נכשלה: "+e.message;list.append(error);}}
 }
 function showGmach(id){
  const url=new URL(location.href);url.searchParams.delete("page");url.searchParams.set("gmach",id);history.pushState({page:"gmach"},"",url);
