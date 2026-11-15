@@ -58,6 +58,7 @@
 
             <button id="forgotPasswordBtn" type="button" class="secondary">שכחתי סיסמה</button>
             <p id="forgotPasswordNotice" class="message" hidden>איפוס סיסמה ללא התחברות אינו זמין כרגע. שינוי סיסמה אפשרי מתוך ״הפרטים שלי״ לאחר התחברות.</p>
+            <button id="requestReRegistration" type="button" class="secondary" hidden>שליחת בקשה לאישור הרשמה מחדש</button>
             <p id="authMessage" class="message"
                role="status" aria-live="polite"></p>
         </section>
@@ -246,7 +247,7 @@
                     <button class="primary" type="submit">הוספת מנהל אתר</button>
                 </form>
                 <p id="siteAdminMessage" class="message" role="status"></p>
-                <h3>כל המשתמשים הרשומים</h3>
+                <h3>בקשות הרשמה מחדש של משתמשים שהוסרו</h3><p class="muted">התראות אימייל יופעלו לאחר הגדרת שירות הדואר.</p><div id="siteAdminReRegistrations" class="items-grid"></div><h3>כל המשתמשים הרשומים</h3>
 <label for="siteAdminUserSearch">חיפוש משתמש לפי שם או אימייל</label>
 <input id="siteAdminUserSearch" type="search" placeholder="חיפוש משתמש..." autocomplete="off">
 <p id="siteAdminUserCount" class="muted" aria-live="polite"></p>
