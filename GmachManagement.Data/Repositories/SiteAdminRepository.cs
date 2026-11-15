@@ -53,7 +53,12 @@ public sealed class SiteAdminRepository(AppDbContext db) : ISiteAdminRepository 
      await db.Loans.AnyAsync(l=>l.UserId==userId,ct) ||
      await db.PersonalTransactions.AnyAsync(t=>t.UserId==userId,ct))
    return "לא ניתן למחוק משתמש עם גמ״ח, השאלות או פעולות קיימות. יש לטפל בנתונים הקשורים קודם.";
-  db.Users.Remove(user);await db.SaveChangesAsync(ct);return null;
+  await using var tx=await db.Database.BeginTransactionAsync(ct);
+  var normalized=Normalize(user.Email);
+  var tombstone=await db.DeletedAccounts.FirstOrDefaultAsync(x=>x.Email==normalized,ct);
+  if(tombstone==null)db.DeletedAccounts.Add(new DeletedAccount{Email=normalized,Approved=false,Requested=false,DeletedAtUtc=DateTime.UtcNow});
+  else{tombstone.Approved=false;tombstone.Requested=false;tombstone.DeletedAtUtc=DateTime.UtcNow;}
+  db.Users.Remove(user);await db.SaveChangesAsync(ct);await tx.CommitAsync(ct);return null;
  }
  public async Task<string?> EditGmachAsync(int id,string name,string city,string description,CancellationToken ct) {
   var g=await db.Gmachs.FirstOrDefaultAsync(x=>x.Id==id,ct);
