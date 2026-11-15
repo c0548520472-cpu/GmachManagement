@@ -12,12 +12,22 @@
 <body>
     <header class="header">
         <div class="header-content">
-            <h1 class="brand-title"><img class="brand-logo" src="logo.svg" alt="" width="54" height="54"> ניהול הגמ״ח <small>נותנים מכל הלב</small></h1>
-            <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button><button id="siteAdminNav" class="secondary" type="button" hidden>ניהול האתר</button></nav><div id="userArea"><button id="profileNav" class="secondary" type="button" hidden>הפרטים שלי</button>
-                <span id="welcomeText"></span>
-                <button id="logoutBtn" class="secondary" hidden>
-                    התנתקות
-                </button>
+            <h1 class="brand-title"><img class="brand-logo" src="logo.svg" alt="" width="56" height="56"><span>ניהול הגמ״ח<small>נותנים מכל הלב</small></span></h1>
+            <nav class="site-nav" aria-label="ניווט ראשי">
+                <button id="homeNav" class="secondary" type="button">דף הבית</button>
+                <button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button>
+                <button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button>
+                <button id="siteAdminNav" class="secondary" type="button" hidden>ניהול האתר</button>
+            </nav>
+            <div id="userArea">
+                <details id="accountMenu" class="account-menu" hidden>
+                    <summary><span id="welcomeText"></span><span class="account-chevron" aria-hidden="true">⌄</span></summary>
+                    <div class="account-menu-panel">
+                        <button id="myLoansNav" class="secondary" type="button" hidden>האזור האישי · ההשאלות שלי</button>
+                        <button id="profileNav" class="secondary" type="button" hidden>הפרטים שלי</button>
+                        <button id="logoutBtn" class="secondary" type="button" hidden>התנתקות</button>
+                    </div>
+                </details>
             </div>
         </div>
     </header>
@@ -255,8 +265,36 @@
                 <h3>פריטים</h3><div id="siteAdminItems" class="items-grid"></div>
             </section>
         </section>
+        <section id="aboutPage" class="info-page auth-card wide-card" hidden>
+            <div class="info-page-heading"><span class="info-eyebrow">קצת עלינו</span><h2>אודות ניהול הגמ״ח</h2><p>מחברים בין אנשים שרוצים לעזור לבין מי שזקוקים לפריט בהשאלה.</p></div>
+            <div class="info-prose"><h3>מה עושים כאן?</h3><p>ניהול הגמ״ח הוא אתר המאפשר להציג גמ״חים ופריטים להשאלה, לחפש לפי מידע זמין ולפנות לבעלי הגמ״חים כדי לברר על השאלה.</p><h3>איך זה עובד?</h3><p>אפשר לעיין בגמ״חים ובפריטים המפורסמים באתר. כשמעוניינים בפריט, ניתן להעביר בקשה ופרטי יצירת קשר לבעל הגמ״ח, בהתאם לאפשרויות המוצגות באתר. בעל הגמ״ח מנהל את הבקשות, את הפריטים ואת סטטוס ההשאלה.</p><h3>החזון שלנו</h3><p>להנגיש השאלת ציוד, לעודד נתינה ועזרה הדדית ולפשט את ניהול הגמ״חים בקהילה. כל גמ״ח אחראי לפרטים, לזמינות ולתנאי ההשאלה שהוא מפרסם.</p></div>
+        </section>
+        <section id="privacyPage" class="info-page auth-card wide-card" hidden>
+            <div class="info-page-heading"><span class="info-eyebrow">שקיפות ואמון</span><h2>מדיניות פרטיות</h2><p>עודכנה לאחרונה: 16 בנובמבר 2026</p></div>
+            <div class="info-prose">
+                <p>מסמך זה מסביר באופן כללי כיצד מידע עשוי להיאסף ולהיות מעובד בעת שימוש באתר ניהול הגמ״ח. יש להשלים ולאמת אותו מול הגדרות התפעול, ספקי השירות והדין החל לפני הסתמכות עליו כמסמך משפטי מחייב.</p>
+                <h3>איזה מידע נמסר?</h3><p>בעת הרשמה או עדכון פרופיל ייתכן שייאספו שם, כתובת דוא״ל ופרטי חשבון. בעת בקשת השאלה ניתן למסור שם וטלפון או דוא״ל. בעלי גמ״חים עשויים למסור פרטי גמ״ח, פריטים, בקשות ונתוני השאלה.</p>
+                <h3>מטרות השימוש</h3><p>המידע משמש לניהול חשבונות והרשאות, להצגת גמ״חים ופריטים, להעברת בקשות לבעלי גמ״חים, לניהול השאלות, לתפעול האתר, לאבטחה ולמענה לפניות.</p>
+                <h3>למי המידע נחשף?</h3><p>פרטים שהמשתמש בוחר לפרסם עשויים להיות גלויים למבקרים. פרטי קשר בבקשת השאלה נמסרים לבעל הגמ״ח הרלוונטי לצורך טיפול בבקשה. מנהלי האתר וספקי תשתית ואחסון עשויים לגשת למידע במידה הדרושה לתפעול האתר.</p>
+                <h3>אחסון ואבטחה</h3><p>האתר עושה שימוש בשירותי אירוח ותשתית חיצוניים. ננקטים אמצעי הגנה טכנולוגיים בהתאם למימוש המערכת, אך אין אפשרות להבטיח אבטחה מוחלטת. מומלץ לא למסור פרטים רגישים שאינם נדרשים לשירות.</p>
+                <h3>שמירת מידע ומחיקתו</h3><p>מידע עשוי להישמר כל עוד הוא נדרש לתפעול, לטיפול בהשאלות, לאבטחה או לעמידה בחובות חוקיות. בקשות לעיון, תיקון או מחיקת מידע ניתן להפנות להנהלת האתר; טיפול בבקשה כפוף לצורכי התפעול ולדין החל.</p>
+                <h3>אחסון מקומי וקובצי Cookie</h3><p>האתר עשוי להשתמש באחסון הדפדפן לצורך שמירת מצב ההתחברות והפעלת השירות. ספקי האירוח עשויים להשתמש בטכנולוגיות נוספות לצורכי אבטחה ותפעול.</p>
+                <h3>עדכונים ויצירת קשר</h3><p>מדיניות זו עשויה להתעדכן מעת לעת. לשאלות בנושא פרטיות או למימוש זכויות בנוגע למידע אישי, ניתן לפנות דרך עמוד יצירת הקשר.</p>
+            </div>
+        </section>
+        <section id="contactPage" class="info-page auth-card wide-card" hidden>
+            <div class="info-page-heading"><span class="info-eyebrow">אנחנו כאן כדי לעזור</span><h2>צור קשר</h2><p>יש שאלה על האתר, הצעה לשיפור או בקשה בנוגע לפרטיות?</p></div>
+            <div class="info-prose">
+                <h3>פנייה להנהלת האתר</h3><p>אפשר לשלוח הודעה לכתובת הדוא״ל של הנהלת האתר. כדאי לציין נושא, פרטי קשר ותיאור קצר של הפנייה.</p>
+                <p><a class="contact-email" href="mailto:C0548520472@gmail.com?subject=%D7%A4%D7%A0%D7%99%D7%99%D7%94%20%D7%9E%D7%90%D7%AA%D7%A8%20%D7%A0%D7%99%D7%94%D7%95%D7%9C%20%D7%94%D7%92%D7%9E%D7%97">שליחת הודעה להנהלת האתר בדוא״ל</a></p>
+                <p class="muted">הקישור פותח את תוכנת הדוא״ל במכשיר שלך; אין באתר טופס ששולח הודעות אוטומטית.</p>
+                <h3>פנייה בנושא פריט להשאלה</h3><p>לשאלות על זמינות פריט, תנאי השאלה או החזרה, מומלץ לפנות ישירות לבעל הגמ״ח דרך הפרטים או אפשרות הבקשה המופיעים בדף הגמ״ח.</p>
+                <h3>פרטיות ואבטחה</h3><p>בפנייה על חשבון או מידע אישי, מומלץ לציין את כתובת הדוא״ל של החשבון, אך לא לשלוח סיסמאות או פרטי תשלום.</p>
+            </div>
+        </section>
     </main>
 
+    <footer class="site-footer"><div class="footer-inner"><div class="footer-brand"><img src="logo.svg" alt="" width="42" height="42"><span><strong>ניהול הגמ״ח</strong><small>נותנים מכל הלב</small></span></div><nav aria-label="קישורים נוספים"><button type="button" data-info-page="about">אודות האתר</button><button type="button" data-info-page="privacy">מדיניות פרטיות</button><button type="button" data-info-page="contact">צור קשר</button></nav><p>© <span id="footerYear">2026</span> ניהול הגמ״ח · מחברים בין אנשים</p></div></footer>
     <script src="app.js"></script>
 </body>
 </html>
