@@ -608,3 +608,11 @@ button:hover:not(:disabled){transform:translateY(-1px)}
 @media(max-width:900px){.header-content{flex-wrap:wrap}.site-nav{order:3;width:100%}.brand-title small{display:none}}
 @media(max-width:600px){.header{padding:14px 16px}.container{padding:0 14px;margin-top:18px}.page-heading{padding:26px 20px;border-radius:20px}.auth-card{padding:22px;border-radius:20px}#userArea{gap:7px}#welcomeText:not(:empty){padding:8px 12px;font-size:13px}.site-nav button,.header #userArea button{padding:8px 12px;font-size:13px}}
 @media(prefers-reduced-motion:reduce){button,.item-card,.site-nav button{transition:none!important}button:hover,.item-card:hover{transform:none!important}}
+
+/* Site administrator bulk user actions */
+.site-admin-bulk-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;padding:1rem;margin:1rem 0;border:1px solid #b8e0e1;border-radius:16px;background:#f0fbfa}
+.site-admin-bulk-toolbar label,.site-admin-select-label{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer}
+.site-admin-bulk-toolbar button{margin-inline-start:auto}
+.site-admin-select-label{padding:.5rem .8rem;font-size:.92rem}
+.site-admin-user-check,#siteAdminSelectAll{accent-color:#008c96;width:1.1rem;height:1.1rem}
+#siteAdminBulkDelete:not(:disabled){color:#a12424;border-color:#d89c9c}
