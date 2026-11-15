@@ -3,6 +3,8 @@ using GmachManagement.Core.Entities;
 namespace GmachManagement.Service.Services;
 public sealed class SiteAdminService(ISiteAdminRepository repo) {
  public Task<bool> IsAdminAsync(int id,string? bootstrap,CancellationToken ct)=>repo.IsSiteAdminAsync(id,bootstrap,ct);
+ public Task<List<DeletedAccount>> PendingReRegistrationsAsync(CancellationToken ct)=>repo.PendingReRegistrationsAsync(ct);
+ public Task<string?> ApproveReRegistrationAsync(string email,CancellationToken ct)=>repo.ApproveReRegistrationAsync(email,ct);
  public Task<List<User>> UsersAsync(CancellationToken ct)=>repo.UsersAsync(ct);
  public Task<List<Gmach>> GmachsAsync(CancellationToken ct)=>repo.GmachsAsync(ct);
  public Task<List<Item>> ItemsAsync(CancellationToken ct)=>repo.ItemsAsync(ct);
