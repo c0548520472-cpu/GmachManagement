@@ -1124,6 +1124,11 @@ async function loadSiteAdmin(keepMessage=false) {
         for(const u of users) {
             const card=document.createElement("details");card.className="site-admin-user-row";
             card.dataset.search=(u.name+" "+u.email+" "+u.role).toLocaleLowerCase();
+            const selection=document.createElement("label");selection.className="site-admin-select-label";
+            const check=document.createElement("input");check.type="checkbox";check.className="site-admin-user-check";check.value=String(u.id);check.disabled=!!u.isPrimary;
+            check.setAttribute("aria-label","בחירת "+u.name);
+            check.addEventListener("change",updateAdminBulkSelection);
+            selection.append(check,document.createTextNode(" בחירה"));card.append(selection);
             const heading=document.createElement("summary");
             const label=document.createElement("span");label.textContent=u.name;
             const meta=document.createElement("span");meta.className="site-admin-user-meta";meta.textContent=u.email+" | "+(u.role==="SiteAdmin"?"מנהל אתר":u.role==="GmachAdmin"?"בעל גמ״ח":"משתמש");
@@ -1195,6 +1200,7 @@ async function loadSiteAdmin(keepMessage=false) {
             itemsList.append(card);
         }
         filterSiteAdminUsers();
+        updateAdminBulkSelection();
         if(!keepMessage)showMessage(siteAdminMessage,"");
     }catch(error){showMessage(siteAdminMessage,error.message,"error");}
 }
@@ -1212,5 +1218,35 @@ function filterSiteAdminUsers(){
     let visible=0;
     rows.forEach(row=>{const match=row.dataset.search.includes(query);row.hidden=!match;if(match)visible++;});
     document.getElementById("siteAdminUserCount").textContent="מוצגים "+visible+" מתוך "+rows.length+" משתמשים";
+    updateAdminBulkSelection();
 }
 document.getElementById("siteAdminUserSearch").addEventListener("input",filterSiteAdminUsers);
+
+function updateAdminBulkSelection(){
+    const boxes=[...document.querySelectorAll("#siteAdminUsers .site-admin-user-check:not(:disabled)")];
+    const selected=boxes.filter(x=>x.checked);
+    const visible=boxes.filter(x=>!x.closest(".site-admin-user-row").hidden);
+    document.getElementById("siteAdminSelectedCount").textContent=selected.length+" משתמשים נבחרו";
+    document.getElementById("siteAdminBulkDelete").disabled=selected.length===0;
+    const all=document.getElementById("siteAdminSelectAll");
+    all.checked=visible.length>0&&visible.every(x=>x.checked);
+    all.indeterminate=visible.some(x=>x.checked)&&!all.checked;
+}
+document.getElementById("siteAdminSelectAll").addEventListener("change",event=>{
+    document.querySelectorAll("#siteAdminUsers .site-admin-user-row:not([hidden]) .site-admin-user-check:not(:disabled)").forEach(x=>x.checked=event.target.checked);
+    updateAdminBulkSelection();
+});
+document.getElementById("siteAdminBulkDelete").addEventListener("click",async()=>{
+    const selected=[...document.querySelectorAll("#siteAdminUsers .site-admin-user-check:checked")].map(x=>Number(x.value));
+    if(!selected.length)return;
+    if(!confirm("למחוק לצמיתות "+selected.length+" משתמשים? הפעולה אינה ניתנת לביטול."))return;
+    const button=document.getElementById("siteAdminBulkDelete");
+    button.disabled=true;
+    let deleted=0;const failures=[];
+    for(const id of selected){
+        try{await apiRequest("/site-admin/users/"+id,{method:"DELETE"});deleted++;}
+        catch(error){failures.push("משתמש "+id+": "+error.message);}
+    }
+    await loadSiteAdmin(true);
+    showMessage(siteAdminMessage,"נמחקו "+deleted+" משתמשים."+(failures.length?" לא נמחקו: "+failures.join("; "):""),failures.length?"error":"success");
+});
