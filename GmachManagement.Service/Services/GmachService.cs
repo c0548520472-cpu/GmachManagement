@@ -6,7 +6,7 @@ public sealed class GmachService {
  public GmachService(IGmachRepository repo)=>this.repo=repo;
  public Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct)=>repo.AddBorrowRequestAsync(itemId,name,phone,email,ct);
  public Task<List<BorrowRequest>> GetBorrowRequestsAsync(int ownerId,CancellationToken ct)=>repo.GetBorrowRequestsAsync(ownerId,ct);
- public Task<bool> FulfillBorrowRequestAsync(int ownerId,int requestId,CancellationToken ct)=>repo.FulfillBorrowRequestAsync(ownerId,requestId,ct);
+ public Task<bool> FulfillBorrowRequestAsync(int ownerId,int requestId,DateTime expectedReturnDate,CancellationToken ct)=>repo.FulfillBorrowRequestAsync(ownerId,requestId,expectedReturnDate,ct);
  public Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct)=>repo.SearchAsync(city,search,ct);
  public Task<List<Gmach>> SearchAsync(string? city,string? search,string? itemSearch,CancellationToken ct)=>repo.SearchAsync(city,search,itemSearch,ct);
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>repo.GetAsync(id,ct);
@@ -16,7 +16,7 @@ public sealed class GmachService {
  public Task<Item> AddItemAsync(int gmachId,string name,string description,CancellationToken ct)=>repo.AddItemAsync(gmachId,name,description,ct);
  public Task<int?> GetItemIdForCopyAsync(int copyId,CancellationToken ct)=>repo.GetItemIdForCopyAsync(copyId,ct);
  public Task<bool> OwnsLoanAsync(int ownerId,int loanId,CancellationToken ct)=>repo.OwnsLoanAsync(ownerId,loanId,ct);
- public Task<GmachManagement.Core.Entities.ManagedLoan?> MarkBorrowedAsync(int ownerId,int itemId,string name,string? phone,string? email,CancellationToken ct)=>repo.MarkBorrowedAsync(ownerId,itemId,name,phone,email,ct);
+ public Task<GmachManagement.Core.Entities.ManagedLoan?> MarkBorrowedAsync(int ownerId,int itemId,string name,string? phone,string? email,DateTime expectedReturnDate,CancellationToken ct)=>repo.MarkBorrowedAsync(ownerId,itemId,name,phone,email,expectedReturnDate,ct);
  public Task<bool> ReturnManagedLoanAsync(int ownerId,int id,CancellationToken ct)=>repo.ReturnManagedLoanAsync(ownerId,id,ct);
  public Task<List<GmachManagement.Core.Entities.ManagedLoan>> GetManagedLoansAsync(int ownerId,CancellationToken ct)=>repo.GetManagedLoansAsync(ownerId,ct);
  public Task<int> AddCopiesAsync(int itemId,int quantity,CancellationToken ct)=>repo.AddCopiesAsync(itemId,quantity,ct);

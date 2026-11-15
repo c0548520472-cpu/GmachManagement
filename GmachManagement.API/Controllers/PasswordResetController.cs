@@ -7,6 +7,7 @@ using GmachManagement.Service.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GmachManagement.API.Controllers;
 
@@ -36,6 +37,7 @@ public sealed class PasswordResetController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("password-recovery")]
     public async Task<IActionResult> Forgot([FromBody] ForgotRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Email))
@@ -73,6 +75,7 @@ public sealed class PasswordResetController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("reset-password")]
+    [EnableRateLimiting("password-recovery")]
     public async Task<IActionResult> Reset([FromBody] ResetRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)

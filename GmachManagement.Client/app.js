@@ -140,8 +140,35 @@ async function requestFromServer(path, options = {}) {
 }
 
 document.getElementById("forgotPasswordBtn").addEventListener("click",()=>{
+ document.getElementById("forgotPasswordForm").hidden=false;
+ document.getElementById("forgotPasswordEmail").value=document.getElementById("email").value.trim();
+});
+document.getElementById("forgotPasswordForm").addEventListener("submit",async event=>{
+ event.preventDefault();
  const notice=document.getElementById("forgotPasswordNotice");
- notice.hidden=false;
+ showMessage(notice,"שולח קישור...");
+ try {
+  const result=await apiRequest("/Auth/forgot-password",{method:"POST",body:JSON.stringify({email:document.getElementById("forgotPasswordEmail").value.trim()})});
+  showMessage(notice,result.message||"אם האימייל רשום, יישלח קישור.","success");
+ }catch(error){showMessage(notice,error.message,"error");}
+});
+const resetToken=new URLSearchParams(location.search).get("resetToken");
+if(resetToken){
+ document.getElementById("resetPasswordForm").hidden=false;
+ document.getElementById("forgotPasswordBtn").hidden=true;
+ document.getElementById("authForm").hidden=true;
+}
+document.getElementById("resetPasswordForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ const message=document.getElementById("resetPasswordMessage");
+ try{
+  const result=await apiRequest("/Auth/reset-password",{method:"POST",body:JSON.stringify({token:resetToken,newPassword:document.getElementById("resetNewPassword").value})});
+  showMessage(message,result.message||"הסיסמה עודכנה.","success");
+  history.replaceState(null,"",location.pathname);
+  document.getElementById("resetPasswordForm").hidden=true;
+  document.getElementById("authForm").hidden=false;
+  document.getElementById("forgotPasswordBtn").hidden=false;
+ }catch(error){showMessage(message,error.message,"error");}
 });
 
 // התחברות
@@ -641,11 +668,13 @@ document.getElementById("ownerBorrowForm").addEventListener("submit",async event
  const borrowerName=document.getElementById("ownerBorrowName").value.trim();
  const borrowerPhone=document.getElementById("ownerBorrowPhone").value.trim();
  const borrowerEmail=document.getElementById("ownerBorrowEmail").value.trim();
+ const expectedReturnDate=document.getElementById("ownerExpectedReturnDate").value;
  const message=document.getElementById("ownerBorrowMessage");
  if(!borrowerName){showMessage(message,"חובה למלא שם שואל.","error");return;}
  if(!borrowerPhone&&!borrowerEmail){showMessage(message,"חובה למלא לפחות טלפון או אימייל.","error");return;}
+ if(!expectedReturnDate || expectedReturnDate<=new Date().toISOString().slice(0,10)){showMessage(message,"יש לבחור תאריך החזרה עתידי.","error");return;}
  try{
-  await apiRequest("/gmachs/mine/items/"+ownerBorrowItemId+"/borrow",{method:"POST",body:JSON.stringify({borrowerName,borrowerPhone:borrowerPhone||null,borrowerEmail:borrowerEmail||null})});
+  await apiRequest("/gmachs/mine/items/"+ownerBorrowItemId+"/borrow",{method:"POST",body:JSON.stringify({borrowerName,borrowerPhone:borrowerPhone||null,borrowerEmail:borrowerEmail||null,expectedReturnDate})});
   ownerBorrowDialog.close();await refreshAdmin();await loadItems();
  }catch(error){showMessage(message,error.message,"error");}
 });
@@ -778,7 +807,7 @@ async function refreshAdmin() {
         for(const record of managedLoans){
           const row=document.createElement("article");row.className="item-card";
           const details=document.createElement("p");
-          details.textContent=(record.itemName || "פריט") + " | קוד פריט: " + (record.itemId ?? "לא ידוע") + " | " + record.borrowerName + " | " + (record.borrowerPhone||"") + " | " + (record.borrowerEmail||"");
+          details.textContent=(record.itemName || "פריט") + " | קוד פריט: " + (record.itemId ?? "לא ידוע") + " | " + record.borrowerName + " | " + (record.borrowerPhone||"") + " | " + (record.borrowerEmail||"") + " | החזרה: " + (record.expectedReturnDate?new Date(record.expectedReturnDate).toLocaleDateString("he-IL"):"לא נקבע");
           const borrowedDate=document.createElement("p");
           borrowedDate.textContent="הושאל בתאריך: "+new Date(record.borrowedAt).toLocaleString("he-IL",{dateStyle:"short",timeStyle:"short"});
           const returned=document.createElement("button");returned.textContent="הוחזר";
@@ -1048,7 +1077,11 @@ async function loadBorrowRequests() {
    const button=document.createElement("button");button.className="primary";button.textContent="סימון כהושאל";
    button.addEventListener("click",async()=>{
     button.disabled=true;
-    try{await apiRequest("/borrow-requests/mine/"+request.id+"/fulfill",{method:"POST"});await refreshAdmin();}
+    try{
+      const due=prompt("תאריך החזרה צפוי (YYYY-MM-DD)");
+      if(due===null){button.disabled=false;return;}
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(due)||due<=new Date().toISOString().slice(0,10)){showMessage(message,"יש להזין תאריך החזרה עתידי בפורמט YYYY-MM-DD","error");button.disabled=false;return;}
+      await apiRequest("/borrow-requests/mine/"+request.id+"/fulfill",{method:"POST",body:JSON.stringify({expectedReturnDate:due})});await refreshAdmin();}
     catch(e){showMessage(message,e.message,"error");button.disabled=false;}
    });
    card.append(heading,contact,button);list.append(card);
