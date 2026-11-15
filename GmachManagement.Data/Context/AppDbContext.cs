@@ -24,6 +24,7 @@ namespace GmachManagement.Data.Context
 
         public DbSet<Gmach> Gmachs { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<DeletedAccount> DeletedAccounts { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<ItemCopy> ItemCopies { get; set; }
         public DbSet<Loan> Loans { get; set; }
@@ -35,6 +36,7 @@ namespace GmachManagement.Data.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder) 
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<DeletedAccount>(e=>{e.Property(x=>x.Email).HasMaxLength(254).IsRequired();e.HasIndex(x=>x.Email).IsUnique();});
 
             modelBuilder.Entity<Gmach>(entity => {
                 entity.Property(g => g.Name).HasMaxLength(150).IsRequired();

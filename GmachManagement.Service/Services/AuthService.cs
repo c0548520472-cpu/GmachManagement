@@ -107,6 +107,8 @@ namespace GmachManagement.Service.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public Task<bool> RequiresReRegistrationApprovalAsync(string email,CancellationToken ct=default)=>_userRepository.RequiresReRegistrationApprovalAsync(email,ct);
+        public Task<bool> RequestReRegistrationAsync(string email,CancellationToken ct=default)=>_userRepository.RequestReRegistrationAsync(email,ct);
         public Task<bool> RegisterAsync(RegisterDto request,CancellationToken cancellationToken=default)=>RegisterInternalAsync(request,null,cancellationToken);
         private Task<bool> RegisterInternalAsync(RegisterDto request,string? recoveryHash,CancellationToken cancellationToken)
             => RegisterImplAsync(request,recoveryHash,cancellationToken);
@@ -115,6 +117,7 @@ namespace GmachManagement.Service.Services
             string? recoveryHash,
             CancellationToken cancellationToken)
         {
+            if(await _userRepository.RequiresReRegistrationApprovalAsync(request.Email,cancellationToken))return false;
             var existingUser = await _userRepository.GetByEmailAsync(
                 request.Email,
                 cancellationToken);

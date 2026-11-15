@@ -2,6 +2,8 @@ using GmachManagement.Core.Entities;
 namespace GmachManagement.Core.Interfaces;
 public interface ISiteAdminRepository {
  Task<bool> IsSiteAdminAsync(int userId,string? bootstrapEmail,CancellationToken ct);
+ Task<List<DeletedAccount>> PendingReRegistrationsAsync(CancellationToken ct);
+ Task<string?> ApproveReRegistrationAsync(string email,CancellationToken ct);
  Task<List<User>> UsersAsync(CancellationToken ct);
  Task<List<Gmach>> GmachsAsync(CancellationToken ct);
  Task<List<Item>> ItemsAsync(CancellationToken ct);

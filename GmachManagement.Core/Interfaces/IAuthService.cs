@@ -16,6 +16,8 @@ namespace GmachManagement.Core.Interfaces
             CancellationToken cancellationToken = default);
 
 
+        Task<bool> RequiresReRegistrationApprovalAsync(string email,CancellationToken ct=default);
+        Task<bool> RequestReRegistrationAsync(string email,CancellationToken ct=default);
         Task<bool> RegisterAsync(
             RegisterDto request,
             CancellationToken cancellationToken = default);

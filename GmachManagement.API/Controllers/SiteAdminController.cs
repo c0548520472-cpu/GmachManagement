@@ -21,6 +21,10 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
  public sealed record UserEditInput([Required,StringLength(150,MinimumLength=1)] string Name);
  public sealed record GmachEditInput([Required,StringLength(150,MinimumLength=1)] string Name,[Required,StringLength(100,MinimumLength=1)] string City,string? Description);
  public sealed record ItemEditInput([Required,StringLength(150,MinimumLength=1)] string Name,string? Description);
+ [HttpGet("re-registration-requests")]
+ public async Task<IActionResult> ReRegistrationRequests(CancellationToken ct){if(!await Allowed(ct))return Forbid();return Ok((await service.PendingReRegistrationsAsync(ct)).Select(x=>new {x.Email,x.DeletedAtUtc}));}
+ [HttpPost("re-registration-requests/approve")]
+ public async Task<IActionResult> ApproveReRegistration(EmailInput input,CancellationToken ct){if(!await Allowed(ct))return Forbid();return Result(await service.ApproveReRegistrationAsync(input.Email,ct));}
  [HttpGet("users")]
  public async Task<IActionResult> Users(CancellationToken ct){
   if(!await Allowed(ct))return Forbid();

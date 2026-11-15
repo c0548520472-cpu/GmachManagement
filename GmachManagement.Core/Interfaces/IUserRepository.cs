@@ -9,6 +9,8 @@ namespace GmachManagement.Core.Interfaces
 {
     public interface IUserRepository
     {
+        Task<bool> RequiresReRegistrationApprovalAsync(string email,CancellationToken ct=default);
+        Task<bool> RequestReRegistrationAsync(string email,CancellationToken ct=default);
         Task<User?> GetByEmailAsync(
             string email,
             CancellationToken cancellationToken = default);

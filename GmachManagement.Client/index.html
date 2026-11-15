@@ -6,12 +6,13 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
     <title>ניהול הגמ"ח</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="header">
         <div class="header-content">
-            <h1 class="brand-title"><span class="brand-mark" aria-hidden="true">✦</span> ניהול הגמ״ח <small>נותנים מכל הלב</small></h1>
+            <h1 class="brand-title"><img class="brand-logo" src="logo.svg" alt="" width="54" height="54"> ניהול הגמ״ח <small>נותנים מכל הלב</small></h1>
             <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button><button id="siteAdminNav" class="secondary" type="button" hidden>ניהול האתר</button></nav><div id="userArea"><button id="profileNav" class="secondary" type="button" hidden>הפרטים שלי</button>
                 <span id="welcomeText"></span>
                 <button id="logoutBtn" class="secondary" hidden>
@@ -57,6 +58,7 @@
 
             <button id="forgotPasswordBtn" type="button" class="secondary">שכחתי סיסמה</button>
             <p id="forgotPasswordNotice" class="message" hidden>איפוס סיסמה ללא התחברות אינו זמין כרגע. שינוי סיסמה אפשרי מתוך ״הפרטים שלי״ לאחר התחברות.</p>
+            <button id="requestReRegistration" type="button" class="secondary" hidden>שליחת בקשה לאישור הרשמה מחדש</button>
             <p id="authMessage" class="message"
                role="status" aria-live="polite"></p>
         </section>
@@ -245,11 +247,11 @@
                     <button class="primary" type="submit">הוספת מנהל אתר</button>
                 </form>
                 <p id="siteAdminMessage" class="message" role="status"></p>
-                <h3>כל המשתמשים הרשומים</h3>
+                <h3>בקשות הרשמה מחדש של משתמשים שהוסרו</h3><p class="muted">התראות אימייל יופעלו לאחר הגדרת שירות הדואר.</p><div id="siteAdminReRegistrations" class="items-grid"></div><h3>כל המשתמשים הרשומים</h3>
 <label for="siteAdminUserSearch">חיפוש משתמש לפי שם או אימייל</label>
 <input id="siteAdminUserSearch" type="search" placeholder="חיפוש משתמש..." autocomplete="off">
 <p id="siteAdminUserCount" class="muted" aria-live="polite"></p>
-<div id="siteAdminUsers" class="site-admin-user-list"></div>
+<div class="site-admin-bulk-toolbar"><label><input id="siteAdminSelectAll" type="checkbox"> בחירת כל המשתמשים המוצגים</label><span id="siteAdminSelectedCount" aria-live="polite">0 משתמשים נבחרו</span><button id="siteAdminBulkDelete" class="secondary" type="button" disabled>מחיקת נבחרים</button></div><div id="siteAdminUsers" class="site-admin-user-list"></div>
                 <h3>גמ״חים</h3><div id="siteAdminGmachs" class="items-grid"></div>
                 <h3>פריטים</h3><div id="siteAdminItems" class="items-grid"></div>
             </section>

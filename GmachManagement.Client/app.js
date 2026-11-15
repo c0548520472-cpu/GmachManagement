@@ -170,6 +170,7 @@ authForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     if (authMode === "register") {
+        document.getElementById("requestReRegistration").hidden=true;
         const name = document.getElementById("fullName").value.trim();
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
@@ -202,6 +203,7 @@ authForm.addEventListener("submit", async (event) => {
                 "success"
             );
         } catch (error) {
+            document.getElementById("requestReRegistration").hidden=!error.message.includes("הוסר בעבר");
             showMessage(authMessage, error.message, "error");
         }
 
@@ -236,6 +238,12 @@ authForm.addEventListener("submit", async (event) => {
     }
 });
 
+document.getElementById("requestReRegistration").addEventListener("click",async()=>{
+    try { const email=document.getElementById("email").value.trim();if(!email)throw new Error("יש להזין כתובת אימייל.");
+        const result=await apiRequest("/Auth/request-re-registration",{method:"POST",body:JSON.stringify({email})});
+        showMessage(authMessage,result.message,"success");document.getElementById("requestReRegistration").hidden=true;
+    }catch(error){showMessage(authMessage,error.message,"error");}
+});
 function switchAuthMode(mode) {
     authMode = mode;
     authForm.hidden=false;
@@ -1112,18 +1120,31 @@ async function loadSiteAdmin(keepMessage=false) {
     if(!isSiteAdminToken())return;
     if(!keepMessage)showMessage(siteAdminMessage,"טוען נתוני ניהול...");
     try {
-        const [users,gmachs,items]=await Promise.all([
+        const [users,gmachs,items,requests]=await Promise.all([
             apiRequest("/site-admin/users"),
             apiRequest("/site-admin/gmachs"),
-            apiRequest("/site-admin/items")
+            apiRequest("/site-admin/items"),
+            apiRequest("/site-admin/re-registration-requests")
         ]);
         const usersList=document.getElementById("siteAdminUsers");
         const gmachsList=document.getElementById("siteAdminGmachs");
         const itemsList=document.getElementById("siteAdminItems");
         usersList.replaceChildren();gmachsList.replaceChildren();itemsList.replaceChildren();
+        const requestsList=document.getElementById("siteAdminReRegistrations");requestsList.replaceChildren();
+        for(const req of requests){const card=document.createElement("article");card.className="item-card";
+            const email=document.createElement("strong");email.textContent=req.email;card.append(email);
+            card.append(adminActionButton("אישור הרשמה מחדש",async()=>{
+                if(confirm("לאשר הרשמה מחדש לכתובת "+req.email+"?"))await adminPerform("/site-admin/re-registration-requests/approve",{method:"POST",body:JSON.stringify({email:req.email})},"הבקשה אושרה. המשתמש יכול להירשם מחדש.");
+            }));requestsList.append(card);
+        }
         for(const u of users) {
             const card=document.createElement("details");card.className="site-admin-user-row";
             card.dataset.search=(u.name+" "+u.email+" "+u.role).toLocaleLowerCase();
+            const selection=document.createElement("label");selection.className="site-admin-select-label";
+            const check=document.createElement("input");check.type="checkbox";check.className="site-admin-user-check";check.value=String(u.id);check.disabled=!!u.isPrimary;
+            check.setAttribute("aria-label","בחירת "+u.name);
+            check.addEventListener("change",updateAdminBulkSelection);
+            selection.append(check,document.createTextNode(" בחירה"));card.append(selection);
             const heading=document.createElement("summary");
             const label=document.createElement("span");label.textContent=u.name;
             const meta=document.createElement("span");meta.className="site-admin-user-meta";meta.textContent=u.email+" | "+(u.role==="SiteAdmin"?"מנהל אתר":u.role==="GmachAdmin"?"בעל גמ״ח":"משתמש");
@@ -1195,6 +1216,7 @@ async function loadSiteAdmin(keepMessage=false) {
             itemsList.append(card);
         }
         filterSiteAdminUsers();
+        updateAdminBulkSelection();
         if(!keepMessage)showMessage(siteAdminMessage,"");
     }catch(error){showMessage(siteAdminMessage,error.message,"error");}
 }
@@ -1212,5 +1234,35 @@ function filterSiteAdminUsers(){
     let visible=0;
     rows.forEach(row=>{const match=row.dataset.search.includes(query);row.hidden=!match;if(match)visible++;});
     document.getElementById("siteAdminUserCount").textContent="מוצגים "+visible+" מתוך "+rows.length+" משתמשים";
+    updateAdminBulkSelection();
 }
 document.getElementById("siteAdminUserSearch").addEventListener("input",filterSiteAdminUsers);
+
+function updateAdminBulkSelection(){
+    const boxes=[...document.querySelectorAll("#siteAdminUsers .site-admin-user-check:not(:disabled)")];
+    const selected=boxes.filter(x=>x.checked);
+    const visible=boxes.filter(x=>!x.closest(".site-admin-user-row").hidden);
+    document.getElementById("siteAdminSelectedCount").textContent=selected.length+" משתמשים נבחרו";
+    document.getElementById("siteAdminBulkDelete").disabled=selected.length===0;
+    const all=document.getElementById("siteAdminSelectAll");
+    all.checked=visible.length>0&&visible.every(x=>x.checked);
+    all.indeterminate=visible.some(x=>x.checked)&&!all.checked;
+}
+document.getElementById("siteAdminSelectAll").addEventListener("change",event=>{
+    document.querySelectorAll("#siteAdminUsers .site-admin-user-row:not([hidden]) .site-admin-user-check:not(:disabled)").forEach(x=>x.checked=event.target.checked);
+    updateAdminBulkSelection();
+});
+document.getElementById("siteAdminBulkDelete").addEventListener("click",async()=>{
+    const selected=[...document.querySelectorAll("#siteAdminUsers .site-admin-user-check:checked")].map(x=>Number(x.value));
+    if(!selected.length)return;
+    if(!confirm("למחוק לצמיתות "+selected.length+" משתמשים? הפעולה אינה ניתנת לביטול."))return;
+    const button=document.getElementById("siteAdminBulkDelete");
+    button.disabled=true;
+    let deleted=0;const failures=[];
+    for(const id of selected){
+        try{await apiRequest("/site-admin/users/"+id,{method:"DELETE"});deleted++;}
+        catch(error){failures.push("משתמש "+id+": "+error.message);}
+    }
+    await loadSiteAdmin(true);
+    showMessage(siteAdminMessage,"נמחקו "+deleted+" משתמשים."+(failures.length?" לא נמחקו: "+failures.join("; "):""),failures.length?"error":"success");
+});

@@ -101,6 +101,23 @@ builder.Services.AddControllers();
 
                         ClockSkew = TimeSpan.Zero
                     };
+                    options.Events = new JwtBearerEvents {
+                        OnTokenValidated = async context => {
+                            var idText=context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                            if(!int.TryParse(idText,out var id)) { context.Fail("Invalid user."); return; }
+                            var repository=context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+                            var user=await repository.GetByIdAsync(id,context.HttpContext.RequestAborted);
+                            if(user==null){ context.Fail("Account deleted."); return; }
+                            var adminClaim=context.Principal?.IsInRole("SiteAdmin")==true;
+                            var currentAdmin=user.Role==GmachManagement.Core.Enums.UserRole.SiteAdmin ||
+                                string.Equals(user.Email,builder.Configuration["SiteAdmin:BootstrapEmail"],StringComparison.OrdinalIgnoreCase);
+                            if(adminClaim!=currentAdmin){context.Fail("Permissions changed; sign in again.");return;}
+                            var ownerClaim=context.Principal?.IsInRole("GmachAdmin")==true;
+                            var currentOwner=user.Role==GmachManagement.Core.Enums.UserRole.GmachAdmin ||
+                                (currentAdmin && await repository.GetOwnedGmachAsync(id,context.HttpContext.RequestAborted)!=null);
+                            if(ownerClaim!=currentOwner){context.Fail("Permissions changed; sign in again.");return;}
+                        }
+                    };
                 });
 
             builder.Services.AddAuthorization();
