@@ -170,6 +170,7 @@ authForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     if (authMode === "register") {
+        document.getElementById("requestReRegistration").hidden=true;
         const name = document.getElementById("fullName").value.trim();
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
@@ -202,6 +203,7 @@ authForm.addEventListener("submit", async (event) => {
                 "success"
             );
         } catch (error) {
+            document.getElementById("requestReRegistration").hidden=!error.message.includes("הוסר בעבר");
             showMessage(authMessage, error.message, "error");
         }
 
@@ -236,6 +238,12 @@ authForm.addEventListener("submit", async (event) => {
     }
 });
 
+document.getElementById("requestReRegistration").addEventListener("click",async()=>{
+    try { const email=document.getElementById("email").value.trim();if(!email)throw new Error("יש להזין כתובת אימייל.");
+        const result=await apiRequest("/Auth/request-re-registration",{method:"POST",body:JSON.stringify({email})});
+        showMessage(authMessage,result.message,"success");document.getElementById("requestReRegistration").hidden=true;
+    }catch(error){showMessage(authMessage,error.message,"error");}
+});
 function switchAuthMode(mode) {
     authMode = mode;
     authForm.hidden=false;
@@ -1112,15 +1120,23 @@ async function loadSiteAdmin(keepMessage=false) {
     if(!isSiteAdminToken())return;
     if(!keepMessage)showMessage(siteAdminMessage,"טוען נתוני ניהול...");
     try {
-        const [users,gmachs,items]=await Promise.all([
+        const [users,gmachs,items,requests]=await Promise.all([
             apiRequest("/site-admin/users"),
             apiRequest("/site-admin/gmachs"),
-            apiRequest("/site-admin/items")
+            apiRequest("/site-admin/items"),
+            apiRequest("/site-admin/re-registration-requests")
         ]);
         const usersList=document.getElementById("siteAdminUsers");
         const gmachsList=document.getElementById("siteAdminGmachs");
         const itemsList=document.getElementById("siteAdminItems");
         usersList.replaceChildren();gmachsList.replaceChildren();itemsList.replaceChildren();
+        const requestsList=document.getElementById("siteAdminReRegistrations");requestsList.replaceChildren();
+        for(const req of requests){const card=document.createElement("article");card.className="item-card";
+            const email=document.createElement("strong");email.textContent=req.email;card.append(email);
+            card.append(adminActionButton("אישור הרשמה מחדש",async()=>{
+                if(confirm("לאשר הרשמה מחדש לכתובת "+req.email+"?"))await adminPerform("/site-admin/re-registration-requests/approve",{method:"POST",body:JSON.stringify({email:req.email})},"הבקשה אושרה. המשתמש יכול להירשם מחדש.");
+            }));requestsList.append(card);
+        }
         for(const u of users) {
             const card=document.createElement("details");card.className="site-admin-user-row";
             card.dataset.search=(u.name+" "+u.email+" "+u.role).toLocaleLowerCase();
