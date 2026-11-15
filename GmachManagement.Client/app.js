@@ -18,6 +18,25 @@ let selectedCopyId = null;
 let gmachSearchSequence = 0;
 let itemsRequestSequence = 0;
 let authMode = "login";
+let signedInName = "";
+let profileNameToken = null;
+async function refreshWelcomeName() {
+    const activeToken = token;
+    if (!activeToken || profileNameToken === activeToken) return;
+    profileNameToken = activeToken;
+    try {
+        const profile = await apiRequest("/Auth/profile");
+        if (token !== activeToken) return;
+        signedInName = String(profile.name || "").trim().slice(0, 60);
+        renderWelcomeName();
+    } catch {
+        if (token === activeToken) { signedInName = ""; renderWelcomeName(); }
+    }
+}
+function renderWelcomeName() {
+    document.getElementById("welcomeText").textContent =
+        token ? (signedInName ? "היי, " + signedInName + " 👋" : "היי, ברוכים הבאים 👋") : "";
+}
 
 function showMessage(element, message, type = "") {
     element.textContent = message;
@@ -35,6 +54,8 @@ function showLogin() {
 function logout() {
     sessionStorage.removeItem("gmachToken");
     token = null;
+    signedInName = "";
+    profileNameToken = null;
     currentItems = [];
     publicRequestCache.clear();
     publicPendingRequests.clear();
@@ -205,7 +226,10 @@ authForm.addEventListener("submit", async (event) => {
 
         token = result.accessToken;
         sessionStorage.setItem("gmachToken", token);
+        signedInName = "";
+        profileNameToken = null;
         showMessage(authMessage, "");
+        void refreshWelcomeName();
         showDashboard();
     } catch (error) {
         showMessage(authMessage, error.message, "error");
@@ -843,7 +867,8 @@ function showPage(page, push = true) {
     document.getElementById("adminSection").hidden = page !== "owner";
     document.getElementById("logoutBtn").hidden = !token;
     document.getElementById("profileNav").hidden = !token;
-    document.getElementById("welcomeText").textContent = token ? "מחובר למערכת" : "";
+    renderWelcomeName();
+    if (token) void refreshWelcomeName();
     document.getElementById("loginNav").hidden = !!token;
     document.getElementById("myLoansNav").hidden = !token;
     document.getElementById("adminNav").hidden = !token || !isAdminToken();
@@ -899,6 +924,9 @@ document.getElementById("profileForm").addEventListener("submit",async e=>{
   const result=await apiRequest("/Auth/profile",{method:"PUT",body:JSON.stringify(payload)});
   if(!result.accessToken)throw new Error("נדרש להתחבר מחדש.");
   token=result.accessToken;sessionStorage.setItem("gmachToken",token);
+  signedInName = String(payload.name || "").trim().slice(0, 60);
+  profileNameToken = token;
+  renderWelcomeName();
   updateNavigation();await loadProfile();showMessage(msg,"הפרטים עודכנו בהצלחה.","success");
  }catch(err){showMessage(msg,err.message,"error");}
 });
