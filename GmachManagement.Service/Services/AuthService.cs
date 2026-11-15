@@ -96,7 +96,7 @@ namespace GmachManagement.Service.Services
             {
                 Name = request.Name.Trim(),
                 Email = request.Email.Trim().ToLowerInvariant(),
-                Role = UserRole.User
+                Role = UserRole.GmachAdmin
             };
 
             user.PasswordHash = _passwordService.HashPassword(

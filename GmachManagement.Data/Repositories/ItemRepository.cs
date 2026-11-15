@@ -70,6 +70,12 @@ public class ItemRepository : IItemRepository
     }
 
 
+    public Task<int?> GetCopyOwnerItemIdAsync(int copyId, CancellationToken ct) =>
+        _context.ItemCopies.Where(c => c.Id == copyId).Select(c => (int?)c.ItemId).FirstOrDefaultAsync(ct);
+
+    public Task<bool> IsOwnedByAsync(int itemId, int ownerId, CancellationToken ct) =>
+        _context.Items.AnyAsync(i => i.Id == itemId && i.OwnerId == ownerId, ct);
+
     public async Task<Item?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default)
@@ -96,7 +102,7 @@ public class ItemRepository : IItemRepository
         var existing = await _context.Items
             .FirstOrDefaultAsync(i => i.Id == item.Id, cancellationToken);
 
-        if (existing == null)
+        if (existing == null || existing.OwnerId != item.OwnerId)
             return false;
 
         existing.Name = item.Name;

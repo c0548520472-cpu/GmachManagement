@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 
 
 using GmachManagement.Core.DTOs;
@@ -12,7 +13,7 @@ namespace GmachManagement.API.Controllers;
 
 [ApiController]
 [Route("api/items")]
-[Authorize]
+[AllowAnonymous]
 public class ItemsController : ControllerBase
 {
     private readonly IItemService _itemService;
@@ -70,8 +71,9 @@ public class ItemsController : ControllerBase
         [FromBody] CreateItemDto dto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetOwnerId(out var ownerId)) return Unauthorized();
         var item = await _itemService.AddAsync(
-            dto.Name, dto.Description, cancellationToken);
+            dto.Name, dto.Description, ownerId, cancellationToken);
 
         return CreatedAtAction(
             nameof(GetById),
@@ -86,8 +88,10 @@ public class ItemsController : ControllerBase
         [FromBody] CreateItemDto dto,
         CancellationToken cancellationToken)
     {
+        if (!await OwnsItem(id, cancellationToken)) return NotFound();
+        if (!TryGetOwnerId(out var ownerId)) return Unauthorized();
         var updated = await _itemService.UpdateAsync(
-            id, dto.Name, dto.Description, cancellationToken);
+            id, dto.Name, dto.Description, ownerId, cancellationToken);
 
         if (!updated)
             return NotFound();
@@ -121,6 +125,7 @@ public class ItemsController : ControllerBase
         int id,
         CancellationToken cancellationToken)
     {
+        if (!await OwnsItem(id, cancellationToken)) return NotFound();
         var copy = await _itemService.AddCopyAsync(
             id, cancellationToken);
 
@@ -131,6 +136,12 @@ public class ItemsController : ControllerBase
     }
 
 
+
+    private bool TryGetOwnerId(out int ownerId) =>
+        int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out ownerId) && ownerId > 0;
+
+    private async Task<bool> OwnsItem(int itemId, CancellationToken ct) =>
+        TryGetOwnerId(out var ownerId) && await _itemService.IsOwnedByAsync(itemId, ownerId, ct);
 
     private static ItemDto ToDto(Item item)
     {
@@ -158,6 +169,8 @@ public class ItemsController : ControllerBase
     {
         try
         {
+            var copyOwner = await _itemService.GetCopyOwnerItemIdAsync(copyId, ct);
+            if (copyOwner == null || !await OwnsItem(copyOwner.Value, ct)) return NotFound();
             var updated = await _itemService.UpdateCopyStatusAsync(
                 copyId, dto.Status, ct);
 
@@ -190,6 +203,7 @@ public class ItemsController : ControllerBase
         [FromQuery] bool isActive,
         CancellationToken ct)
     {
+        if (!await OwnsItem(id, ct)) return NotFound();
         var updated = await _itemService.SetActiveAsync(
             id, isActive, ct);
 
@@ -223,6 +237,7 @@ public class ItemsController : ControllerBase
         int categoryId,
         CancellationToken ct)
     {
+        if (!await OwnsItem(id, ct)) return NotFound();
         var result = await _itemService.AddCategoryAsync(
             id, categoryId, ct);
 
@@ -236,6 +251,7 @@ public class ItemsController : ControllerBase
         int categoryId,
         CancellationToken ct)
     {
+        if (!await OwnsItem(id, ct)) return NotFound();
         var result = await _itemService.RemoveCategoryAsync(
             id, categoryId, ct);
 

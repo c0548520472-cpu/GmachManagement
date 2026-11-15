@@ -12,6 +12,8 @@ namespace GmachManagement.Core.Entities
         public string Description { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = true;
+        public int? OwnerId { get; set; }
+        public User? Owner { get; set; }
 
 
         public ICollection<ItemCopy> Copies { get; set; }

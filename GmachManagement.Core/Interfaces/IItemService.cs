@@ -16,6 +16,10 @@ public interface IItemService
         CancellationToken cancellationToken = default);
 
 
+    Task<int?> GetCopyOwnerItemIdAsync(int copyId, CancellationToken ct);
+
+    Task<bool> IsOwnedByAsync(int itemId, int ownerId, CancellationToken ct);
+
     Task<Item?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default);
@@ -23,12 +27,14 @@ public interface IItemService
     Task<Item> AddAsync(
         string name,
         string description,
+        int ownerId,
         CancellationToken cancellationToken = default);
 
     Task<bool> UpdateAsync(
         int id,
         string name,
         string description,
+        int ownerId,
         CancellationToken cancellationToken = default);
 
     Task<List<ItemCopy>> GetCopiesAsync(

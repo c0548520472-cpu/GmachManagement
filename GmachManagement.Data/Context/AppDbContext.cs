@@ -21,6 +21,7 @@ namespace GmachManagement.Data.Context
         public DbSet<Item> Items { get; set; }
         public DbSet<ItemCopy> ItemCopies { get; set; }
         public DbSet<Loan> Loans { get; set; }
+        public DbSet<BorrowRequest> BorrowRequests { get; set; }
         public DbSet<PersonalTransaction> PersonalTransactions { get; set; }
         public DbSet<Category> Categories { get; set; }
 
@@ -39,6 +40,17 @@ namespace GmachManagement.Data.Context
             });
 
 
+
+            modelBuilder.Entity<Item>()
+                .HasOne(i => i.Owner).WithMany().HasForeignKey(i => i.OwnerId).OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<BorrowRequest>(entity =>
+            {
+                entity.Property(r => r.ApplicantName).HasMaxLength(100).IsRequired();
+                entity.Property(r => r.Phone).HasMaxLength(30);
+                entity.Property(r => r.Email).HasMaxLength(254);
+                entity.HasOne(r => r.ItemCopy).WithMany().HasForeignKey(r => r.ItemCopyId).OnDelete(DeleteBehavior.Restrict);
+            });
 
             modelBuilder.Entity<Item>()
                 .HasMany(i => i.Copies)

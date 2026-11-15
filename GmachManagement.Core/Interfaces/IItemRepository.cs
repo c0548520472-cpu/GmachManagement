@@ -18,6 +18,10 @@ public interface IItemRepository
         CancellationToken cancellationToken = default);
 
 
+    Task<int?> GetCopyOwnerItemIdAsync(int copyId, CancellationToken ct);
+
+    Task<bool> IsOwnedByAsync(int itemId, int ownerId, CancellationToken ct);
+
     Task<Item?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default);
