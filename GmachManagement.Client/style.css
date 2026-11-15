@@ -616,3 +616,5 @@ button:hover:not(:disabled){transform:translateY(-1px)}
 .site-admin-select-label{padding:.5rem .8rem;font-size:.92rem}
 .site-admin-user-check,#siteAdminSelectAll{accent-color:#008c96;width:1.1rem;height:1.1rem}
 #siteAdminBulkDelete:not(:disabled){color:#a12424;border-color:#d89c9c}
+
+.brand-logo{width:54px;height:54px;object-fit:contain;vertical-align:middle;margin-inline-end:.4rem;border-radius:14px}
