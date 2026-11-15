@@ -44,6 +44,14 @@ namespace GmachManagement.Data.Repositories
             catch(DbUpdateException ex) when(ex.InnerException?.GetType().Name=="PostgresException" || ex.InnerException is Microsoft.Data.SqlClient.SqlException){return (null,"לא ניתן לשמור את הפרטים. ייתכן שכתובת המייל כבר רשומה.");}
         }
 
+        public Task<bool> RequiresReRegistrationApprovalAsync(string email,CancellationToken ct=default)=>
+            _context.DeletedAccounts.AsNoTracking().AnyAsync(x=>x.Email==email.Trim().ToLowerInvariant()&&!x.Approved,ct);
+        public async Task<bool> RequestReRegistrationAsync(string email,CancellationToken ct=default){
+            var normalized=email.Trim().ToLowerInvariant();
+            var row=await _context.DeletedAccounts.FirstOrDefaultAsync(x=>x.Email==normalized&&!x.Approved,ct);
+            if(row==null)return false;
+            row.Requested=true;await _context.SaveChangesAsync(ct);return true;
+        }
         public async Task<User?> GetByEmailAsync(
             string email,
             CancellationToken cancellationToken = default)
