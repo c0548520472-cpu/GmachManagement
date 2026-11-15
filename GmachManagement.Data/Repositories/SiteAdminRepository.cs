@@ -11,6 +11,13 @@ public sealed class SiteAdminRepository(AppDbContext db) : ISiteAdminRepository 
  public Task<bool> IsSiteAdminAsync(int userId,string? bootstrapEmail,CancellationToken ct)=>
   db.Users.AsNoTracking().AnyAsync(u=>u.Id==userId && (u.Role==UserRole.SiteAdmin ||
    (bootstrapEmail!=null && u.Email.ToLower()==Normalize(bootstrapEmail))),ct);
+ public Task<List<DeletedAccount>> PendingReRegistrationsAsync(CancellationToken ct)=>db.DeletedAccounts.AsNoTracking().Where(x=>x.Requested&&!x.Approved).OrderBy(x=>x.DeletedAtUtc).ToListAsync(ct);
+ public async Task<string?> ApproveReRegistrationAsync(string email,CancellationToken ct){
+  var normalized=Normalize(email);
+  var row=await db.DeletedAccounts.FirstOrDefaultAsync(x=>x.Email==normalized&&x.Requested&&!x.Approved,ct);
+  if(row==null)return "בקשת ההרשמה לא נמצאה.";
+  row.Approved=true;row.Requested=false;await db.SaveChangesAsync(ct);return null;
+ }
  public Task<List<User>> UsersAsync(CancellationToken ct)=>db.Users.AsNoTracking().OrderBy(u=>u.Id).ToListAsync(ct);
  public Task<List<Gmach>> GmachsAsync(CancellationToken ct)=>db.Gmachs.AsNoTracking().OrderBy(g=>g.Id).ToListAsync(ct);
  public Task<List<Item>> ItemsAsync(CancellationToken ct)=>db.Items.AsNoTracking().OrderBy(i=>i.Id).ToListAsync(ct);
