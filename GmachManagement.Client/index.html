@@ -11,7 +11,7 @@
 <body>
     <header class="header">
         <div class="header-content">
-            <h1>ניהול הגמ"ח</h1>
+            <h1 class="brand-title"><span class="brand-mark" aria-hidden="true">✦</span> ניהול הגמ״ח <small>נותנים מכל הלב</small></h1>
             <nav class="site-nav" aria-label="ניווט ראשי"><button id="homeNav" class="secondary" type="button">דף הבית</button><button id="loginNav" class="secondary" type="button">הרשמה / התחברות</button><button id="myLoansNav" class="secondary" type="button" hidden>ההשאלות שלי</button><button id="adminNav" class="secondary" type="button" hidden>ניהול גמ״ח</button><button id="siteAdminNav" class="secondary" type="button" hidden>ניהול האתר</button></nav><div id="userArea"><button id="profileNav" class="secondary" type="button" hidden>הפרטים שלי</button>
                 <span id="welcomeText"></span>
                 <button id="logoutBtn" class="secondary" hidden>
@@ -64,15 +64,15 @@
         <section id="dashboardSection" hidden>
             <div class="page-heading">
                 <div>
-                    <h2>קטלוג הפריטים</h2>
+                    <span class="eyebrow">קהילה של נתינה</span><h2>מוצאים את מה שצריך, קרוב לבית</h2>
                     <p class="muted">
-                        חיפוש פריטים והשאלת עותקים זמינים
+                        מגלים גמ״חים בסביבה, מוצאים פריטים זמינים ומתחברים לעזרה הדדית
                     </p>
                 </div>
             </div>
 
             <section class="auth-card wide-card" id="gmachDirectory">
-                <h2>חיפוש גמ״חים ופריטים זמינים</h2>
+                <h2>איזה גמ״ח מחפשים היום?</h2><p class="muted directory-subtitle">אפשר לחפש לפי עיר, שם הגמ״ח או פריט מבוקש</p>
                 <div class="home-filters">
                     <input id="citySearch" type="search" placeholder="עיר" aria-label="סינון לפי עיר">
                     <input id="gmachSearch" type="search" placeholder="שם גמ״ח" aria-label="סינון לפי שם גמ״ח">
