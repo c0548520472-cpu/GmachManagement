@@ -60,6 +60,7 @@ function logout() {
     publicRequestCache.clear();
     publicPendingRequests.clear();
     document.getElementById("welcomeText").textContent = "";
+    document.getElementById("accountMenu").open=false;
     showHome();
 }
 
@@ -856,6 +857,10 @@ function showPage(page, push = true) {
     if ((page === "account" || page === "owner" || page === "profile" || page === "siteAdmin") && !token) page = "login";
     if (page === "siteAdmin" && !isSiteAdminToken()) page = "home";
     if (page === "owner" && !isAdminToken()) page = "account";
+    for(const info of ["about","privacy","contact"]){
+        document.getElementById(info+"Page").hidden=page!==info;
+    }
+    document.getElementById("accountMenu").open=false;
     authSection.hidden = page !== "login";
     dashboardSection.hidden = page !== "home";
     document.getElementById("gmachPage").hidden = page !== "gmach";
@@ -865,6 +870,7 @@ function showPage(page, push = true) {
     document.getElementById("ownerPage").hidden = page !== "owner";
     document.getElementById("siteAdminPage").hidden = page !== "siteAdmin";
     document.getElementById("adminSection").hidden = page !== "owner";
+    document.getElementById("accountMenu").hidden = !token;
     document.getElementById("logoutBtn").hidden = !token;
     document.getElementById("profileNav").hidden = !token;
     const activeNav={home:"homeNav",gmach:"homeNav",login:"loginNav",account:"myLoansNav",owner:"adminNav",siteAdmin:"siteAdminNav",profile:"profileNav"}[page];
@@ -942,6 +948,7 @@ function updateNavigation() {
     document.getElementById("myLoansNav").hidden = !token;
     document.getElementById("adminNav").hidden = !token || !isAdminToken();
     document.getElementById("siteAdminNav").hidden = !token || !isSiteAdminToken();
+    document.getElementById("accountMenu").hidden = !token;
 }
 document.getElementById("homeNav").addEventListener("click", showHome);
 document.getElementById("loginNav").addEventListener("click", showLogin);
@@ -949,10 +956,21 @@ document.getElementById("myLoansNav").addEventListener("click", () => showPage("
 document.getElementById("adminNav").addEventListener("click", () => showPage("owner"));
 document.getElementById("siteAdminNav").addEventListener("click", () => showPage("siteAdmin"));
 document.getElementById("profileNav").addEventListener("click",()=>showPage("profile"));
+document.querySelectorAll("[data-info-page]").forEach(button=>{
+    button.addEventListener("click",()=>showPage(button.dataset.infoPage));
+});
+document.getElementById("footerYear").textContent=String(new Date().getFullYear());
+document.addEventListener("click",event=>{
+    const menu=document.getElementById("accountMenu");
+    if(menu.open&&!menu.contains(event.target))menu.open=false;
+});
+document.addEventListener("keydown",event=>{
+    if(event.key==="Escape")document.getElementById("accountMenu").open=false;
+});
 window.addEventListener("popstate", () => {
     const params=new URLSearchParams(location.search);
     const page=params.has("gmach")?"gmach":params.get("page")||"home";
-    showPage(["login","account","owner","profile","gmach","siteAdmin"].includes(page) ? page : "home", false);
+    showPage(["login","account","owner","profile","gmach","siteAdmin","about","privacy","contact"].includes(page) ? page : "home", false);
 });
 
 async function loadMyLoans() {
@@ -1041,7 +1059,7 @@ document.getElementById("findGmachs").addEventListener("click",findGmachs);
 for(const id of ["citySearch","gmachSearch","homeItemSearch"])document.getElementById(id).addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();findGmachs();}});
 const startupParams=new URLSearchParams(location.search);
 const initialPage=startupParams.has("gmach")?"gmach":startupParams.get("page");
-showPage(["login","account","owner","profile","gmach"].includes(initialPage)?initialPage:"home",false);
+showPage(["login","account","owner","profile","gmach","siteAdmin","about","privacy","contact"].includes(initialPage)?initialPage:"home",false);
 document.getElementById("excelImportForm").addEventListener("submit",async event=>{
  event.preventDefault();const file=document.getElementById("excelFile").files[0];if(!file)return;
  const form=new FormData();form.append("file",file);
