@@ -53,6 +53,8 @@ namespace GmachManagement.API.Controllers
         {
             if (request.IsGmachOwner && (string.IsNullOrWhiteSpace(request.GmachName) || string.IsNullOrWhiteSpace(request.City)))
                 return BadRequest(new { message = "יש להזין שם גמ״ח ועיר." });
+            if(await _authService.RequiresReRegistrationApprovalAsync(request.Email,cancellationToken))
+                return StatusCode(403,new {message="החשבון הוסר בעבר. יש לבקש אישור מנהל לפני הרשמה מחדש.",requiresApproval=true});
             bool registered;
             try
             {
@@ -80,6 +82,13 @@ namespace GmachManagement.API.Controllers
             });
         }
 
+        public sealed record ReRegistrationRequest([System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.EmailAddress] string Email);
+        [AllowAnonymous,HttpPost("request-re-registration")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
+        public async Task<IActionResult> RequestReRegistration([FromBody] ReRegistrationRequest request,CancellationToken ct){
+            await _authService.RequestReRegistrationAsync(request.Email,ct);
+            return Ok(new {message="אם החשבון הוסר בעבר, הבקשה נשמרה ותועבר למנהל האתר."});
+        }
         public sealed class ProfileUpdateRequest {
             [System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.StringLength(150)] public string Name {get;set;}="";
             [System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.EmailAddress] public string Email {get;set;}="";
