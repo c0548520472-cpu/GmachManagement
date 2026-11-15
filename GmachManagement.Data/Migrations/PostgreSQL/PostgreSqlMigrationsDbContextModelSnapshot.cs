@@ -22,6 +22,19 @@ namespace GmachManagement.Data.Migrations.PostgreSQL
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GmachManagement.Core.Entities.DeletedAccount", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("integer");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<string>("Email").IsRequired().HasMaxLength(254).HasColumnType("character varying(254)");
+                    b.Property<bool>("Approved").HasColumnType("boolean");
+                    b.Property<bool>("Requested").HasColumnType("boolean");
+                    b.Property<DateTime>("DeletedAtUtc").HasColumnType("timestamp with time zone");
+                    b.HasKey("Id");
+                    b.HasIndex("Email").IsUnique();
+                    b.ToTable("DeletedAccounts");
+                });
+
             modelBuilder.Entity("CategoryItem", b =>
                 {
                     b.Property<int>("CategoriesId")

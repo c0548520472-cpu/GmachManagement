@@ -22,6 +22,19 @@ namespace GmachManagement.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("GmachManagement.Core.Entities.DeletedAccount", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Email").IsRequired().HasMaxLength(254).HasColumnType("nvarchar(254)");
+                    b.Property<bool>("Approved").HasColumnType("bit");
+                    b.Property<bool>("Requested").HasColumnType("bit");
+                    b.Property<DateTime>("DeletedAtUtc").HasColumnType("datetime2");
+                    b.HasKey("Id");
+                    b.HasIndex("Email").IsUnique();
+                    b.ToTable("DeletedAccounts");
+                });
+
             modelBuilder.Entity("CategoryItem", b =>
                 {
                     b.Property<int>("CategoriesId")
