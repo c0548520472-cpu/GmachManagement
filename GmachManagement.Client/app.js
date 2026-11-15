@@ -875,6 +875,14 @@ function showPage(page, push = true) {
     document.getElementById("adminSection").hidden = page !== "owner";
     document.getElementById("logoutBtn").hidden = !token;
     document.getElementById("profileNav").hidden = !token;
+    // Keep the current destination visible in the navigation without altering routing.
+    const activeNav = {home:"homeNav",gmach:"homeNav",login:"loginNav",account:"myLoansNav",owner:"adminNav",siteAdmin:"siteAdminNav",profile:"profileNav"}[page];
+    for(const id of ["homeNav","loginNav","myLoansNav","adminNav","siteAdminNav","profileNav"]){
+        const button=document.getElementById(id);
+        if(!button)continue;
+        if(id===activeNav)button.setAttribute("aria-current","page");
+        else button.removeAttribute("aria-current");
+    }
     renderWelcomeName();
     if (token) void refreshWelcomeName();
     document.getElementById("loginNav").hidden = !!token;
@@ -894,7 +902,7 @@ function showPage(page, push = true) {
     if (page === "owner") refreshAdmin();
     if (page === "profile") loadProfile();
     if (page === "siteAdmin") loadSiteAdmin();
-    window.scrollTo({top:0,behavior:"instant"});
+    window.scrollTo({top:0,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
 }
 function showHome() { showPage("home"); }
 
