@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using GmachManagement.Core.Interfaces;
 using GmachManagement.Data.Context;
 using GmachManagement.Data.Repositories;
+using GmachManagement.Data.Services;
 
 namespace GmachManagement.Data
 {
@@ -15,18 +16,49 @@ namespace GmachManagement.Data
             IConfiguration configuration)
         {
             services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString(
-                        "DefaultConnection")));
+            {
+                var provider = configuration["DatabaseProvider"] ?? "SqlServer";
+                if (provider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.UseNpgsql(configuration.GetConnectionString("PostgreSQL")
+                        ?? throw new InvalidOperationException("PostgreSQL connection string is missing."));
+                }
+                else if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Unsupported database provider: {provider}");
+                }
+            });
+
+            if (string.Equals(configuration["DatabaseProvider"], "PostgreSQL", StringComparison.OrdinalIgnoreCase))
+            {
+                services.AddDbContext<PostgreSqlMigrationsDbContext>(options =>
+                    options.UseNpgsql(configuration.GetConnectionString("PostgreSQL")));
+            }
 
             services.AddScoped<ILoanRepository, LoanRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<ISiteAdminRepository, SiteAdminRepository>();
+            services.AddScoped<IPersonalTransactionRepository, PersonalTransactionRepository>();
+            services.AddHostedService<PersonalReminderWorker>();
+            services.AddScoped<IGmachRepository, GmachRepository>();
             services.AddScoped<IItemRepository, ItemRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
 
             return services;
         }
 
+
+        public static async Task ApplyPostgreSqlMigrationsAsync(IServiceProvider provider, IConfiguration configuration)
+        {
+            if (!string.Equals(configuration["DatabaseProvider"], "PostgreSQL", StringComparison.OrdinalIgnoreCase)) return;
+            using var scope = provider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<PostgreSqlMigrationsDbContext>();
+            await context.Database.MigrateAsync();
+        }
 
         public static async Task CreateInitialAdminAsync(
             IServiceProvider serviceProvider,

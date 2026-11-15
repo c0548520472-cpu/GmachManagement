@@ -5,6 +5,7 @@ using GmachManagement.Core.Interfaces;
 using GmachManagement.Service;
 using GmachManagement.Service.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using NLog.Web;
@@ -18,7 +19,20 @@ namespace GmachManagement.API
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddControllers();
+            builder.Services.AddRateLimiter(options => {
+    options.AddPolicy("password-recovery", context =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(15),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+    options.RejectionStatusCode = 429;
+});
+builder.Services.AddMemoryCache();
+builder.Services.AddControllers();
             builder.Services.AddServiceServices();
 
             var dataAssemblyPath = Path.Combine(
@@ -90,6 +104,7 @@ namespace GmachManagement.API
                 });
 
             builder.Services.AddAuthorization();
+            builder.Services.AddDataProtection().SetApplicationName("GmachManagement");
 
             builder.Services.AddCors(options =>
             {
@@ -97,7 +112,22 @@ namespace GmachManagement.API
                 {
                     policy
                         .WithOrigins("http://localhost:5500",
-                                     "http://127.0.0.1:5500")
+                                     "http://127.0.0.1:5500",
+                                     "https://gmachmanagement-client.pages.dev")
+                        // Cloudflare Pages preview deployments use a unique subdomain.
+                        // Accept only our Pages project and its previews, not arbitrary pages.dev sites.
+                        .SetIsOriginAllowed(origin =>
+                        {
+                            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                                return false;
+                            if (uri.Scheme == "http" &&
+                                (uri.Host == "localhost" || uri.Host == "127.0.0.1") &&
+                                uri.Port == 5500)
+                                return true;
+                            return uri.Scheme == "https" &&
+                                (uri.Host.Equals("gmachmanagement-client.pages.dev", StringComparison.OrdinalIgnoreCase) ||
+                                 uri.Host.EndsWith(".gmachmanagement-client.pages.dev", StringComparison.OrdinalIgnoreCase));
+                        })
                         .AllowAnyHeader()
                         .AllowAnyMethod();
                 });
@@ -108,6 +138,14 @@ namespace GmachManagement.API
 
 
             var app = builder.Build();
+
+            // Apply only pending PostgreSQL migrations before serving requests.
+            // Data stays loaded through reflection; API does not reference Data.
+            var migrationMethod = dependencyInjectionType.GetMethod(
+                "ApplyPostgreSqlMigrationsAsync", BindingFlags.Public | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Data migration runner not found.");
+            await (Task)(migrationMethod.Invoke(null, new object[] { app.Services, app.Configuration })
+                ?? throw new InvalidOperationException("Migration runner returned no task."));
 
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
@@ -125,7 +163,8 @@ namespace GmachManagement.API
 
             app.UseCors("ClientPolicy");
 
-            app.UseAuthentication();
+            app.UseRateLimiter();
+app.UseAuthentication();
             app.UseAuthorization();
 
 

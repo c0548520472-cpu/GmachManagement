@@ -31,7 +31,7 @@ public class ItemRepository : IItemRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.Items.AsNoTracking().AsQueryable();
+        var query = _context.Items.AsNoTracking().Where(i => i.IsActive).AsQueryable();
 
         if (categoryId.HasValue)
         {

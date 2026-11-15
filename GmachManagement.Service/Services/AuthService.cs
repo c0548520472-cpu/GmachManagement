@@ -28,12 +28,36 @@ namespace GmachManagement.Service.Services
             _configuration = configuration;
         }
 
+        public async Task<(string? Name,string? Email,bool IsOwner,string? GmachName,string? City,string? GmachType)> GetProfileAsync(int userId,CancellationToken ct=default)
+        {
+            var user=await _userRepository.GetByIdAsync(userId,ct);
+            if(user==null)return (null,null,false,null,null,null);
+            var gmach=await _userRepository.GetOwnedGmachAsync(userId,ct);
+            return (user.Name,user.Email,gmach!=null||user.Role==UserRole.GmachAdmin,gmach?.Name,gmach?.City,gmach?.Type);
+        }
+        public async Task<(string? Token,string? Error)> UpdateProfileAsync(int userId,string name,string email,string currentPassword,string? newPassword,bool isOwner,string? gmachName,string? city,string? gmachType,CancellationToken ct=default)
+        {
+            var user=await _userRepository.GetByIdAsync(userId,ct);
+            if(user==null||!_passwordService.VerifyPassword(user,currentPassword))return (null,"הסיסמה הנוכחית שגויה.");
+            if(string.Equals(user.Email,_configuration["SiteAdmin:BootstrapEmail"],StringComparison.OrdinalIgnoreCase) &&
+               !string.Equals(user.Email,email.Trim(),StringComparison.OrdinalIgnoreCase))
+                return (null,"שינוי כתובת המנהלת הראשית מחייב עדכון בהגדרות השרת.");
+            if(string.IsNullOrWhiteSpace(name)||string.IsNullOrWhiteSpace(email))return (null,"יש להזין שם וכתובת מייל.");
+            if(isOwner&&(string.IsNullOrWhiteSpace(gmachName)||string.IsNullOrWhiteSpace(city)))return (null,"יש להזין שם גמ״ח ועיר.");
+            if(newPassword!=null&&(newPassword.Length<8||newPassword.Length>128))return (null,"הסיסמה החדשה חייבת להכיל 8 עד 128 תווים.");
+            var newHash=newPassword==null?null:_passwordService.HashPassword(user,newPassword);
+            var result=await _userRepository.UpdateProfileAsync(userId,name.Trim(),email.Trim().ToLowerInvariant(),newHash,isOwner,gmachName?.Trim(),city?.Trim(),gmachType?.Trim(),ct);
+            if(result.Error!=null)return (null,result.Error);
+            var token=await LoginAsync(new LoginDto{Email=email.Trim(),Password=newPassword??currentPassword},ct);
+            return (token,token==null?"יש להתחבר מחדש.":null);
+        }
+
         public async Task<string?> LoginAsync(
             LoginDto request,
             CancellationToken cancellationToken = default)
         {
             var user = await _userRepository.GetByEmailAsync(
-                request.Email,
+                request.Email.Trim().ToLowerInvariant(),
                 cancellationToken);
 
             if (user == null ||
@@ -54,12 +78,17 @@ namespace GmachManagement.Service.Services
                 ?? throw new InvalidOperationException(
                     "JWT Audience is missing.");
 
-            var claims = new[]
+            var isSiteAdmin = user.Role == UserRole.SiteAdmin ||
+                string.Equals(user.Email, _configuration["SiteAdmin:BootstrapEmail"], StringComparison.OrdinalIgnoreCase);
+            var claims = new List<Claim>
             {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role.ToString())
-                };
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, isSiteAdmin ? UserRole.SiteAdmin.ToString() : user.Role.ToString())
+            };
+            if (isSiteAdmin && (user.Role == UserRole.GmachAdmin ||
+                await _userRepository.GetOwnedGmachAsync(user.Id, cancellationToken) != null))
+                claims.Add(new Claim(ClaimTypes.Role, UserRole.GmachAdmin.ToString()));
 
             var signingKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtKey));
@@ -78,9 +107,13 @@ namespace GmachManagement.Service.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public async Task<bool> RegisterAsync(
+        public Task<bool> RegisterAsync(RegisterDto request,CancellationToken cancellationToken=default)=>RegisterInternalAsync(request,null,cancellationToken);
+        private Task<bool> RegisterInternalAsync(RegisterDto request,string? recoveryHash,CancellationToken cancellationToken)
+            => RegisterImplAsync(request,recoveryHash,cancellationToken);
+        private async Task<bool> RegisterImplAsync(
             RegisterDto request,
-            CancellationToken cancellationToken = default)
+            string? recoveryHash,
+            CancellationToken cancellationToken)
         {
             var existingUser = await _userRepository.GetByEmailAsync(
                 request.Email,
@@ -92,23 +125,26 @@ namespace GmachManagement.Service.Services
             }
 
 
+            if (request.IsGmachOwner && (string.IsNullOrWhiteSpace(request.GmachName) || string.IsNullOrWhiteSpace(request.City)))
+                throw new ArgumentException("Gmach name and city are required for owners.");
+
             var user = new User
             {
                 Name = request.Name.Trim(),
                 Email = request.Email.Trim().ToLowerInvariant(),
-                Role = UserRole.User
+                Role = request.IsGmachOwner ? UserRole.GmachAdmin : UserRole.User,
+                RecoveryCodeHash = recoveryHash
             };
 
             user.PasswordHash = _passwordService.HashPassword(
                 user,
                 request.Password);
 
-            await _userRepository.AddAsync(user, cancellationToken);
+            if (request.IsGmachOwner)
+                await _userRepository.AddWithGmachAsync(user, new Gmach { Name = request.GmachName!.Trim(), City = request.City!.Trim() }, cancellationToken);
+            else
+                await _userRepository.AddAsync(user, cancellationToken);
 
-            return true;
-
-
-            await _userRepository.AddAsync(user, cancellationToken);
             return true;
 
         }

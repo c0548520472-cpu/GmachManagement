@@ -47,7 +47,8 @@ namespace GmachManagement.Data.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -74,6 +75,20 @@ namespace GmachManagement.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GmachManagement.Core.Entities.Gmach", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Name").IsRequired().HasMaxLength(150).HasColumnType("nvarchar(150)");
+                    b.Property<string>("City").IsRequired().HasMaxLength(100).HasColumnType("nvarchar(100)");
+                    b.Property<string>("Type").IsRequired().HasMaxLength(100).HasDefaultValue("").HasColumnType("nvarchar(100)");
+                    b.Property<string>("Description").HasColumnType("nvarchar(max)");
+                    b.Property<int>("OwnerId").HasColumnType("int");
+                    b.HasKey("Id");
+                    b.HasIndex("OwnerId").IsUnique();
+                    b.ToTable("Gmachs");
+                });
+
             modelBuilder.Entity("GmachManagement.Core.Entities.Item", b =>
                 {
                     b.Property<int>("Id")
@@ -86,6 +101,8 @@ namespace GmachManagement.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("GmachId").HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -94,6 +111,8 @@ namespace GmachManagement.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("GmachId");
 
                     b.ToTable("Items");
 
@@ -181,6 +200,23 @@ namespace GmachManagement.Data.Migrations
                     b.ToTable("Loans");
                 });
 
+            modelBuilder.Entity("GmachManagement.Core.Entities.ManagedLoan", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<int>("GmachId").HasColumnType("int");
+                    b.Property<int>("ItemCopyId").HasColumnType("int");
+                    b.Property<string>("BorrowerName").IsRequired().HasMaxLength(150).HasColumnType("nvarchar(150)");
+                    b.Property<string>("BorrowerPhone").HasMaxLength(30).HasColumnType("nvarchar(30)");
+                    b.Property<string>("BorrowerEmail").HasMaxLength(254).HasColumnType("nvarchar(254)");
+                    b.Property<DateTime>("BorrowedAt").HasColumnType("datetime2");
+                    b.Property<DateTime?>("ReturnedAt").HasColumnType("datetime2");
+                    b.HasKey("Id");
+                    b.HasIndex("GmachId");
+                    b.HasIndex("ItemCopyId");
+                    b.ToTable("ManagedLoans");
+                });
+
             modelBuilder.Entity("GmachManagement.Core.Entities.PersonalTransaction", b =>
                 {
                     b.Property<int>("Id")
@@ -237,6 +273,8 @@ namespace GmachManagement.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RecoveryCodeHash").HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -272,6 +310,25 @@ namespace GmachManagement.Data.Migrations
                         .HasForeignKey("ItemsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GmachManagement.Core.Entities.Gmach", b =>
+                {
+                    b.HasOne("GmachManagement.Core.Entities.User", "Owner")
+                        .WithOne("OwnedGmach")
+                        .HasForeignKey("GmachManagement.Core.Entities.Gmach", "OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("GmachManagement.Core.Entities.Item", b =>
+                {
+                    b.HasOne("GmachManagement.Core.Entities.Gmach", "Gmach")
+                        .WithMany("Items")
+                        .HasForeignKey("GmachId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                    b.Navigation("Gmach");
                 });
 
             modelBuilder.Entity("GmachManagement.Core.Entities.ItemCopy", b =>
@@ -315,6 +372,11 @@ namespace GmachManagement.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("GmachManagement.Core.Entities.Gmach", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("GmachManagement.Core.Entities.Item", b =>
                 {
                     b.Navigation("Copies");
@@ -327,6 +389,7 @@ namespace GmachManagement.Data.Migrations
 
             modelBuilder.Entity("GmachManagement.Core.Entities.User", b =>
                 {
+                    b.Navigation("OwnedGmach");
                     b.Navigation("Loans");
 
                     b.Navigation("PersonalTransactions");

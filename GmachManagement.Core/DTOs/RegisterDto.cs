@@ -17,6 +17,10 @@ public class RegisterDto
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
 
+    public bool IsGmachOwner { get; set; }
+    [StringLength(150)] public string? GmachName { get; set; }
+    [StringLength(100)] public string? City { get; set; }
+
     [Required]
     [MinLength(8)]
     public string Password { get; set; } = string.Empty;

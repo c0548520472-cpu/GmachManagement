@@ -14,15 +14,41 @@ namespace GmachManagement.API.Controllers
 
     public class LoansController : ControllerBase
     {
+        [HttpPost("{loanId:int}/admin-return")]
+        [Authorize(Roles = "GmachAdmin")]
+        public async Task<IActionResult> AdminReturn(int loanId, CancellationToken ct)
+        {
+            if (!await _gmachService.OwnsLoanAsync(CurrentOwnerId, loanId, ct)) return Forbid();
+            return await _loanService.ReturnAsAdminAsync(loanId, ct) ? NoContent() : NotFound();
+        }
+
+        [HttpPut("{loanId:int}/due-date")]
+        [Authorize(Roles = "GmachAdmin")]
+        public async Task<IActionResult> ChangeDueDate(int loanId, [FromBody] ChangeDueDateDto request, CancellationToken ct)
+        {
+            if (!await _gmachService.OwnsLoanAsync(CurrentOwnerId, loanId, ct)) return Forbid();
+            if (request.ExpectedReturnDate <= DateTime.UtcNow) return BadRequest();
+            return await _loanService.ChangeReturnDateAsync(loanId, request.ExpectedReturnDate, ct) ? NoContent() : NotFound();
+        }
+
+        public sealed class ChangeDueDateDto
+        {
+            public DateTime ExpectedReturnDate { get; set; }
+        }
+
+        private readonly GmachManagement.Service.Services.GmachService _gmachService;
+        private int CurrentOwnerId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         private readonly ILoanService _loanService;
         private readonly IMapper _mapper;
 
         public LoansController(
             ILoanService loanService,
-            IMapper mapper)
+            IMapper mapper,
+            GmachManagement.Service.Services.GmachService gmachService)
         {
             _loanService = loanService;
             _mapper = mapper;
+            _gmachService = gmachService;
         }
 
 
@@ -34,7 +60,9 @@ namespace GmachManagement.API.Controllers
             var loans = await _loanService.GetActiveLoansAsync(
                 cancellationToken);
 
-            return Ok(_mapper.Map<List<LoanDto>>(loans));
+            var mine = new List<GmachManagement.Core.Entities.Loan>();
+            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
+            return Ok(_mapper.Map<List<LoanDto>>(mine));
         }
 
         [HttpGet("overdue")]
@@ -45,7 +73,9 @@ namespace GmachManagement.API.Controllers
             var loans = await _loanService.GetOverdueLoansAsync(
                 cancellationToken);
 
-            return Ok(_mapper.Map<List<LoanDto>>(loans));
+            var mine = new List<GmachManagement.Core.Entities.Loan>();
+            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
+            return Ok(_mapper.Map<List<LoanDto>>(mine));
         }
 
         [HttpGet("my/active")]
@@ -86,6 +116,14 @@ namespace GmachManagement.API.Controllers
                 cancellationToken);
 
             var result = _mapper.Map<List<LoanDto>>(loans);
+            for (var i = 0; i < loans.Count; i++)
+            {
+                var item = loans[i].ItemCopy?.Item;
+                result[i].ItemName = item?.Name;
+                result[i].GmachName = item?.Gmach?.Name;
+                result[i].GmachCity = item?.Gmach?.City;
+                result[i].GmachDescription = item?.Gmach?.Description;
+            }
 
             return Ok(result);
         }
@@ -100,7 +138,9 @@ namespace GmachManagement.API.Controllers
             var loans = await _loanService.GetAllLoansAsync(
                 cancellationToken);
 
-            var result = _mapper.Map<List<LoanDto>>(loans);
+            var mine = new List<GmachManagement.Core.Entities.Loan>();
+            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
+            var result = _mapper.Map<List<LoanDto>>(mine);
 
             return Ok(result);
         }
@@ -111,6 +151,8 @@ namespace GmachManagement.API.Controllers
             [FromBody] BorrowItemDto request,
             CancellationToken cancellationToken)
         {
+            return StatusCode(410, new { message = "יש לשלוח בקשת השאלה. רק בעל הגמ״ח יכול לסמן פריט כהושאל." });
+#pragma warning disable CS0162
             var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdValue, out int userId) || userId <= 0)
@@ -137,6 +179,7 @@ namespace GmachManagement.API.Controllers
             var result = _mapper.Map<LoanDto>(loan);
 
             return StatusCode(201, result);
+#pragma warning restore CS0162
         }
 
         [HttpPost("{loanId:int}/return")]

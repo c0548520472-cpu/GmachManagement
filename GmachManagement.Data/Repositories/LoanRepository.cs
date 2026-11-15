@@ -13,6 +13,23 @@ namespace GmachManagement.Data.Repositories
 {
     public class LoanRepository : ILoanRepository
     {
+        public async Task<bool> ReturnAsAdminAsync(int loanId, CancellationToken ct)
+        {
+            var loan = await _context.Loans.AsNoTracking().FirstOrDefaultAsync(l => l.Id == loanId, ct);
+            if (loan is null) return false;
+            if (loan.ActualReturnDate is not null) return true;
+            return await ReturnItemAsync(loanId, loan.UserId, ct);
+        }
+
+        public async Task<bool> ChangeReturnDateAsync(int loanId, DateTime date, CancellationToken ct)
+        {
+            var loan = await _context.Loans.FirstOrDefaultAsync(l => l.Id == loanId, ct);
+            if (loan is null || loan.ActualReturnDate is not null) return false;
+            loan.ExpectedReturnDate = date;
+            await _context.SaveChangesAsync(ct);
+            return true;
+        }
+
         private readonly AppDbContext _context;
 
         public LoanRepository(AppDbContext context)
@@ -65,6 +82,9 @@ namespace GmachManagement.Data.Repositories
             return await _context.Loans
                 .AsNoTracking()
                 .Where(loan => loan.UserId == userId)
+                .Include(loan => loan.ItemCopy)
+                    .ThenInclude(copy => copy.Item)
+                        .ThenInclude(item => item.Gmach)
                 .OrderByDescending(loan => loan.LoanDate)
                 .ToListAsync(cancellationToken);
         }

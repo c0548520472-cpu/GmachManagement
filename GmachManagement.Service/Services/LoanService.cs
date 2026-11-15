@@ -10,6 +10,8 @@ namespace GmachManagement.Service.Services
 {
     public class LoanService : ILoanService
     {
+        public Task<bool> ReturnAsAdminAsync(int loanId, CancellationToken ct) => _loanRepository.ReturnAsAdminAsync(loanId, ct);
+        public Task<bool> ChangeReturnDateAsync(int loanId, DateTime date, CancellationToken ct) => _loanRepository.ChangeReturnDateAsync(loanId, date, ct);
         private readonly ILoanRepository _loanRepository;
 
         public LoanService(ILoanRepository loanRepository)

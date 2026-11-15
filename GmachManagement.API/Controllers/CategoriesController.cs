@@ -5,6 +5,7 @@ using GmachManagement.Core.Entities;
 using GmachManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using GmachManagement.Core.Exceptions;
 
 
@@ -16,20 +17,28 @@ namespace GmachManagement.API.Controllers;
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _service;
+    private readonly IMemoryCache _cache;
 
-    public CategoriesController(ICategoryService service)
+    public CategoriesController(ICategoryService service, IMemoryCache cache)
     {
         _service = service;
+        _cache = cache;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll(
         CancellationToken ct)
     {
-        var categories = await _service.GetAllAsync(ct);
-        return Ok(categories.Select(ToDto).ToList());
+        var categories = await _cache.GetOrCreateAsync("public-categories", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20);
+            return (await _service.GetAllAsync(ct)).Select(ToDto).ToList();
+        });
+        return Ok(categories);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CategoryDto>> GetById(
         int id,
@@ -57,6 +66,7 @@ public class CategoriesController : ControllerBase
         {
             var category = await _service.CreateAsync(dto.Name, ct);
 
+            _cache.Remove("public-categories");
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = category.Id },
@@ -83,6 +93,7 @@ public class CategoriesController : ControllerBase
         try
         {
             var updated = await _service.UpdateAsync(id, dto.Name, ct);
+            if (updated) _cache.Remove("public-categories");
             return updated ? NoContent() : NotFound();
         }
         catch (DuplicateCategoryNameException ex)
@@ -107,6 +118,7 @@ public class CategoriesController : ControllerBase
     {
         var deleted = await _service.DeleteAsync(id, ct);
 
+        if (deleted) _cache.Remove("public-categories");
         return deleted ? NoContent() : NotFound();
     }
 
