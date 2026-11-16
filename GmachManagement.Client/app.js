@@ -40,8 +40,32 @@ function renderWelcomeName() {
 }
 
 function showMessage(element, message, type = "") {
-    element.textContent = message;
     element.className = `message ${type}`;
+    if (type === "loading") element.replaceChildren(createDataLoader(message));
+    else element.textContent = message;
+}
+
+function createDataLoader(message) {
+    const status = document.createElement("span");
+    status.className = "data-loading";
+    status.setAttribute("role", "status");
+
+    const motion = document.createElement("span");
+    motion.className = "pac-loader";
+    motion.setAttribute("aria-hidden", "true");
+
+    const trail = document.createElement("span");
+    trail.className = "pac-pellets";
+    trail.append(document.createElement("i"), document.createElement("i"), document.createElement("i"));
+
+    const mouth = document.createElement("span");
+    mouth.className = "pac-mouth";
+    motion.append(trail, mouth);
+
+    const label = document.createElement("span");
+    label.textContent = message;
+    status.append(motion, label);
+    return status;
 }
 
 function showDashboard() {
@@ -123,22 +147,6 @@ if (!allowsDirectoryStorage()) {
 }
 if (cookiePreference === null) openCookieNotice();
 
-const dataLoading = document.getElementById("dataLoading");
-let activeLoads = 0;
-let loaderTimer;
-async function withDataLoading(operation) {
-    if (++activeLoads === 1) {
-        loaderTimer = setTimeout(() => { dataLoading.hidden = false; }, 180);
-    }
-    try {
-        return await operation();
-    } finally {
-        if (--activeLoads === 0) {
-            clearTimeout(loaderTimer);
-            dataLoading.hidden = true;
-        }
-    }
-}
 const DIRECTORY_SNAPSHOT_MS = 5 * 60 * 1000;
 function readDirectorySnapshot() {
     if (!allowsDirectoryStorage()) return null;
@@ -189,11 +197,7 @@ async function apiRequest(path, options = {}) {
     publicPendingRequests.set(cacheKey, request);
     return request;
 }
-function requestFromServer(path, options) {
-    return withDataLoading(() => fetchFromServer(path, options));
-}
-
-async function fetchFromServer(path, options = {}) {
+async function requestFromServer(path, options = {}) {
     const headers = new Headers(options.headers || {});
 
     // Public directory endpoints must work without login or an expired saved token.
@@ -403,7 +407,7 @@ async function loadItems() {
         renderItems(cachedItems.value);
         showMessage(itemsMessage, "");
     } else if (!currentItems.length) {
-        showMessage(itemsMessage, "טוען פריטים...");
+        showMessage(itemsMessage, "טוען פריטים...", "loading");
     }
 
     try {
@@ -1120,9 +1124,7 @@ async function findGmachs() {
  const list = document.getElementById("gmachList");
  const term = document.getElementById("unifiedGmachSearch").value.trim();
  const snapshot = term ? null : readDirectorySnapshot();
- const status = document.createElement("p");
- status.setAttribute("role", "status");
- status.textContent = snapshot ? "מעדכן את רשימת הגמ״חים..." : "טוען גמ״חים...";
+ const status = createDataLoader(snapshot ? "מעדכן את רשימת הגמ״חים…" : "טוען גמ״חים…");
  if (snapshot) {
   renderGmachDirectory(list, snapshot);
   list.prepend(status);
@@ -1148,8 +1150,7 @@ function showGmach(id){
 async function renderGmach(id){
  const sequence = ++gmachDetailsSequence;
  const container=document.getElementById("gmachDetails");
- const loading=document.createElement("p");loading.setAttribute("role","status");loading.textContent="טוען את פריטי הגמ״ח...";
- container.replaceChildren(loading);
+ container.replaceChildren(createDataLoader("טוען את פריטי הגמ״ח…"));
  try {const g=await apiRequest("/gmachs/"+id);if(sequence!==gmachDetailsSequence)return;const section=document.createElement("section");section.className="gmach-content";
  const grid=document.createElement("div");grid.className="gmach-items-grid";
  const title=document.createElement("h2");title.textContent=g.name+" — "+normalizeCity(g.city);section.append(title);
@@ -1173,7 +1174,7 @@ showPage(["login","account","owner","profile","gmach","siteAdmin","about","priva
 document.getElementById("excelImportForm").addEventListener("submit",async event=>{
  event.preventDefault();const file=document.getElementById("excelFile").files[0];if(!file)return;
  const form=new FormData();form.append("file",file);
- try{const response=await withDataLoading(() => fetch(API_BASE+"/gmachs/mine/import",{method:"POST",headers:{Authorization:"Bearer "+token},body:form}));
+ try{const response=await fetch(API_BASE+"/gmachs/mine/import",{method:"POST",headers:{Authorization:"Bearer "+token},body:form});
  const result=await response.json();if(!response.ok)throw new Error(result.message||"ייבוא נכשל");
  clearPublicData();
  showMessage(document.getElementById("adminMessage"),"יובאו "+result.imported+" פריטים בהצלחה","success");await refreshAdmin();await loadItems();await findGmachs();
@@ -1309,7 +1310,7 @@ async function adminPerform(path,options,success) {
 }
 async function loadSiteAdmin(keepMessage=false) {
     if(!isSiteAdminToken())return;
-    if(!keepMessage)showMessage(siteAdminMessage,"טוען נתוני ניהול...");
+    if(!keepMessage)showMessage(siteAdminMessage,"טוען נתוני ניהול...", "loading");
     try {
         const [users,gmachs,items]=await Promise.all([
             apiRequest("/site-admin/users"),
@@ -1437,7 +1438,7 @@ async function loadSiteAdminOpenLoans(result = "") {
     const message = document.getElementById("siteAdminOpenLoansMessage");
     list.replaceChildren();
     updateOpenLoanControls();
-    showMessage(message, "טוען השאלות פתוחות...");
+    showMessage(message, "טוען השאלות פתוחות...", "loading");
     try {
         const loans = await apiRequest("/site-admin/open-loans");
         if (token !== adminToken) return;
