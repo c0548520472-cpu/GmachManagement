@@ -898,7 +898,10 @@ function showPage(page, push = true) {
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); }
     if (page === "owner") refreshAdmin();
     if (page === "profile") loadProfile();
-    if (page === "siteAdmin") loadSiteAdmin();
+    if (page === "siteAdmin") {
+        loadSiteAdmin();
+        loadSiteAdminOpenLoans();
+    }
     window.scrollTo({top:0,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
 }
 function showHome() { showPage("home"); }
@@ -1315,3 +1318,82 @@ function filterSiteAdminUsers(){
     document.getElementById("siteAdminUserCount").textContent="מוצגים "+visible+" מתוך "+rows.length+" משתמשים";
 }
 document.getElementById("siteAdminUserSearch").addEventListener("input",filterSiteAdminUsers);
+
+function updateOpenLoanControls() {
+    const checkboxes = [...document.querySelectorAll("#siteAdminOpenLoans input")];
+    const selected = checkboxes.filter(box => box.checked).length;
+    const all = document.getElementById("siteAdminSelectOpenLoans");
+    all.disabled = checkboxes.length === 0;
+    all.checked = selected > 0 && selected === checkboxes.length;
+    all.indeterminate = selected > 0 && selected < checkboxes.length;
+    document.getElementById("siteAdminDeleteOpenLoans").disabled = selected === 0;
+    document.getElementById("siteAdminDeleteAllOpenLoans").disabled = all.disabled;
+}
+
+async function loadSiteAdminOpenLoans(result = "") {
+    const adminToken = token;
+    const list = document.getElementById("siteAdminOpenLoans");
+    const message = document.getElementById("siteAdminOpenLoansMessage");
+    list.replaceChildren();
+    updateOpenLoanControls();
+    showMessage(message, "טוען השאלות פתוחות...");
+    try {
+        const loans = await apiRequest("/site-admin/open-loans");
+        if (token !== adminToken) return;
+        for (const loan of loans) {
+            const row = document.createElement("label");
+            row.className = "site-admin-select-label";
+            const box = document.createElement("input");
+            box.type = "checkbox";
+            box.className = "site-admin-select";
+            box.dataset.id = loan.id;
+            box.dataset.kind = loan.kind;
+            box.addEventListener("change", updateOpenLoanControls);
+            const date = new Date(loan.borrowedAt).toLocaleDateString("he-IL");
+            row.append(box, document.createTextNode(
+                `${loan.itemName} · ${loan.borrowerName} · ${date} · השאלה מס׳ ${loan.id}`
+            ));
+            list.append(row);
+        }
+        updateOpenLoanControls();
+        showMessage(message, [result, loans.length ? "" : "אין השאלות פתוחות."].filter(Boolean).join(" "), result ? "success" : undefined);
+    } catch (error) {
+        if (token === adminToken) showMessage(message, error.message, "error");
+    }
+}
+
+async function deleteSiteAdminOpenLoans(all) {
+    const boxes = [...document.querySelectorAll("#siteAdminOpenLoans input")];
+    const loans = boxes.filter(box => all || box.checked).map(box => ({
+        id: Number(box.dataset.id), kind: box.dataset.kind
+    }));
+    if (!loans.length || !window.confirm(
+        `למחוק לצמיתות ${loans.length} השאלות פתוחות? הפעולה אינה ניתנת לביטול.`
+    )) return;
+
+    const list = document.getElementById("siteAdminOpenLoans");
+    const message = document.getElementById("siteAdminOpenLoansMessage");
+    list.replaceChildren();
+    updateOpenLoanControls();
+    showMessage(message, "מוחק השאלות...");
+    try {
+        const { deleted } = await apiRequest("/site-admin/open-loans/delete", {
+            method: "POST",
+            body: JSON.stringify({ confirmed: true, all, loans })
+        });
+        if (isSiteAdminToken()) await loadSiteAdminOpenLoans(`נמחקו ${deleted} השאלות פתוחות.`);
+    } catch (error) {
+        if (!isSiteAdminToken()) return;
+        await loadSiteAdminOpenLoans();
+        showMessage(message, error.message, "error");
+    }
+}
+
+document.getElementById("siteAdminSelectOpenLoans").addEventListener("change", event => {
+    document.querySelectorAll("#siteAdminOpenLoans input").forEach(box => {
+        box.checked = event.target.checked;
+    });
+    updateOpenLoanControls();
+});
+document.getElementById("siteAdminDeleteOpenLoans").addEventListener("click", () => deleteSiteAdminOpenLoans(false));
+document.getElementById("siteAdminDeleteAllOpenLoans").addEventListener("click", () => deleteSiteAdminOpenLoans(true));

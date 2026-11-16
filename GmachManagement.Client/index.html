@@ -261,6 +261,16 @@
 <div class="site-admin-bulk-toolbar" id="siteAdminUsersBulk"><label><input type="checkbox" id="siteAdminSelectAllUsers"> בחירת כל המשתמשים הניתנים למחיקה</label><span id="siteAdminUsersSelectedCount">0 נבחרו</span><button id="siteAdminDeleteUsers" class="secondary" type="button" disabled>מחיקת משתמשים נבחרים</button></div>
 <div id="siteAdminUsers" class="site-admin-user-list"></div>
                 <h3>גמ״חים</h3><div class="site-admin-bulk-toolbar"><label><input type="checkbox" id="siteAdminSelectAllGmachs"> בחירת כל הגמ״חים</label><span id="siteAdminGmachsSelectedCount">0 נבחרו</span><button id="siteAdminDeleteGmachs" class="secondary" type="button" disabled>מחיקת גמ״חים נבחרים</button></div><div id="siteAdminGmachs" class="items-grid"></div>
+                <section aria-labelledby="siteAdminOpenLoansTitle">
+                    <h3 id="siteAdminOpenLoansTitle">ניהול השאלות פתוחות</h3>
+                    <div class="site-admin-bulk-toolbar">
+                        <label><input type="checkbox" id="siteAdminSelectOpenLoans" disabled> בחירת כל ההשאלות המוצגות</label>
+                        <button id="siteAdminDeleteOpenLoans" class="secondary" type="button" disabled>מחק השאלות נבחרות</button>
+                        <button id="siteAdminDeleteAllOpenLoans" class="secondary" type="button" disabled>מחק את כל ההשאלות הפתוחות</button>
+                    </div>
+                    <p id="siteAdminOpenLoansMessage" class="message" role="status"></p>
+                    <div id="siteAdminOpenLoans" class="site-admin-user-list"></div>
+                </section>
                 <h3>פריטים</h3><div class="site-admin-bulk-toolbar"><label><input type="checkbox" id="siteAdminSelectAllItems"> בחירת כל הפריטים</label><span id="siteAdminItemsSelectedCount">0 נבחרו</span><button id="siteAdminDeleteItems" class="secondary" type="button" disabled>מחיקת פריטים נבחרים</button></div><div id="siteAdminItems" class="items-grid"></div>
             </section>
         </section>
