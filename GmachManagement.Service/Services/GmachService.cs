@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
 using GmachManagement.Core.Interfaces;
 namespace GmachManagement.Service.Services;
@@ -9,6 +10,10 @@ public sealed class GmachService {
  public Task<bool> FulfillBorrowRequestAsync(int ownerId,int requestId,CancellationToken ct)=>repo.FulfillBorrowRequestAsync(ownerId,requestId,ct);
  public Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct)=>repo.SearchAsync(city,search,ct);
  public Task<List<Gmach>> SearchAsync(string? city,string? search,string? itemSearch,CancellationToken ct)=>repo.SearchAsync(city,search,itemSearch,ct);
+ public Task<List<Gmach>> SearchDirectoryAsync(string city, string term, CancellationToken ct)
+     => repo.SearchDirectoryAsync(city, term, ct);
+ public Task<PublicGmachDetailsDto?> GetPublicDetailsAsync(int id, CancellationToken ct)
+     => repo.GetPublicDetailsAsync(id, ct);
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>repo.GetAsync(id,ct);
  public Task<Gmach> CreateAsync(Gmach g,CancellationToken ct)=>repo.CreateAsync(g,ct);
  public Task<Gmach?> GetMineAsync(int ownerId,CancellationToken ct)=>repo.GetByOwnerAsync(ownerId,ct);

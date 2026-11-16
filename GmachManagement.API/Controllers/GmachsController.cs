@@ -12,23 +12,36 @@ public sealed class GmachsController : ControllerBase {
  private readonly IMemoryCache cache;
  public GmachsController(GmachService service, IMemoryCache cache){this.service=service;this.cache=cache;}
  private int UserId=>int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
- private static object Project(Gmach g)=>new {g.Id,g.Name,g.City,g.Description,Items=g.Items.Where(i=>i.IsActive).Select(i=>new {i.Id,i.Name,i.Description,i.IsActive,AvailableCopies=i.Copies.Count(c=>c.Status==GmachManagement.Core.Enums.ItemStatus.Available)})};
- [HttpGet,AllowAnonymous] public async Task<IActionResult> Search([FromQuery]string? city,[FromQuery]string? search,[FromQuery]string? itemSearch,CancellationToken ct){
-  var key="public-gmachs:"+city?.Trim()+":"+search?.Trim()+":"+itemSearch?.Trim();
-  var result=await cache.GetOrCreateAsync(key,async entry=>{
-   entry.AbsoluteExpirationRelativeToNow=TimeSpan.FromSeconds(20);
-   return (await service.SearchAsync(city,search,itemSearch,ct)).Select(g=>new {g.Id,g.Name,g.City,g.Description}).ToList();
+ [HttpGet,AllowAnonymous]
+ public async Task<IActionResult> Search(
+  [FromQuery]string? city, [FromQuery]string? search, [FromQuery]string? itemSearch,
+  [FromQuery]string? query, CancellationToken ct)
+ {
+  var term = query?.Trim();
+  var cityTerm = city?.Trim();
+  var key = ("public-gmachs", cityTerm, search?.Trim(), itemSearch?.Trim(), term);
+  var result = await cache.GetOrCreateAsync(key, async entry =>
+  {
+   entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20);
+   var gmachs = string.IsNullOrEmpty(term)
+    ? await service.SearchAsync(city, search, itemSearch, ct)
+    : await service.SearchDirectoryAsync(string.IsNullOrEmpty(cityTerm) ? term : cityTerm, term, ct);
+   return gmachs.Select(g => new {g.Id,g.Name,g.City,g.Description}).ToList();
   });
   return Ok(result);
  }
- [HttpGet("{id:int}"),AllowAnonymous] public async Task<IActionResult> Details(int id,CancellationToken ct){
-  var result=await cache.GetOrCreateAsync("public-gmach-details:"+id,async entry=>{
-   entry.AbsoluteExpirationRelativeToNow=TimeSpan.FromSeconds(10);
-   var g=await service.GetAsync(id,ct);
-   if(g==null){entry.AbsoluteExpirationRelativeToNow=TimeSpan.FromSeconds(2);return null;}
-   return Project(g);
+
+ [HttpGet("{id:int}"),AllowAnonymous]
+ public async Task<IActionResult> Details(int id, CancellationToken ct)
+ {
+  var result = await cache.GetOrCreateAsync(("public-gmach-details", id), async entry =>
+  {
+   entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(10);
+   var gmach = await service.GetPublicDetailsAsync(id, ct);
+   if (gmach == null) entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(2);
+   return gmach;
   });
-  return result==null?NotFound():Ok(result);
+  return result == null ? NotFound() : Ok(result);
  }
  [HttpPost("mine"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> CreateMine([FromBody]GmachDto dto,CancellationToken ct){

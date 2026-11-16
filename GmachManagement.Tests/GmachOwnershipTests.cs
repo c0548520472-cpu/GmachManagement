@@ -63,4 +63,40 @@ public class GmachOwnershipTests {
   Assert.True(await repo.OwnsItemAsync(101,101,CancellationToken.None));
   Assert.False(await repo.OwnsItemAsync(101,102,CancellationToken.None));
  }
+
+ [Fact]
+ public async Task PublicDirectoryMatchesCityNameAndAvailableInventoryInOneSearch()
+ {
+  await using var connection = new SqliteConnection("Data Source=:memory:");
+  await connection.OpenAsync();
+  var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+  await using var db = new TestDbContext(options);
+  await db.Database.EnsureCreatedAsync();
+
+  db.Gmachs.AddRange(Enumerable.Range(501, 4).Select(id => new Gmach
+  {
+   Id = id,
+   Owner = new User { Id = id, Name = "Owner", Email = $"owner-{id}@test.invalid" },
+   Name = id == 502 ? "Drill Gmach" : "Equipment",
+   City = id == 501 ? "Jerusalem" : "Haifa"
+  }));
+  db.Items.AddRange(
+   new Item { Id = 503, Name = "Drill", GmachId = 503, Copies =
+    [new ItemCopy { Status = ItemStatus.Available }, new ItemCopy { Status = ItemStatus.Borrowed }] },
+   new Item { Id = 504, Name = "Drill", GmachId = 504, Copies = [new ItemCopy { Status = ItemStatus.Borrowed }] },
+   new Item { Id = 505, Name = "Drill", GmachId = 503, IsActive = false, Copies =
+    [new ItemCopy { Status = ItemStatus.Available }] });
+  await db.SaveChangesAsync();
+
+  var repository = new GmachRepository(db);
+  var results = await repository.SearchDirectoryAsync("Jerusalem", "Drill", default);
+  Assert.Equal([501, 502, 503], results.Select(gmach => gmach.Id));
+
+  var details = await repository.GetPublicDetailsAsync(503, default);
+  Assert.NotNull(details);
+  var item = Assert.Single(details.Items);
+  Assert.Equal(503, item.Id);
+  Assert.Equal(1, item.AvailableCopies);
+  Assert.Null(await repository.GetPublicDetailsAsync(-1, default));
+ }
 }

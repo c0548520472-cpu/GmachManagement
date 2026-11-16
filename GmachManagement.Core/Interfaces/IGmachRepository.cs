@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
 namespace GmachManagement.Core.Interfaces;
 public interface IGmachRepository {
@@ -6,6 +7,8 @@ public interface IGmachRepository {
  Task<bool> FulfillBorrowRequestAsync(int ownerId,int requestId,CancellationToken ct);
  Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct);
  Task<List<Gmach>> SearchAsync(string? city,string? search,string? itemSearch,CancellationToken ct);
+ Task<List<Gmach>> SearchDirectoryAsync(string city, string term, CancellationToken ct);
+ Task<PublicGmachDetailsDto?> GetPublicDetailsAsync(int id, CancellationToken ct);
  Task<Gmach?> GetAsync(int id,CancellationToken ct);
  Task<Gmach?> GetByOwnerAsync(int ownerId,CancellationToken ct);
  Task<Gmach> CreateAsync(Gmach gmach,CancellationToken ct);

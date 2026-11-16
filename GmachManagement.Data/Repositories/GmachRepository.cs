@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
 using GmachManagement.Core.Interfaces;
 using GmachManagement.Data.Context;
@@ -36,6 +37,28 @@ public sealed class GmachRepository : IGmachRepository {
   if(!string.IsNullOrWhiteSpace(search)) q=q.Where(g=>g.Name.Contains(search.Trim()));
   if(!string.IsNullOrWhiteSpace(itemSearch)) q=q.Where(g=>g.Items.Any(i=>i.IsActive && i.Name.Contains(itemSearch.Trim()) && i.Copies.Any(c=>c.Status==GmachManagement.Core.Enums.ItemStatus.Available)));
   return q.OrderBy(g=>g.Name).ToListAsync(ct);
+ }
+ public Task<List<Gmach>> SearchDirectoryAsync(string city, string term, CancellationToken ct)
+ {
+  return db.Gmachs.AsNoTracking()
+   .Where(g => g.City.Contains(city) || g.Name.Contains(term) ||
+    g.Items.Any(item => item.IsActive && item.Name.Contains(term) &&
+     item.Copies.Any(copy => copy.Status == GmachManagement.Core.Enums.ItemStatus.Available)))
+   .OrderBy(g => g.City.Contains(city) ? 0 : g.Name.Contains(term) ? 1 : 2)
+   .ThenBy(g => g.Name)
+   .ThenBy(g => g.Id)
+   .ToListAsync(ct);
+ }
+ public Task<PublicGmachDetailsDto?> GetPublicDetailsAsync(int id, CancellationToken ct)
+ {
+  return db.Gmachs.AsNoTracking()
+   .Where(g => g.Id == id)
+   .Select(g => new PublicGmachDetailsDto(g.Id, g.Name, g.City, g.Description,
+    g.Items.Where(item => item.IsActive).OrderBy(item => item.Id)
+     .Select(item => new PublicGmachItemDto(item.Id, item.Name, item.Description, item.IsActive,
+      item.Copies.Count(copy => copy.Status == GmachManagement.Core.Enums.ItemStatus.Available)))
+     .ToList()))
+   .FirstOrDefaultAsync(ct);
  }
  public Task<Gmach?> GetAsync(int id,CancellationToken ct)=>db.Gmachs.AsNoTracking().AsSingleQuery().Include(g=>g.Items).ThenInclude(i=>i.Copies).FirstOrDefaultAsync(g=>g.Id==id,ct);
  public Task<Gmach?> GetByOwnerAsync(int ownerId,CancellationToken ct)=>db.Gmachs.AsNoTracking().FirstOrDefaultAsync(g=>g.OwnerId==ownerId,ct);
