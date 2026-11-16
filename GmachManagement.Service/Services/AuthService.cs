@@ -66,6 +66,55 @@ namespace GmachManagement.Service.Services
                 return null;
             }
 
+            return await IssueSessionAsync(user, cancellationToken);
+        }
+
+        public async Task<(string? Token, string? Error)> SignInWithGoogleAsync(
+            string subject, string email, string name, int? signedInUserId, CancellationToken ct)
+        {
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            var googleUserId = await _userRepository.GetGoogleUserIdAsync(subject, ct);
+            if (googleUserId > 0)
+            {
+                if (signedInUserId.HasValue && signedInUserId != googleUserId)
+                    return (null, "חשבון Google הזה כבר מקושר לחשבון אחר באתר.");
+                var linkedUser = await _userRepository.GetByIdAsync(googleUserId, ct);
+                return linkedUser == null
+                    ? (null, "לא ניתן להתחבר עם חשבון Google הזה.")
+                    : (await IssueSessionAsync(linkedUser, ct), null);
+            }
+
+            var existingUser = await _userRepository.GetByEmailAsync(normalizedEmail, ct);
+            if (existingUser != null)
+            {
+                if (existingUser.Id != signedInUserId)
+                    return (null, "כתובת המייל כבר רשומה. התחבר בסיסמה וקשר את Google דרך הפרטים שלי.");
+                await _userRepository.SaveGoogleIdentityAsync(existingUser, subject, ct);
+                return (await IssueSessionAsync(existingUser, ct), null);
+            }
+
+            if (signedInUserId.HasValue)
+                return (null, "כדי לקשר חשבון Google יש לבחור בכתובת האימייל של החשבון באתר.");
+
+            if (string.Equals(normalizedEmail, _configuration["SiteAdmin:BootstrapEmail"], StringComparison.OrdinalIgnoreCase) ||
+                await _userRepository.RequiresReRegistrationApprovalAsync(normalizedEmail, ct))
+                return (null, "החשבון הזה מחייב הרשמה מאושרת לפני התחברות דרך Google.");
+
+            var displayName = string.IsNullOrWhiteSpace(name) ? normalizedEmail : name.Trim();
+            var user = new User
+            {
+                Email = normalizedEmail,
+                Name = displayName[..Math.Min(100, displayName.Length)],
+                Role = UserRole.User
+            };
+            user.PasswordHash = _passwordService.HashPassword(user,
+                Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
+            await _userRepository.SaveGoogleIdentityAsync(user, subject, ct);
+            return (await IssueSessionAsync(user, ct), null);
+        }
+
+        private async Task<string> IssueSessionAsync(User user, CancellationToken cancellationToken)
+        {
             var jwtKey = _configuration["Jwt:Key"]
                 ?? throw new InvalidOperationException(
                     "JWT Key is missing.");

@@ -11,6 +11,8 @@ namespace GmachManagement.Core.Interfaces
     {
         Task<(string? Name,string? Email,bool IsOwner,string? GmachName,string? City,string? GmachType)> GetProfileAsync(int userId,CancellationToken cancellationToken=default);
         Task<(string? Token,string? Error)> UpdateProfileAsync(int userId,string name,string email,string currentPassword,string? newPassword,bool isOwner,string? gmachName,string? city,string? gmachType,CancellationToken cancellationToken=default);
+        Task<(string? Token, string? Error)> SignInWithGoogleAsync(
+            string subject, string email, string name, int? signedInUserId, CancellationToken ct);
         Task<string?> LoginAsync(
             LoginDto request,
             CancellationToken cancellationToken = default);

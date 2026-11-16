@@ -11,6 +11,8 @@ namespace GmachManagement.Core.Interfaces
     {
         Task<bool> RequiresReRegistrationApprovalAsync(string email,CancellationToken ct=default);
         Task<bool> RequestReRegistrationAsync(string email,CancellationToken ct=default);
+        Task<int> GetGoogleUserIdAsync(string subject, CancellationToken ct);
+        Task SaveGoogleIdentityAsync(User user, string subject, CancellationToken ct);
         Task<User?> GetByEmailAsync(
             string email,
             CancellationToken cancellationToken = default);

@@ -19,6 +19,26 @@ namespace GmachManagement.Data.Repositories
             _context = context;
         }
 
+        public Task<int> GetGoogleUserIdAsync(string subject, CancellationToken ct)
+            => _context.Database.SqlQuery<int>($"""
+                SELECT "UserId" AS "Value" FROM "GoogleIdentities" WHERE "Subject" = {subject}
+                """).SingleOrDefaultAsync(ct);
+
+        public async Task SaveGoogleIdentityAsync(User user, string subject, CancellationToken ct)
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            if (user.Id == 0)
+            {
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync(ct);
+            }
+
+            await _context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GoogleIdentities" ("UserId", "Subject") VALUES ({user.Id}, {subject})
+                """, ct);
+            await transaction.CommitAsync(ct);
+        }
+
         public async Task<(User? User, string? Error)> UpdateProfileAsync(int userId,string name,string email,string? passwordHash,bool isOwner,string? gmachName,string? city,string? gmachType,CancellationToken ct=default)
         {
             await using var transaction=await _context.Database.BeginTransactionAsync(ct);
