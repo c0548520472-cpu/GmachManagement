@@ -18,6 +18,8 @@ let selectedCopyId = null;
 let gmachSearchSequence = 0;
 let gmachDetailsSequence = 0;
 let activeChat = null;
+let selectedChatGmach = null;
+let openChatOnGmachLoad = null;
 let chatTimer = null;
 let approvalPending = false;
 let openApprovalId = null;
@@ -997,6 +999,9 @@ function showPage(page, push = true) {
     }
     if (page === "home") { findGmachs(); }
     if (page === "gmach") { const id=Number(new URLSearchParams(location.search).get("gmach")); if(Number.isInteger(id)&&id>0)renderGmach(id);else showPage("home",true); }
+    selectedChatGmach = null;
+    if (page !== "gmach") openChatOnGmachLoad = null;
+    document.getElementById("floatingGmachChat").classList.remove("is-gmach");
     const chat = document.getElementById("gmachChat");
     if (chat.open) chat.close();
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); loadBorrowApprovals(); }
@@ -1152,16 +1157,16 @@ async function renderGmach(id){
  const sequence = ++gmachDetailsSequence;
  const container=document.getElementById("gmachDetails");
  container.replaceChildren(createDataLoader("טוען את פריטי הגמ״ח…"));
- try {const g=await apiRequest("/gmachs/"+id);if(sequence!==gmachDetailsSequence)return;const section=document.createElement("section");section.className="gmach-content";
+ try {const g=await apiRequest("/gmachs/"+id);if(sequence!==gmachDetailsSequence || document.getElementById("gmachPage").hidden)return;const section=document.createElement("section");section.className="gmach-content";
  const grid=document.createElement("div");grid.className="gmach-items-grid";
  const title=document.createElement("h2");title.textContent=g.name+" — "+normalizeCity(g.city);section.append(title);
  const desc=document.createElement("p");desc.textContent=g.description||"";section.append(desc);
- const chatButton = document.createElement("button");
- chatButton.type = "button";
- chatButton.className = "secondary gmach-chat-launch";
- chatButton.textContent = "צ׳אט עם בעל הגמ״ח";
- chatButton.addEventListener("click", () => token ? openCustomerChat(g) : showLogin());
- section.append(chatButton);
+ selectedChatGmach = g;
+ document.getElementById("floatingGmachChat").classList.add("is-gmach");
+ if (openChatOnGmachLoad === id) {
+  openChatOnGmachLoad = null;
+  if (token) openCustomerChat(g);
+ }
  for(const item of g.items.filter(item=>item.isActive&&item.availableCopies>0)){const card=document.createElement("article");card.className="item-card";
  const name=document.createElement("h3");name.textContent=item.name;
  const info=document.createElement("p");info.textContent=(item.description||"")+" | עותקים זמינים: "+item.availableCopies;
@@ -1581,7 +1586,7 @@ function openCustomerChat(gmach) {
         button.type = "button";
         button.className = "secondary";
         button.textContent = item.name;
-        button.addEventListener("click", () => sendChatMessage(chat, {itemId: item.id}));
+        button.addEventListener("click", () => sendChatMessage(chat, {itemId: item.id}, item.name));
         choices.append(button);
     }
     startChat(chat);
@@ -1631,23 +1636,31 @@ function startChat(chat) {
 }
 
 async function refreshChat(chat) {
-    if (chat.reading || activeChat !== chat || chat.token !== token || document.hidden) return;
+    if (chat.reading || chat.sending || activeChat !== chat || chat.token !== token || document.hidden) return;
     chat.reading = true;
     const messages = document.getElementById("gmachChatMessages");
     const status = document.getElementById("gmachChatStatus");
     try {
         const result = await apiRequest(chatPath(chat));
-        if (activeChat !== chat || chat.token !== token) return;
-        const newest = result.at(-1)?.id ?? null;
-        if (chat.newest !== newest) {
-            chat.newest = newest;
-            messages.replaceChildren(...result.map(message => {
-                const entry = document.createElement("p");
-                entry.className = message.mine ? "chat-message chat-message-mine" : "chat-message";
-                entry.textContent = message.text;
-                return entry;
-            }));
-            messages.scrollTop = messages.scrollHeight;
+        if (chat.sending || activeChat !== chat || chat.token !== token || document.hidden) return;
+        const signature = result.map(message => `${message.id}:${message.readByOwner}`).join("|");
+        if (chat.signature !== signature || chat.pendingBubble) {
+            const shouldScroll = chat.newest !== result.at(-1)?.id || chat.pendingBubble;
+            chat.signature = signature;
+            chat.newest = result.at(-1)?.id ?? null;
+            chat.pendingBubble = null;
+            messages.replaceChildren(...result.map(message => createChatBubble(
+                message.text, message.mine,
+                message.mine && !chat.customerId ? (message.readByOwner ? "read" : "sent") : null
+            )));
+            if (shouldScroll) messages.scrollTop = messages.scrollHeight;
+        }
+        const unread = chat.customerId && result.findLast(message => !message.mine && !message.readByOwner);
+        if (unread && unread.id > (chat.readThrough ?? 0)) {
+            await apiRequest(`/gmach-communication/${chat.gmachId}/messages/read?customerId=${chat.customerId}`, {
+                method: "POST", body: JSON.stringify({throughId: unread.id})
+            });
+            chat.readThrough = unread.id;
         }
     } catch (error) {
         if (activeChat === chat) {
@@ -1659,26 +1672,105 @@ async function refreshChat(chat) {
     }
 }
 
-async function sendChatMessage(chat, payload) {
+function createChatBubble(text, mine, receipt) {
+    const bubble = document.createElement("p");
+    bubble.className = mine ? "chat-message chat-message-mine" : "chat-message";
+    bubble.textContent = text;
+    if (receipt) {
+        const marks = document.createElement("span");
+        marks.className = `chat-ticks chat-ticks-${receipt}`;
+        const label = {pending: "נשלחת", sent: "נשלחה", read: "נקראה על ידי בעל הגמ״ח"}[receipt];
+        marks.setAttribute("role", "img");
+        marks.setAttribute("aria-label", label);
+        marks.title = label;
+        for (let n = 0; n < 2; n++) {
+            const tick = document.createElement("span");
+            tick.textContent = "✓";
+            tick.setAttribute("aria-hidden", "true");
+            marks.append(tick);
+        }
+        bubble.append(marks);
+    }
+    return bubble;
+}
+
+async function sendChatMessage(chat, payload, productName = "") {
     if (!chat || chat.sending || activeChat !== chat || chat.token !== token) return;
     chat.sending = true;
     const submit = document.getElementById("gmachChatSend");
     const status = document.getElementById("gmachChatStatus");
+    const messages = document.getElementById("gmachChatMessages");
+    const text = payload.text || `אני מתעניין בפריט ${productName}`;
+    const pending = createChatBubble(text, true, chat.customerId ? null : "pending");
+    chat.pendingBubble = pending;
+    messages.append(pending);
+    messages.scrollTop = messages.scrollHeight;
     submit.disabled = true;
     showMessage(status, "שולח…");
     try {
         await apiRequest(chatPath(chat), {method: "POST", body: JSON.stringify(payload)});
         if (activeChat !== chat || chat.token !== token) return;
         if (payload.text) document.getElementById("gmachChatInput").value = "";
+        const sent = createChatBubble(text, true, chat.customerId ? null : "sent");
+        pending.replaceWith(sent);
+        chat.pendingBubble = sent;
         showMessage(status, "ההודעה נשלחה.", "success");
-        await refreshChat(chat);
     } catch (error) {
+        pending.remove();
+        chat.pendingBubble = null;
         if (activeChat === chat) showMessage(status, error.message, "error");
     } finally {
         chat.sending = false;
-        if (activeChat === chat) submit.disabled = false;
+        if (activeChat === chat) {
+            submit.disabled = false;
+            refreshChat(chat);
+        }
     }
 }
+
+async function openFloatingGmachChat() {
+    if (!token) {
+        showLogin();
+        return;
+    }
+    if (selectedChatGmach) {
+        openCustomerChat(selectedChatGmach);
+        return;
+    }
+    if (!document.getElementById("ownerManagement").hidden &&
+        !document.getElementById("adminSection").hidden) {
+        showOwnerChatInbox();
+        return;
+    }
+
+    const chooser = {token};
+    clearInterval(chatTimer);
+    activeChat = chooser;
+    showChatPanel("עם איזה גמ״ח תרצו להתכתב?");
+    const status = document.getElementById("gmachChatStatus");
+    showMessage(status, "טוען גמ״חים…", "loading");
+    try {
+        const gmachs = await apiRequest("/gmachs");
+        if (activeChat !== chooser || token !== chooser.token) return;
+        showMessage(status, gmachs.length ? "" : "אין גמ״חים זמינים.");
+        const inbox = document.getElementById("gmachChatInbox");
+        for (const gmach of gmachs) {
+            const choice = document.createElement("button");
+            choice.type = "button";
+            choice.className = "secondary";
+            choice.textContent = `${gmach.name} · ${normalizeCity(gmach.city)}`;
+            choice.addEventListener("click", () => {
+                openChatOnGmachLoad = gmach.id;
+                showGmach(gmach.id);
+            });
+            inbox.append(choice);
+        }
+    } catch (error) {
+        if (activeChat === chooser) showMessage(status, error.message, "error");
+    }
+}
+
+document.getElementById("floatingGmachChat").addEventListener("click", openFloatingGmachChat);
 
 document.getElementById("gmachChatForm").addEventListener("submit", event => {
     event.preventDefault();

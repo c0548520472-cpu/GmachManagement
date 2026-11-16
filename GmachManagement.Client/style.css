@@ -884,7 +884,6 @@ body::before{opacity:.22;background-size:clamp(290px,48vw,650px)}
   background: #dff6ec; color: #137951; font-size: 2.5rem; font-weight: 800;
 }
 .borrow-confirmation h2 { margin: 0 0 .5rem; }
-.gmach-chat-launch { margin-block: .5rem 1.2rem; }
 dialog.gmach-chat {
   position: fixed; inset: auto 1rem 1rem auto; margin: 0; box-sizing: border-box;
   width: min(26rem, calc(100% - 2rem)); max-height: min(42rem, calc(100dvh - 2rem));
@@ -905,3 +904,42 @@ dialog.gmach-chat {
 }
 .chat-message-mine { justify-self: end; background: #d7f1ed; }
 .gmach-chat textarea { box-sizing: border-box; width: 100%; font: inherit; }
+
+.floating-gmach-chat {
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 105;
+  display: flex; align-items: center; gap: .6rem; width: auto; padding: 0;
+  margin: 0; border: none; background: transparent; color: #104e50;
+  box-shadow: none;
+}
+.floating-chat-icon {
+  display: grid; place-items: center; flex: none; width: 3.25rem; height: 3.25rem;
+  color: white; background: #087e88; border-radius: 50%;
+  box-shadow: 0 .35rem 1.2rem #0a535655; transition: width .2s, height .2s;
+}
+.floating-gmach-chat.is-gmach .floating-chat-icon { width: 3.65rem; height: 3.65rem; }
+.floating-chat-icon > span {
+  display: block; position: relative; width: 1.45rem; height: 1.1rem;
+  background: white; color: #087e88; border-radius: .45rem;
+}
+.floating-chat-icon > span::before {
+  content: ""; position: absolute; inset: auto auto -.23rem .3rem;
+  width: .45rem; height: .45rem; background: white; transform: rotate(45deg);
+}
+.floating-chat-icon > span::after {
+  content: ""; position: absolute; top: .45rem; left: .4rem;
+  width: .16rem; height: .16rem; border-radius: 50%; background: currentColor;
+  box-shadow: .25rem 0 currentColor, .5rem 0 currentColor;
+}
+.floating-chat-greeting {
+  display: none; padding: .55rem .8rem; border: 1px solid #c3e5e2; border-radius: 2rem;
+  background: #fff; color: #104e50; box-shadow: 0 .25rem .9rem #0a535622;
+}
+.floating-gmach-chat.is-gmach .floating-chat-greeting { display: block; }
+body:has(dialog.gmach-chat[open]) .floating-gmach-chat { visibility: hidden; }
+.chat-message-mine:has(.chat-ticks) { background: #156b70; color: #fff; }
+.chat-ticks {
+  display: inline-flex; direction: ltr; vertical-align: baseline; gap: .1rem;
+  margin-inline-start: .45rem; color: #fff; font-weight: 800;
+}
+.chat-ticks-sent > span:first-child, .chat-ticks-read > span { color: #8bddff; }
+@media (prefers-reduced-motion: reduce) { .floating-chat-icon { transition: none; } }
