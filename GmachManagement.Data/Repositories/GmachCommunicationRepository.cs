@@ -42,10 +42,22 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
 
         var customer = customerId ?? actorId;
         return await db.Database.SqlQuery<GmachChatMessage>($"""
-            SELECT "Id", "SenderId", "Text", "SentAt"
+            SELECT "Id", "SenderId", "Text", "SentAt", "ReadByOwnerAt"
             FROM "GmachChatMessages"
             WHERE "GmachId" = {gmachId} AND "CustomerId" = {customer}
             """).OrderByDescending(message => message.Id).Take(250).ToListAsync(ct);
+    }
+
+    public async Task MarkChatReadByOwnerAsync(int gmachId, int customerId, int ownerId, int throughId, CancellationToken ct)
+    {
+        var readAt = DateTime.UtcNow;
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "GmachChatMessages" AS m
+            SET "ReadByOwnerAt" = {readAt}
+            WHERE m."GmachId" = {gmachId} AND m."CustomerId" = {customerId}
+              AND m."SenderId" = {customerId} AND m."Id" <= {throughId} AND m."ReadByOwnerAt" IS NULL
+              AND EXISTS (SELECT 1 FROM "Gmachs" g WHERE g."Id" = m."GmachId" AND g."OwnerId" = {ownerId})
+            """, ct);
     }
 
     public async Task<(bool Saved, string? OwnerEmail)> AddMessageAsync(

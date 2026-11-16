@@ -16,6 +16,9 @@ public sealed class GmachCommunicationService(IGmachCommunicationRepository repo
     public Task<List<GmachChatMessage>?> GetChatAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
         => repository.GetChatAsync(gmachId, customerId, actorId, ct);
 
+    public Task MarkChatReadByOwnerAsync(int gmachId, int customerId, int ownerId, int throughId, CancellationToken ct)
+        => repository.MarkChatReadByOwnerAsync(gmachId, customerId, ownerId, throughId, ct);
+
     public Task<(bool Saved, string? OwnerEmail)> AddMessageAsync(
         int gmachId, int? customerId, int actorId, string message, int? itemId, CancellationToken ct)
         => repository.AddMessageAsync(gmachId, customerId, actorId, message.Trim(), itemId, ct);

@@ -40,8 +40,20 @@ public sealed class GmachCommunicationController(
         if (messages == null) return NotFound();
         return Ok(messages.AsEnumerable().Reverse().Select(message => new
         {
-            message.Id, message.Text, message.SentAt, Mine = message.SenderId == ActorId
+            message.Id, message.Text, message.SentAt, Mine = message.SenderId == ActorId,
+            ReadByOwner = message.ReadByOwnerAt.HasValue
         }));
+    }
+
+    public sealed record ChatReadReceipt([Range(1, int.MaxValue)] int ThroughId);
+
+    [Authorize(Roles = "GmachAdmin"), HttpPost("{gmachId:int}/messages/read")]
+    public async Task<IActionResult> MarkChatRead(int gmachId, [FromQuery] int customerId, ChatReadReceipt input, CancellationToken ct)
+    {
+        if (ActorId <= 0) return Unauthorized();
+        if (gmachId <= 0 || customerId <= 0) return BadRequest();
+        await service.MarkChatReadByOwnerAsync(gmachId, customerId, ActorId, input.ThroughId, ct);
+        return NoContent();
     }
 
     public sealed record NewChatMessage([StringLength(1000)] string? Text, [Range(1, int.MaxValue)] int? ItemId);
