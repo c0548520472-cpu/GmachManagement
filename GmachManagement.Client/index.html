@@ -72,6 +72,7 @@
                 </button>
             </form>
 
+            <div id="googleSignIn" hidden><div class="google-identity-button"></div></div>
             <button id="forgotPasswordBtn" type="button" class="secondary">שכחתי סיסמה</button>
             <p id="forgotPasswordNotice" class="message" hidden>איפוס סיסמה ללא התחברות אינו זמין כרגע. שינוי סיסמה אפשרי מתוך ״הפרטים שלי״ לאחר התחברות.</p>
             <p id="authMessage" class="message"
@@ -153,7 +154,8 @@
                 <label><input id="profileShowPasswords" type="checkbox"> הצגת סיסמאות</label>
                 <button class="primary" type="submit">שמירת השינויים</button>
             </form>
-            <p id="profileMessage" class="message" role="status"></p>
+            <div id="googleLink" hidden><p>קישור חשבון Google</p><div class="google-identity-button"></div></div>
+                <p id="profileMessage" class="message" role="status"></p>
         </section>
 
         <section id="accountPage" class="account-page" hidden>
@@ -363,6 +365,6 @@
         <span class="floating-chat-icon" aria-hidden="true"><span></span></span>
         <span class="floating-chat-greeting" aria-hidden="true">היי, לכל שאלה אנחנו כאן.</span>
     </button>
-    <script src="app.js?v=automatic-password"></script>
+    <script src="app.js?v=google-identity"></script>
 </body>
 </html>

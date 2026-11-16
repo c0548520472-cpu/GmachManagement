@@ -25,6 +25,8 @@ let approvalPending = false;
 let openApprovalId = null;
 let itemsRequestSequence = 0;
 let authMode = "login";
+let googleScript;
+let googleMountSequence = 0;
 let signedInName = "";
 let profileNameToken = null;
 async function refreshWelcomeName() {
@@ -1047,7 +1049,11 @@ function showPage(page, push = true) {
     if (chat.open) chat.close();
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); loadBorrowApprovals(); }
     if (page === "owner") refreshAdmin();
-    if (page === "profile") loadProfile();
+    if (page === "profile") {
+        loadProfile();
+        mountGoogleButton("googleLink", document.getElementById("profileMessage"));
+    }
+    if (page === "login") mountGoogleButton("googleSignIn", authMessage);
     if (page === "siteAdmin") {
         loadSiteAdmin();
         loadSiteAdminOpenLoans();
@@ -1824,3 +1830,76 @@ document.getElementById("gmachChat").addEventListener("close", () => {
     clearInterval(chatTimer);
 });
 document.getElementById("ownerChatInbox").addEventListener("click", showOwnerChatInbox);
+
+function loadGoogleIdentityScript() {
+    if (window.google?.accounts?.id) return Promise.resolve();
+    if (!googleScript) {
+        googleScript = new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = "https://accounts.google.com/gsi/client";
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = () => {
+                script.remove();
+                googleScript = null;
+                reject(new Error("לא ניתן לטעון כרגע את הכניסה דרך Google."));
+            };
+            document.head.append(script);
+        });
+    }
+    return googleScript;
+}
+
+async function mountGoogleButton(sectionId, status) {
+    const section = document.getElementById(sectionId);
+    const button = section.querySelector(".google-identity-button");
+    const sequence = ++googleMountSequence;
+    const session = token;
+    section.hidden = true;
+    button.replaceChildren();
+    try {
+        const config = await apiRequest("/Auth/google/config", {method: "GET", cache: "no-store"});
+        if (!config?.clientId || sequence !== googleMountSequence) return;
+        await loadGoogleIdentityScript();
+        if (sequence !== googleMountSequence || session !== token || section.parentElement.hidden) return;
+
+        const googleId = window.google.accounts.id;
+        googleId.initialize({
+            client_id: config.clientId,
+            nonce: config.nonce,
+            callback: async ({credential}) => {
+                if (sequence !== googleMountSequence || token !== session || section.parentElement.hidden) return;
+                showMessage(status, "מאמת חשבון Google…");
+                try {
+                    const result = await apiRequest("/Auth/google", {
+                        method: "POST", body: JSON.stringify({credential, nonce: config.nonce})
+                    });
+                    if (token !== session || section.parentElement.hidden) return;
+                    if (!result?.accessToken) throw new Error("לא התקבל אישור התחברות.");
+                    token = result.accessToken;
+                    sessionStorage.setItem("gmachToken", token);
+                    signedInName = "";
+                    profileNameToken = null;
+                    void refreshWelcomeName();
+                    if (session) {
+                        showMessage(status, "חשבון Google קושר בהצלחה.", "success");
+                        mountGoogleButton(sectionId, status);
+                    } else {
+                        showMessage(status, "");
+                        showDashboard();
+                    }
+                } catch (error) {
+                    showMessage(status, error.message, "error");
+                }
+            }
+        });
+        section.hidden = false;
+        googleId.renderButton(button, {
+            type: "standard", theme: "outline", size: "large",
+            text: session ? "continue_with" : "signin_with", locale: "he"
+        });
+    } catch (error) {
+        if (sequence === googleMountSequence && !section.parentElement.hidden)
+            showMessage(status, error.message, "error");
+    }
+}
