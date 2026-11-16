@@ -721,3 +721,24 @@ button{font-weight:700;letter-spacing:0}
 @media(max-width:1020px){.header-content{grid-template-columns:1fr auto;gap:12px}.site-nav{grid-column:1/-1;grid-row:2;justify-content:center}.header h1.brand-title{grid-column:1;grid-row:1}#userArea{grid-column:2;grid-row:1}.header h1.brand-title small{display:block}}
 @media(max-width:620px){.header{padding:12px}.header-content{gap:10px}.brand-logo{width:44px;height:44px}.header h1.brand-title{font-size:17px;gap:7px}.header h1.brand-title small{font-size:10px}.site-nav{gap:5px}.site-nav button{font-size:12px;padding:8px 11px}#welcomeText:not(:empty){font-size:12px;max-width:120px}.account-menu summary{padding:7px 9px}.account-menu-panel{left:0}.container{width:calc(100% - 24px)}.footer-inner{flex-direction:column;text-align:center}.footer-brand span{align-items:center}.info-page{padding:23px 18px}.info-prose{font-size:15px}}
 @media(prefers-reduced-motion:reduce){.account-chevron,.item-card,.account-menu summary{transition:none!important}}
+
+/* Clearer logo watermark, lighter surfaces and updated site-wide card typography */
+:root,body,button,input,select,textarea{font-family:"Heebo","Assistant","Segoe UI",Arial,sans-serif}
+body::before{opacity:.22;background-size:clamp(290px,48vw,650px)}
+.auth-card,.wide-card,#gmachDirectory,.site-admin-user-row,.toolbar{background:rgba(255,255,255,.76);backdrop-filter:blur(4px)}
+.item-card,#gmachList>.item-card,.gmach-items-grid>.item-card{background:rgba(255,255,255,.79);border:1px solid rgba(135,198,197,.56);border-top:3px solid #24aaa6;border-radius:26px;box-shadow:0 10px 32px rgba(20,86,96,.09);padding:clamp(20px,2.3vw,30px);gap:12px}
+.item-card:hover{box-shadow:0 20px 42px rgba(20,86,96,.17);transform:translateY(-4px)}
+.item-card h3{font-size:clamp(19px,1.7vw,23px);font-weight:800;letter-spacing:-.025em}
+.item-card p{font-size:15px;line-height:1.8}
+.items-grid,#gmachList,.gmach-items-grid,#siteAdminGmachs,#siteAdminItems{grid-template-columns:repeat(auto-fit,minmax(min(100%,265px),320px));justify-content:center;justify-items:stretch}
+.site-admin-bulk-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;padding:15px 18px;margin:16px auto;background:rgba(235,249,248,.86);border:1px solid #b9e0df;border-radius:18px;max-width:1000px}
+.site-admin-bulk-toolbar label,.site-admin-select-label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-weight:700}
+.site-admin-bulk-toolbar input[type="checkbox"],.site-admin-select-label input[type="checkbox"]{width:19px;height:19px;accent-color:#087e88;cursor:pointer}
+.site-admin-bulk-toolbar button{width:auto;padding:10px 16px;background:#ffe5e5;color:#9b3030}
+.site-admin-bulk-toolbar button:disabled{opacity:.48;cursor:not-allowed}
+.site-admin-select-label{align-self:flex-start;background:#e8f7f5;border-radius:12px;padding:7px 11px;margin-bottom:5px}
+.site-admin-user-entry{display:flex;align-items:center;gap:12px;width:100%}
+.site-admin-user-entry>.site-admin-select-label{flex-shrink:0;margin:0}
+.site-admin-user-entry>.site-admin-user-row{flex:1;min-width:0}
+.site-admin-user-entry[hidden]{display:none!important}
+@media(max-width:600px){.site-admin-bulk-toolbar{flex-direction:column;align-items:stretch}.site-admin-bulk-toolbar button{width:100%}.site-admin-user-entry{align-items:flex-start}.site-admin-user-entry>.site-admin-select-label{margin-top:8px}}

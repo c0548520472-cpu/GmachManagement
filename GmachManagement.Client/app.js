@@ -1119,6 +1119,69 @@ function isSiteAdminToken() {
     } catch { return false; }
 }
 const siteAdminMessage=document.getElementById("siteAdminMessage");
+const siteAdminSelections={users:new Set(),gmachs:new Set(),items:new Set()};
+const siteAdminBulkConfig={
+    users:{list:"siteAdminUsers",all:"siteAdminSelectAllUsers",count:"siteAdminUsersSelectedCount",delete:"siteAdminDeleteUsers",path:"users",noun:"משתמשים"},
+    gmachs:{list:"siteAdminGmachs",all:"siteAdminSelectAllGmachs",count:"siteAdminGmachsSelectedCount",delete:"siteAdminDeleteGmachs",path:"gmachs",noun:"גמ״חים"},
+    items:{list:"siteAdminItems",all:"siteAdminSelectAllItems",count:"siteAdminItemsSelectedCount",delete:"siteAdminDeleteItems",path:"items",noun:"פריטים"}
+};
+function siteAdminCheckbox(kind,id,description) {
+    const label=document.createElement("label");
+    label.className="site-admin-select-label";
+    const checkbox=document.createElement("input");
+    checkbox.type="checkbox";checkbox.className="site-admin-select";
+    checkbox.dataset.kind=kind;checkbox.dataset.id=String(id);
+    checkbox.setAttribute("aria-label","בחירת "+description);
+    checkbox.checked=siteAdminSelections[kind].has(String(id));
+    checkbox.addEventListener("change",()=>{
+        if(checkbox.checked)siteAdminSelections[kind].add(String(id));
+        else siteAdminSelections[kind].delete(String(id));
+        updateSiteAdminBulk(kind);
+    });
+    label.append(checkbox,document.createTextNode(" בחירה"));
+    return label;
+}
+function updateSiteAdminBulk(kind) {
+    const config=siteAdminBulkConfig[kind],selected=siteAdminSelections[kind];
+    const boxes=[...document.querySelectorAll("#"+config.list+" .site-admin-select")];
+    const all=document.getElementById(config.all);
+    all.checked=boxes.length>0&&boxes.every(box=>box.checked);
+    all.indeterminate=boxes.some(box=>box.checked)&&!all.checked;
+    document.getElementById(config.count).textContent=selected.size+" נבחרו";
+    document.getElementById(config.delete).disabled=selected.size===0;
+}
+for(const [kind,config] of Object.entries(siteAdminBulkConfig)) {
+    document.getElementById(config.all).addEventListener("change",event=>{
+        document.querySelectorAll("#"+config.list+" .site-admin-select").forEach(box=>{
+            if(box.closest("[hidden]"))return;
+            box.checked=event.target.checked;
+            if(box.checked)siteAdminSelections[kind].add(box.dataset.id);
+            else siteAdminSelections[kind].delete(box.dataset.id);
+        });
+        updateSiteAdminBulk(kind);
+    });
+    document.getElementById(config.delete).addEventListener("click",async()=>{
+        const ids=[...siteAdminSelections[kind]];
+        if(!ids.length)return;
+        if(!confirm("למחוק "+ids.length+" "+config.noun+"? פעולה זו בלתי הפיכה ועלולה להשפיע על נתונים קשורים."))return;
+        const button=document.getElementById(config.delete);
+        button.disabled=true;
+        let deleted=0,failed=0;
+        for(const id of ids) {
+            try {
+                await apiRequest("/site-admin/"+config.path+"/"+encodeURIComponent(id),{method:"DELETE"});
+                siteAdminSelections[kind].delete(id);
+                deleted++;
+            } catch(error) {
+                failed++;
+                console.error("Bulk delete failed",kind,id,error);
+            }
+        }
+        await loadSiteAdmin(true);
+        showMessage(siteAdminMessage,"נמחקו "+deleted+" "+config.noun+(failed?"; "+failed+" מחיקות נכשלו. ניתן לנסות שוב.":"."),failed?"error":"success");
+    });
+}
+
 function adminActionButton(label, handler, destructive=false) {
     const button=document.createElement("button");
     button.type="button";button.textContent=label;
@@ -1146,9 +1209,12 @@ async function loadSiteAdmin(keepMessage=false) {
         const gmachsList=document.getElementById("siteAdminGmachs");
         const itemsList=document.getElementById("siteAdminItems");
         usersList.replaceChildren();gmachsList.replaceChildren();itemsList.replaceChildren();
+        for(const kind of Object.keys(siteAdminSelections))siteAdminSelections[kind].clear();
         for(const u of users) {
             const card=document.createElement("details");card.className="site-admin-user-row";
-            card.dataset.search=(u.name+" "+u.email+" "+u.role).toLocaleLowerCase();
+            const entry=document.createElement("div");entry.className="site-admin-user-entry";
+            if(!u.isPrimary)entry.append(siteAdminCheckbox("users",u.id,u.name));
+            entry.dataset.search=(u.name+" "+u.email+" "+u.role).toLocaleLowerCase();
             const heading=document.createElement("summary");
             const label=document.createElement("span");label.textContent=u.name;
             const meta=document.createElement("span");meta.className="site-admin-user-meta";meta.textContent=u.email+" | "+(u.role==="SiteAdmin"?"מנהל אתר":u.role==="GmachAdmin"?"בעל גמ״ח":"משתמש");
@@ -1182,10 +1248,11 @@ async function loadSiteAdmin(keepMessage=false) {
                 },true));
             }
             card.append(actions);
-            usersList.append(card);
+            entry.append(card);usersList.append(entry);
         }
         for(const g of gmachs) {
             const card=document.createElement("article");card.className="item-card";
+            card.append(siteAdminCheckbox("gmachs",g.id,g.name));
             const title=document.createElement("h3");title.textContent=g.name;
             const details=document.createElement("p");details.textContent=g.city+" | בעלים מספר "+g.ownerId;
             card.append(title,details);
@@ -1204,6 +1271,7 @@ async function loadSiteAdmin(keepMessage=false) {
         }
         for(const item of items) {
             const card=document.createElement("article");card.className="item-card";
+            card.append(siteAdminCheckbox("items",item.id,item.name));
             const title=document.createElement("h3");title.textContent=item.name;
             const details=document.createElement("p");details.textContent="גמ״ח מספר "+(item.gmachId||"ללא שיוך");
             card.append(title,details);
@@ -1220,6 +1288,7 @@ async function loadSiteAdmin(keepMessage=false) {
             itemsList.append(card);
         }
         filterSiteAdminUsers();
+        for(const kind of Object.keys(siteAdminSelections))updateSiteAdminBulk(kind);
         if(!keepMessage)showMessage(siteAdminMessage,"");
     }catch(error){showMessage(siteAdminMessage,error.message,"error");}
 }
@@ -1233,7 +1302,7 @@ document.getElementById("siteAdminGrantForm").addEventListener("submit",async ev
 
 function filterSiteAdminUsers(){
     const query=document.getElementById("siteAdminUserSearch").value.trim().toLocaleLowerCase();
-    const rows=document.querySelectorAll("#siteAdminUsers .site-admin-user-row");
+    const rows=document.querySelectorAll("#siteAdminUsers .site-admin-user-entry");
     let visible=0;
     rows.forEach(row=>{const match=row.dataset.search.includes(query);row.hidden=!match;if(match)visible++;});
     document.getElementById("siteAdminUserCount").textContent="מוצגים "+visible+" מתוך "+rows.length+" משתמשים";
