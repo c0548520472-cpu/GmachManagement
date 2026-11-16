@@ -22,7 +22,9 @@ public class RegisterDto : IValidatableObject
     [StringLength(100)] public string? City { get; set; }
 
     [Required]
-    [StringLength(128, MinimumLength = 15, ErrorMessage = "סיסמת ההרשמה חייבת להכיל 15 עד 128 תווים.")]
+    [StringLength(128, MinimumLength = 8, ErrorMessage = "סיסמת ההרשמה חייבת להכיל 8 עד 128 תווים.")]
+    [RegularExpression(@"(?s)\A(?=.*\p{L})(?=.*\p{Nd})(?=.*[\p{P}\p{S}]).*\z",
+        ErrorMessage = "הסיסמה חייבת לכלול לפחות אות אחת, ספרה אחת וסימן אחד.")]
     public string Password { get; set; } = string.Empty;
 
     private static readonly HashSet<string> CommonPasswords = new(StringComparer.OrdinalIgnoreCase)
