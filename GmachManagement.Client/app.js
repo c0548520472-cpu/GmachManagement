@@ -290,8 +290,8 @@ authForm.addEventListener("submit", async (event) => {
             return;
         }
 
-        if (password.length < 8) {
-            showMessage(authMessage, "הסיסמא חייבת להכיל 8 תוים לפחות", "error");
+        if (password.length < 15 || password.length > 128) {
+            showMessage(authMessage, "סיסמת ההרשמה חייבת להכיל 15 עד 128 תווים.", "error");
             document.getElementById("password").focus();
             return;
         }
@@ -371,6 +371,7 @@ function switchAuthMode(mode) {
     document.getElementById("forgotPasswordNotice").hidden = true;
     password.autocomplete = mode === "register" ? "new-password" : "current-password";
     password.minLength = 0;
+    document.getElementById("registerPasswordHint").hidden = mode !== "register";
 
     document.getElementById("authSubmit").textContent =
         mode === "login" ? "התחברות" : "הרשמה";
@@ -387,7 +388,7 @@ document.getElementById("registerTab").addEventListener(
     "click", () => switchAuthMode("register")
 );
 
-document.getElementById("password").addEventListener("input",()=>{if(authMode==="register"&&document.getElementById("password").value.length>=8)showMessage(authMessage,"");});
+document.getElementById("password").addEventListener("input",()=>{if (authMode === "register") showMessage(authMessage, "");});
 
 document.getElementById("logoutBtn").addEventListener(
     "click", logout
