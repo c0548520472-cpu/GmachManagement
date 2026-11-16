@@ -936,10 +936,13 @@ dialog.gmach-chat {
 }
 .floating-gmach-chat.is-gmach .floating-chat-greeting { display: block; }
 body:has(dialog.gmach-chat[open]) .floating-gmach-chat { visibility: hidden; }
-.chat-message-mine:has(.chat-ticks) { background: #156b70; color: #fff; }
+.chat-message-mine:has(.chat-ticks) { background: #125963; color: #fff; }
 .chat-ticks {
   display: inline-flex; direction: ltr; vertical-align: baseline; gap: .1rem;
-  margin-inline-start: .45rem; color: #fff; font-weight: 800;
+  margin-inline-start: .5rem; color: #fff; font-size: 1.2em; line-height: 1; font-weight: 900;
 }
-.chat-ticks-sent > span:first-child, .chat-ticks-read > span { color: #8bddff; }
+.chat-ticks-sent > span:first-child, .chat-ticks-read > span {
+  color: #42ccff;
+  text-shadow: 0 0 1px #001c31, 0 0 5px #42ccff75;
+}
 @media (prefers-reduced-motion: reduce) { .floating-chat-icon { transition: none; } }

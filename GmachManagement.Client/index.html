@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=chat-receipts">
+    <link rel="stylesheet" href="style.css?v=password-ticks">
 </head>
 <body>
     <header class="header">
@@ -48,18 +48,18 @@
                 </button>
             </div>
 
-            <form id="authForm">
+            <form id="authForm" method="post" autocomplete="on">
                 <div id="nameGroup" hidden>
                     <label for="fullName">שם מלא</label>
-                    <input id="fullName" type="text">
+                    <input id="fullName" name="name" type="text" autocomplete="name">
                 </div>
 
                 <div id="ownerRegistration" hidden><label><input id="registerOwner" type="checkbox"> אני בעל גמ״ח</label><div id="ownerFields" hidden><label for="gmachName">שם הגמ״ח</label><input id="gmachName" maxlength="150"><label for="gmachCity">עיר</label><input id="gmachCity" maxlength="100"></div></div>
                 <label for="email">כתובת אימייל</label>
-                <input id="email" type="email" required>
+                <input id="email" name="username" type="email" required autocomplete="username">
 
                 <label for="password">סיסמה</label>
-                <div class="password-field"><input id="password" type="password" required autocomplete="current-password"><label class="password-toggle"><input id="showPassword" type="checkbox"> הצג סיסמה</label></div>
+                <div class="password-field"><input id="password" name="password" type="password" required autocomplete="current-password"><label class="password-toggle"><input id="showPassword" type="checkbox"> הצג סיסמה</label></div>
 
                 <button type="submit" class="primary full-width"
                         id="authSubmit">
@@ -358,6 +358,6 @@
         <span class="floating-chat-icon" aria-hidden="true"><span></span></span>
         <span class="floating-chat-greeting" aria-hidden="true">היי, לכל שאלה אנחנו כאן.</span>
     </button>
-    <script src="app.js?v=chat-receipts"></script>
+    <script src="app.js?v=password-ticks"></script>
 </body>
 </html>

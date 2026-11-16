@@ -347,6 +347,12 @@ authForm.addEventListener("submit", async (event) => {
 });
 
 function switchAuthMode(mode) {
+    const password = document.getElementById("password");
+    if (authMode !== mode) {
+        password.value = "";
+        password.type = "password";
+        document.getElementById("showPassword").checked = false;
+    }
     authMode = mode;
     authForm.hidden=false;
     document.querySelector("#authSection .tabs").hidden=false;
@@ -363,8 +369,8 @@ function switchAuthMode(mode) {
     // Password recovery belongs to login only, never to registration.
     document.getElementById("forgotPasswordBtn").hidden = mode !== "login";
     document.getElementById("forgotPasswordNotice").hidden = true;
-    document.getElementById("password").setAttribute("autocomplete", mode === "register" ? "new-password" : "current-password");
-    document.getElementById("password").minLength = 0;
+    password.autocomplete = mode === "register" ? "new-password" : "current-password";
+    password.minLength = 0;
 
     document.getElementById("authSubmit").textContent =
         mode === "login" ? "התחברות" : "הרשמה";
