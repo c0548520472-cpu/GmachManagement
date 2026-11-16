@@ -16,6 +16,7 @@ let currentPage = 1;
 let currentItems = [];
 let selectedCopyId = null;
 let gmachSearchSequence = 0;
+let gmachDetailsSequence = 0;
 let itemsRequestSequence = 0;
 let authMode = "login";
 let signedInName = "";
@@ -57,8 +58,7 @@ function logout() {
     signedInName = "";
     profileNameToken = null;
     currentItems = [];
-    publicRequestCache.clear();
-    publicPendingRequests.clear();
+    clearPublicData();
     document.getElementById("welcomeText").textContent = "";
     document.getElementById("accountMenu").open=false;
     showHome();
@@ -68,16 +68,36 @@ function logout() {
 const publicRequestCache = new Map();
 const publicPendingRequests = new Map();
 const PUBLIC_CACHE_MS = 60000;
+const DIRECTORY_STORAGE_KEY = "gmachPublicDirectory";
+const DIRECTORY_SNAPSHOT_MS = 5 * 60 * 1000;
+function readDirectorySnapshot() {
+    try {
+        const snapshot = JSON.parse(sessionStorage.getItem(DIRECTORY_STORAGE_KEY));
+        if (snapshot?.expiresAt > Date.now() && Array.isArray(snapshot.groups)) return snapshot.groups;
+    } catch { /* A directory request still works when storage is unavailable. */ }
+    return null;
+}
+function storeDirectorySnapshot(groups) {
+    try {
+        sessionStorage.setItem(DIRECTORY_STORAGE_KEY, JSON.stringify({
+            groups, expiresAt: Date.now() + DIRECTORY_SNAPSHOT_MS
+        }));
+    } catch { /* Storage is optional. */ }
+}
+function clearPublicData() {
+    publicRequestCache.clear();
+    publicPendingRequests.clear();
+    try { sessionStorage.removeItem(DIRECTORY_STORAGE_KEY); } catch { /* Storage is optional. */ }
+}
 function publicCacheKey(path, options) {
     if (options.method && options.method.toUpperCase() !== "GET") return null;
-    return /^\/(?:gmachs(?:\?|\/\d+$)|categories(?:\?|$)|items\?)/.test(path) ? path : null;
+    return /^\/(?:gmachs(?:\?|$|\/\d+$)|categories(?:\?|$)|items\?)/.test(path) ? path : null;
 }
 async function apiRequest(path, options = {}) {
     const cacheKey = publicCacheKey(path, options);
     if (!cacheKey) {
         if (options.method && options.method.toUpperCase() !== "GET") {
-            publicRequestCache.clear();
-            publicPendingRequests.clear();
+            clearPublicData();
         }
         return requestFromServer(path, options);
     }
@@ -86,7 +106,10 @@ async function apiRequest(path, options = {}) {
     const pending = publicPendingRequests.get(cacheKey);
     if (pending) return pending;
     const request = requestFromServer(path, options).then(result => {
-        if (publicPendingRequests.get(cacheKey) === request) publicRequestCache.set(cacheKey, {value: result, expiresAt: Date.now() + PUBLIC_CACHE_MS});
+        if (publicPendingRequests.get(cacheKey) === request) {
+            publicRequestCache.set(cacheKey, {value: result, expiresAt: Date.now() + PUBLIC_CACHE_MS});
+            if (cacheKey === "/gmachs") storeDirectorySnapshot(result);
+        }
         return result;
     }).finally(() => {
         if (publicPendingRequests.get(cacheKey) === request) publicPendingRequests.delete(cacheKey);
@@ -98,7 +121,7 @@ async function requestFromServer(path, options = {}) {
     const headers = new Headers(options.headers || {});
 
     // Public directory endpoints must work without login or an expired saved token.
-    const publicGmachGet = (!options.method || options.method.toUpperCase() === "GET") && /^\/gmachs(?:\?|\/\d+(?:\?|$))/.test(path);
+    const publicGmachGet = (!options.method || options.method.toUpperCase() === "GET") && /^\/gmachs(?:\?|$|\/\d+(?:\?|$))/.test(path);
     if (token && !publicGmachGet) {
         headers.set("Authorization", `Bearer ${token}`);
     }
@@ -998,59 +1021,60 @@ async function loadMyLoans() {
     } catch (error) { showMessage(message,error.message,"error"); }
 }
 
-async function loadCategories() {
-    const select = document.getElementById("categoryFilter");
-    try {
-        const categories = await apiRequest("/categories");
-        for (const category of categories) {
-            const option = document.createElement("option");
-            option.value = category.id;
-            option.textContent = category.name;
-            select.appendChild(option);
-        }
-    } catch (error) { showMessage(itemsMessage, error.message, "error"); }
-}
-loadCategories();
-
 // Gmach directory and owner onboarding
 const ownerCheckbox=document.getElementById("registerOwner");
 ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerFields").hidden=!ownerCheckbox.checked;});
-async function findGmachs(){
- const sequence=++gmachSearchSequence;
- const list=document.getElementById("gmachList");
- const term=document.getElementById("unifiedGmachSearch").value.trim();
- if(!list.children.length){const loading=document.createElement("p");loading.textContent="טוען גמ״חים...";list.append(loading);}
+function renderGmachDirectory(list, groups) {
+ const cards = document.createDocumentFragment();
+ for (const group of groups) {
+  const card=document.createElement("article");card.className="item-card";
+  const heading=document.createElement("h3");heading.textContent=group.name;
+  const city=document.createElement("p");city.textContent=normalizeCity(group.city);
+  const button=document.createElement("button");button.className="primary";button.textContent="דף הגמ״ח";button.addEventListener("click",()=>showGmach(group.id));
+  card.append(heading,city,button);cards.append(card);
+ }
+ if (!groups.length) {
+  const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";cards.append(empty);
+ }
+ list.replaceChildren(cards);
+}
+
+async function findGmachs() {
+ const sequence = ++gmachSearchSequence;
+ const list = document.getElementById("gmachList");
+ const term = document.getElementById("unifiedGmachSearch").value.trim();
+ const snapshot = term ? null : readDirectorySnapshot();
+ const status = document.createElement("p");
+ status.setAttribute("role", "status");
+ status.textContent = snapshot ? "מעדכן את רשימת הגמ״חים..." : "טוען גמ״חים...";
+ if (snapshot) {
+  renderGmachDirectory(list, snapshot);
+  list.prepend(status);
+ } else {
+  list.replaceChildren(status);
+ }
  try {
-  const searches=term
-   ? [
-       new URLSearchParams({city:normalizeCity(term)}),
-       new URLSearchParams({search:term}),
-       new URLSearchParams({itemSearch:term})
-     ]
-   : [new URLSearchParams()];
-  const results=await Promise.allSettled(searches.map(query=>apiRequest("/gmachs?"+query)));
-  const successful=results.filter(result=>result.status==="fulfilled");
-  if(!successful.length)throw results[0].reason;
-  const groups=[...new Map(successful.flatMap(result=>result.value).map(group=>[group.id,group])).values()];
-  if(sequence!==gmachSearchSequence)return;
-  list.replaceChildren();
-  for(const group of groups){
-   const card=document.createElement("article");card.className="item-card";
-   const heading=document.createElement("h3");heading.textContent=group.name;
-   const city=document.createElement("p");city.textContent=normalizeCity(group.city);
-   const button=document.createElement("button");button.className="primary";button.textContent="דף הגמ״ח";button.addEventListener("click",()=>showGmach(group.id));
-   card.append(heading,city,button);list.append(card);
-  }
-  if(!groups.length){const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";list.append(empty);}
- }catch(e){if(sequence===gmachSearchSequence){list.replaceChildren();const error=document.createElement("p");error.className="message error";error.setAttribute("role","alert");error.textContent="טעינת רשימת הגמ״חים נכשלה: "+e.message;list.append(error);}}
+  const path = term ? "/gmachs?" + new URLSearchParams({query: term, city: normalizeCity(term)}) : "/gmachs";
+  const groups = await apiRequest(path);
+  if (sequence === gmachSearchSequence) renderGmachDirectory(list, groups);
+ } catch (error) {
+  if (sequence !== gmachSearchSequence) return;
+  status.className = "message error";
+  status.textContent = snapshot
+   ? "לא ניתן לעדכן כעת. מוצגת הרשימה האחרונה שנשמרה."
+   : "טעינת רשימת הגמ״חים נכשלה: " + error.message;
+ }
 }
 function showGmach(id){
  const url=new URL(location.href);url.searchParams.delete("page");url.searchParams.set("gmach",id);history.pushState({page:"gmach"},"",url);
  showPage("gmach",false);
 }
 async function renderGmach(id){
- const container=document.getElementById("gmachDetails");container.replaceChildren();
- try {const g=await apiRequest("/gmachs/"+id);const section=document.createElement("section");section.className="gmach-content";
+ const sequence = ++gmachDetailsSequence;
+ const container=document.getElementById("gmachDetails");
+ const loading=document.createElement("p");loading.setAttribute("role","status");loading.textContent="טוען את פריטי הגמ״ח...";
+ container.replaceChildren(loading);
+ try {const g=await apiRequest("/gmachs/"+id);if(sequence!==gmachDetailsSequence)return;const section=document.createElement("section");section.className="gmach-content";
  const grid=document.createElement("div");grid.className="gmach-items-grid";
  const title=document.createElement("h2");title.textContent=g.name+" — "+normalizeCity(g.city);section.append(title);
  const desc=document.createElement("p");desc.textContent=g.description||"";section.append(desc);
@@ -1061,8 +1085,8 @@ async function renderGmach(id){
  button.addEventListener("click",()=>openBorrowDialog(item));
  card.append(name,info,button);grid.append(card);}
  section.append(grid);
- container.append(section);
- }catch(e){const message=document.createElement("p");message.className="message error";message.textContent=e.message;container.append(message);}
+ container.replaceChildren(section);
+ }catch(e){if(sequence!==gmachDetailsSequence)return;const message=document.createElement("p");message.className="message error";message.textContent=e.message;container.replaceChildren(message);}
 }
 document.getElementById("backToGmachs").addEventListener("click",showHome);
 document.getElementById("findGmachs").addEventListener("click",findGmachs);
@@ -1075,6 +1099,7 @@ document.getElementById("excelImportForm").addEventListener("submit",async event
  const form=new FormData();form.append("file",file);
  try{const response=await fetch(API_BASE+"/gmachs/mine/import",{method:"POST",headers:{Authorization:"Bearer "+token},body:form});
  const result=await response.json();if(!response.ok)throw new Error(result.message||"ייבוא נכשל");
+ clearPublicData();
  showMessage(document.getElementById("adminMessage"),"יובאו "+result.imported+" פריטים בהצלחה","success");await refreshAdmin();await loadItems();await findGmachs();
  }catch(e){showMessage(document.getElementById("adminMessage"),e.message,"error");}
 });
