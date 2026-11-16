@@ -45,6 +45,7 @@ namespace GmachManagement.Data
             services.AddScoped<IPersonalTransactionRepository, PersonalTransactionRepository>();
             services.AddHostedService<PersonalReminderWorker>();
             services.AddScoped<IGmachRepository, GmachRepository>();
+            services.AddScoped<IGmachCommunicationRepository, GmachCommunicationRepository>();
             services.AddScoped<IItemRepository, ItemRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
 

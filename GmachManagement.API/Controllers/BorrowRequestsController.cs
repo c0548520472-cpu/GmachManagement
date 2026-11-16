@@ -22,7 +22,8 @@ public class BorrowRequestsController : ControllerBase {
  }
  [HttpPost,AllowAnonymous]
  public async Task<IActionResult> Create([FromBody] NewRequest request,CancellationToken ct){
-  var result=await service.AddBorrowRequestAsync(request.ItemId,request.ApplicantName,request.Phone,request.Email,ct);
+  var applicantId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ? (int?)userId : null;
+  var result=await service.AddBorrowRequestAsync(request.ItemId,request.ApplicantName,request.Phone,request.Email,ct,applicantId);
   return result==null?Conflict(new{message="אין עותק זמין לבקשה."}):StatusCode(201,new{message="הבקשה נשלחה בהצלחה! בעל הגמ״ח יצור איתך קשר."});
  }
  [HttpGet("mine"),Authorize(Roles="GmachAdmin")]

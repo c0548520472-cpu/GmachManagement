@@ -1,0 +1,87 @@
+using GmachManagement.Core.Interfaces;
+using GmachManagement.Data.Context;
+using Microsoft.EntityFrameworkCore;
+
+namespace GmachManagement.Data.Repositories;
+
+public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommunicationRepository
+{
+    public Task<List<BorrowApproval>> GetApprovalsAsync(int userId, CancellationToken ct)
+        => db.Database.SqlQuery<BorrowApproval>($"""
+            SELECT r."Id", i."Name" AS "ItemName", g."Name" AS "GmachName", r."FulfilledAt" AS "ApprovedAt", a."Seen"
+            FROM "BorrowRequestApplicants" a
+            JOIN "BorrowRequests" r ON r."Id" = a."RequestId"
+            JOIN "Items" i ON i."Id" = r."ItemId"
+            JOIN "Gmachs" g ON g."Id" = i."GmachId"
+            WHERE a."UserId" = {userId} AND r."FulfilledAt" IS NOT NULL
+            ORDER BY r."FulfilledAt" DESC, r."Id" DESC
+            """).ToListAsync(ct);
+
+    public async Task MarkApprovalSeenAsync(int userId, int requestId, CancellationToken ct)
+        => await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "BorrowRequestApplicants" SET "Seen" = TRUE
+            WHERE "UserId" = {userId} AND "RequestId" = {requestId}
+            """, ct);
+
+    public Task<List<GmachChatThread>> GetOwnerInboxAsync(int ownerId, CancellationToken ct)
+        => db.Database.SqlQuery<GmachChatThread>($"""
+            SELECT m."GmachId", m."CustomerId", u."Name" AS "CustomerName"
+            FROM "GmachChatMessages" m
+            JOIN "Gmachs" g ON g."Id" = m."GmachId"
+            JOIN "Users" u ON u."Id" = m."CustomerId"
+            WHERE g."OwnerId" = {ownerId}
+            GROUP BY m."GmachId", m."CustomerId", u."Name"
+            ORDER BY MAX(m."Id") DESC
+            """).ToListAsync(ct);
+
+    public async Task<List<GmachChatMessage>?> GetChatAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
+    {
+        var owner = await FindOwnerAsync(gmachId, ct);
+        if (owner == null || (customerId.HasValue ? owner.Id != actorId : owner.Id == actorId))
+            return null;
+
+        var customer = customerId ?? actorId;
+        return await db.Database.SqlQuery<GmachChatMessage>($"""
+            SELECT "Id", "SenderId", "Text", "SentAt"
+            FROM "GmachChatMessages"
+            WHERE "GmachId" = {gmachId} AND "CustomerId" = {customer}
+            """).OrderByDescending(message => message.Id).Take(250).ToListAsync(ct);
+    }
+
+    public async Task<(bool Saved, string? OwnerEmail)> AddMessageAsync(
+        int gmachId, int? customerId, int actorId, string message, int? itemId, CancellationToken ct)
+    {
+        var owner = await FindOwnerAsync(gmachId, ct);
+        if (owner == null || (customerId.HasValue ? owner.Id != actorId : owner.Id == actorId))
+            return (false, null);
+
+        var customer = customerId ?? actorId;
+        if (customerId.HasValue && !await db.Database.SqlQuery<int>($"""
+            SELECT "Id" AS "Value" FROM "GmachChatMessages"
+            WHERE "GmachId" = {gmachId} AND "CustomerId" = {customer}
+            """).AnyAsync(ct))
+            return (false, null);
+
+        if (itemId is int id)
+        {
+            var name = await db.Items.Where(item => item.Id == id && item.GmachId == gmachId && item.IsActive)
+                .Select(item => item.Name).SingleOrDefaultAsync(ct);
+            if (name == null) return (false, null);
+            message = $"אני מתעניין בפריט {name}";
+        }
+
+        var now = DateTime.UtcNow;
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "GmachChatMessages" ("GmachId", "CustomerId", "SenderId", "Text", "SentAt")
+            VALUES ({gmachId}, {customer}, {actorId}, {message}, {now})
+            """, ct);
+        return (true, customerId.HasValue ? null : owner.Email);
+    }
+
+    private Task<OwnerContact?> FindOwnerAsync(int gmachId, CancellationToken ct)
+        => db.Gmachs.Where(gmach => gmach.Id == gmachId)
+            .Select(gmach => new OwnerContact(gmach.OwnerId, gmach.Owner.Email))
+            .SingleOrDefaultAsync(ct);
+
+    private sealed record OwnerContact(int Id, string Email);
+}
