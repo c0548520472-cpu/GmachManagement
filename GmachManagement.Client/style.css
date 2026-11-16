@@ -742,3 +742,8 @@ body::before{opacity:.22;background-size:clamp(290px,48vw,650px)}
 .site-admin-user-entry>.site-admin-user-row{flex:1;min-width:0}
 .site-admin-user-entry[hidden]{display:none!important}
 @media(max-width:600px){.site-admin-bulk-toolbar{flex-direction:column;align-items:stretch}.site-admin-bulk-toolbar button{width:100%}.site-admin-user-entry{align-items:flex-start}.site-admin-user-entry>.site-admin-select-label{margin-top:8px}}
+
+/* Unified directory search */
+.home-filters #unifiedGmachSearch{flex:1 1 440px;min-width:min(100%,260px);font-size:16px;padding:13px 18px;max-width:760px}
+.home-filters #findGmachs{flex:0 0 auto;min-width:112px}
+@media(max-width:540px){.home-filters #unifiedGmachSearch,.home-filters #findGmachs{flex-basis:100%;width:100%}}
