@@ -1015,13 +1015,20 @@ ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerField
 async function findGmachs(){
  const sequence=++gmachSearchSequence;
  const list=document.getElementById("gmachList");
- const query=new URLSearchParams({city:normalizeCity(document.getElementById("citySearch").value.trim()),search:document.getElementById("gmachSearch").value.trim()});
- const itemTerm=document.getElementById("homeItemSearch").value.trim();
- if(itemTerm) query.set("itemSearch",itemTerm);
- const cacheKey="/gmachs?"+query;
- if (!publicRequestCache.has(cacheKey) && !list.children.length) {const loading=document.createElement("p");loading.textContent="טוען גמ״חים...";list.append(loading);}
+ const term=document.getElementById("unifiedGmachSearch").value.trim();
+ if(!list.children.length){const loading=document.createElement("p");loading.textContent="טוען גמ״חים...";list.append(loading);}
  try {
-  const groups=await apiRequest("/gmachs?"+query);
+  const searches=term
+   ? [
+       new URLSearchParams({city:normalizeCity(term)}),
+       new URLSearchParams({search:term}),
+       new URLSearchParams({itemSearch:term})
+     ]
+   : [new URLSearchParams()];
+  const results=await Promise.allSettled(searches.map(query=>apiRequest("/gmachs?"+query)));
+  const successful=results.filter(result=>result.status==="fulfilled");
+  if(!successful.length)throw results[0].reason;
+  const groups=[...new Map(successful.flatMap(result=>result.value).map(group=>[group.id,group])).values()];
   if(sequence!==gmachSearchSequence)return;
   list.replaceChildren();
   for(const group of groups){
@@ -1044,7 +1051,7 @@ async function renderGmach(id){
  const grid=document.createElement("div");grid.className="gmach-items-grid";
  const title=document.createElement("h2");title.textContent=g.name+" — "+normalizeCity(g.city);section.append(title);
  const desc=document.createElement("p");desc.textContent=g.description||"";section.append(desc);
- for(const item of g.items.filter(item=>item.isActive&&item.availableCopies>0&&item.name.toLocaleLowerCase("he").includes(document.getElementById("homeItemSearch").value.trim().toLocaleLowerCase("he")))){const card=document.createElement("article");card.className="item-card";
+ for(const item of g.items.filter(item=>item.isActive&&item.availableCopies>0)){const card=document.createElement("article");card.className="item-card";
  const name=document.createElement("h3");name.textContent=item.name;
  const info=document.createElement("p");info.textContent=(item.description||"")+" | עותקים זמינים: "+item.availableCopies;
  const button=document.createElement("button");button.textContent="השאלה";button.disabled=!item.isActive||item.availableCopies<1;
@@ -1056,7 +1063,7 @@ async function renderGmach(id){
 }
 document.getElementById("backToGmachs").addEventListener("click",showHome);
 document.getElementById("findGmachs").addEventListener("click",findGmachs);
-for(const id of ["citySearch","gmachSearch","homeItemSearch"])document.getElementById(id).addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();findGmachs();}});
+document.getElementById("unifiedGmachSearch").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();findGmachs();}});
 const startupParams=new URLSearchParams(location.search);
 const initialPage=startupParams.has("gmach")?"gmach":startupParams.get("page");
 showPage(["login","account","owner","profile","gmach","siteAdmin","about","privacy","contact"].includes(initialPage)?initialPage:"home",false);
