@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GmachManagement.Core.DTOs;
 
-public class RegisterDto
+public class RegisterDto : IValidatableObject
 {
     [Required]
     [StringLength(100)]
@@ -22,6 +22,25 @@ public class RegisterDto
     [StringLength(100)] public string? City { get; set; }
 
     [Required]
-    [MinLength(8)]
+    [StringLength(128, MinimumLength = 15, ErrorMessage = "סיסמת ההרשמה חייבת להכיל 15 עד 128 תווים.")]
     public string Password { get; set; } = string.Empty;
+
+    private static readonly HashSet<string> CommonPasswords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "123456789012345", "1234567890123456", "0123456789012345",
+        "abcdefghijklmnopqrstuvwxyz", "abcdefghijklmnop", "qwertyuiopasdfgh",
+        "password12345678", "password123456789", "passwordpassword",
+        "1234567890qwerty", "1234567890abcdef"
+    };
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (CommonPasswords.Contains(Password) ||
+            System.Text.RegularExpressions.Regex.IsMatch(Password, @"\A(.{1,4})\1+\z",
+                System.Text.RegularExpressions.RegexOptions.Singleline))
+        {
+            yield return new ValidationResult("הסיסמה קלה לניחוש. בחר סיסמה אחרת או השתמש בהצעה של מנהל הסיסמאות.",
+                new[] { nameof(Password) });
+        }
+    }
 }
