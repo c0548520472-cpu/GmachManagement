@@ -288,7 +288,7 @@
                 <h3>למי המידע נחשף?</h3><p>פרטים שהמשתמש בוחר לפרסם עשויים להיות גלויים למבקרים. פרטי קשר בבקשת השאלה נמסרים לבעל הגמ״ח הרלוונטי לצורך טיפול בבקשה. מנהלי האתר וספקי תשתית ואחסון עשויים לגשת למידע במידה הדרושה לתפעול האתר.</p>
                 <h3>אחסון ואבטחה</h3><p>האתר עושה שימוש בשירותי אירוח ותשתית חיצוניים. ננקטים אמצעי הגנה טכנולוגיים בהתאם למימוש המערכת, אך אין אפשרות להבטיח אבטחה מוחלטת. מומלץ לא למסור פרטים רגישים שאינם נדרשים לשירות.</p>
                 <h3>שמירת מידע ומחיקתו</h3><p>מידע עשוי להישמר כל עוד הוא נדרש לתפעול, לטיפול בהשאלות, לאבטחה או לעמידה בחובות חוקיות. בקשות לעיון, תיקון או מחיקת מידע ניתן להפנות להנהלת האתר; טיפול בבקשה כפוף לצורכי התפעול ולדין החל.</p>
-                <h3>אחסון מקומי וקובצי Cookie</h3><p>האתר עשוי להשתמש באחסון הדפדפן לצורך שמירת מצב ההתחברות והפעלת השירות. ספקי האירוח עשויים להשתמש בטכנולוגיות נוספות לצורכי אבטחה ותפעול.</p>
+                <h3>אחסון מקומי וקובצי Cookie</h3><p>אחסון הדפדפן משמש לשמירת מצב ההתחברות והעדפות העוגיות. בהסכמה, רשימת הגמ״חים נשמרת זמנית בלשונית כדי להציג אותה מהר יותר. אפשר לשנות את הבחירה דרך „הגדרות עוגיות” בתחתית האתר. ספקי האירוח עשויים להשתמש בטכנולוגיות נוספות לצורכי אבטחה ותפעול.</p>
                 <h3>עדכונים ויצירת קשר</h3><p>מדיניות זו עשויה להתעדכן מעת לעת. לשאלות בנושא פרטיות או למימוש זכויות בנוגע למידע אישי, ניתן לפנות דרך עמוד יצירת הקשר.</p>
             </div>
         </section>
@@ -304,7 +304,26 @@
         </section>
     </main>
 
-    <footer class="site-footer"><div class="footer-inner"><div class="footer-brand"><img src="logo-full.png" alt="" width="96" height="64"><span><strong>ניהול הגמ״ח</strong><small>נותנים מכל הלב</small></span></div><nav aria-label="קישורים נוספים"><button type="button" data-info-page="about">אודות האתר</button><button type="button" data-info-page="privacy">מדיניות פרטיות</button><button type="button" data-info-page="contact">צור קשר</button></nav><p>© <span id="footerYear">2026</span> ניהול הגמ״ח · מחברים בין אנשים</p></div></footer>
+    <footer class="site-footer"><div class="footer-inner"><div class="footer-brand"><img src="logo-full.png" alt="" width="96" height="64"><span><strong>ניהול הגמ״ח</strong><small>נותנים מכל הלב</small></span></div><nav aria-label="קישורים נוספים"><button type="button" data-info-page="about">אודות האתר</button><button type="button" data-info-page="privacy">מדיניות פרטיות</button><button id="cookieSettings" type="button">הגדרות עוגיות</button><button type="button" data-info-page="contact">צור קשר</button></nav><p>© <span id="footerYear">2026</span> ניהול הגמ״ח · מחברים בין אנשים</p></div></footer>
+    <div id="dataLoading" class="data-loading" role="status" hidden>
+        <span class="loading-apple" aria-hidden="true">🍎<i></i><i></i><i></i></span>
+        <span>טוען נתונים…</span>
+    </div>
+
+    <section id="cookieNotice" class="cookie-notice" aria-labelledby="cookieTitle" hidden>
+        <h2 id="cookieTitle" tabindex="-1">העדפות עוגיות</h2>
+        <p>האתר משתמש באחסון בדפדפן כדי לשמור על ההתחברות ולזכור את הבחירה שלך. אפשר לאפשר גם שמירה זמנית של רשימת הגמ״חים כדי להציג אותה מהר יותר בטעינה חוזרת.</p>
+        <div class="cookie-actions">
+            <button id="cookieAccept" class="primary" type="button">אישור הכול</button>
+            <button id="cookieCustomize" class="secondary" type="button" aria-controls="cookieDetails" aria-expanded="false">אישור חלקי</button>
+            <button id="cookieReject" class="secondary" type="button">דחה הכול</button>
+        </div>
+        <div id="cookieDetails" class="cookie-details" hidden>
+            <p>אחסון הכרחי מופעל תמיד. אפשר לבחור אם להפעיל אחסון אופציונלי.</p>
+            <label><input id="directoryCacheChoice" type="checkbox"> שמירה זמנית של רשימת הגמ״חים</label>
+            <button id="cookieSave" class="primary" type="button">שמירת בחירה</button>
+        </div>
+    </section>
     <script src="app.js"></script>
 </body>
 </html>

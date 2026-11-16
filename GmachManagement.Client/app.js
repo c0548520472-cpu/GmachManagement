@@ -69,8 +69,79 @@ const publicRequestCache = new Map();
 const publicPendingRequests = new Map();
 const PUBLIC_CACHE_MS = 60000;
 const DIRECTORY_STORAGE_KEY = "gmachPublicDirectory";
+const COOKIE_PREFERENCE_KEY = "gmachCookiePreference.v1";
+let cookiePreference = null;
+try {
+    const saved = localStorage.getItem(COOKIE_PREFERENCE_KEY);
+    if (["all", "partial", "none"].includes(saved)) cookiePreference = saved;
+} catch { /* The preference can still be used for this page. */ }
+
+const cookieNotice = document.getElementById("cookieNotice");
+const cookieDetails = document.getElementById("cookieDetails");
+const cookieCustomize = document.getElementById("cookieCustomize");
+const directoryCacheChoice = document.getElementById("directoryCacheChoice");
+
+function allowsDirectoryStorage() {
+    return cookiePreference === "all" || cookiePreference === "partial";
+}
+
+function openCookieNotice(moveFocus = false) {
+    cookieDetails.hidden = true;
+    cookieCustomize.setAttribute("aria-expanded", "false");
+    directoryCacheChoice.checked = allowsDirectoryStorage();
+    cookieNotice.hidden = false;
+    if (moveFocus) document.getElementById("cookieTitle").focus();
+}
+
+function saveCookiePreference(choice) {
+    cookiePreference = choice;
+    try { localStorage.setItem(COOKIE_PREFERENCE_KEY, choice); } catch { /* Storage is optional. */ }
+    if (!allowsDirectoryStorage()) {
+        try { sessionStorage.removeItem(DIRECTORY_STORAGE_KEY); } catch { /* Storage is optional. */ }
+    } else {
+        const currentDirectory = publicRequestCache.get("/gmachs");
+        if (currentDirectory?.expiresAt > Date.now()) storeDirectorySnapshot(currentDirectory.value);
+    }
+    const restoreFocus = cookieNotice.contains(document.activeElement);
+    cookieNotice.hidden = true;
+    if (restoreFocus) document.getElementById("cookieSettings").focus();
+}
+
+document.getElementById("cookieSettings").addEventListener("click", () => openCookieNotice(true));
+document.getElementById("cookieAccept").addEventListener("click", () => saveCookiePreference("all"));
+document.getElementById("cookieReject").addEventListener("click", () => saveCookiePreference("none"));
+cookieCustomize.addEventListener("click", () => {
+    cookieDetails.hidden = false;
+    cookieCustomize.setAttribute("aria-expanded", "true");
+    directoryCacheChoice.focus();
+});
+document.getElementById("cookieSave").addEventListener("click", () => {
+    saveCookiePreference(directoryCacheChoice.checked ? "partial" : "none");
+});
+if (!allowsDirectoryStorage()) {
+    try { sessionStorage.removeItem(DIRECTORY_STORAGE_KEY); } catch { /* Storage is optional. */ }
+}
+if (cookiePreference === null) openCookieNotice();
+
+const dataLoading = document.getElementById("dataLoading");
+let activeLoads = 0;
+let loaderTimer;
+async function withDataLoading(operation) {
+    if (++activeLoads === 1) {
+        loaderTimer = setTimeout(() => { dataLoading.hidden = false; }, 180);
+    }
+    try {
+        return await operation();
+    } finally {
+        if (--activeLoads === 0) {
+            clearTimeout(loaderTimer);
+            dataLoading.hidden = true;
+        }
+    }
+}
 const DIRECTORY_SNAPSHOT_MS = 5 * 60 * 1000;
 function readDirectorySnapshot() {
+    if (!allowsDirectoryStorage()) return null;
     try {
         const snapshot = JSON.parse(sessionStorage.getItem(DIRECTORY_STORAGE_KEY));
         if (snapshot?.expiresAt > Date.now() && Array.isArray(snapshot.groups)) return snapshot.groups;
@@ -78,6 +149,7 @@ function readDirectorySnapshot() {
     return null;
 }
 function storeDirectorySnapshot(groups) {
+    if (!allowsDirectoryStorage()) return;
     try {
         sessionStorage.setItem(DIRECTORY_STORAGE_KEY, JSON.stringify({
             groups, expiresAt: Date.now() + DIRECTORY_SNAPSHOT_MS
@@ -117,7 +189,11 @@ async function apiRequest(path, options = {}) {
     publicPendingRequests.set(cacheKey, request);
     return request;
 }
-async function requestFromServer(path, options = {}) {
+function requestFromServer(path, options) {
+    return withDataLoading(() => fetchFromServer(path, options));
+}
+
+async function fetchFromServer(path, options = {}) {
     const headers = new Headers(options.headers || {});
 
     // Public directory endpoints must work without login or an expired saved token.
@@ -1097,7 +1173,7 @@ showPage(["login","account","owner","profile","gmach","siteAdmin","about","priva
 document.getElementById("excelImportForm").addEventListener("submit",async event=>{
  event.preventDefault();const file=document.getElementById("excelFile").files[0];if(!file)return;
  const form=new FormData();form.append("file",file);
- try{const response=await fetch(API_BASE+"/gmachs/mine/import",{method:"POST",headers:{Authorization:"Bearer "+token},body:form});
+ try{const response=await withDataLoading(() => fetch(API_BASE+"/gmachs/mine/import",{method:"POST",headers:{Authorization:"Bearer "+token},body:form}));
  const result=await response.json();if(!response.ok)throw new Error(result.message||"ייבוא נכשל");
  clearPublicData();
  showMessage(document.getElementById("adminMessage"),"יובאו "+result.imported+" פריטים בהצלחה","success");await refreshAdmin();await loadItems();await findGmachs();
