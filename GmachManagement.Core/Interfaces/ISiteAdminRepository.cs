@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
 namespace GmachManagement.Core.Interfaces;
 public interface ISiteAdminRepository {
@@ -15,4 +16,7 @@ public interface ISiteAdminRepository {
  Task<string?> DeleteGmachAsync(int id,CancellationToken ct);
  Task<string?> EditItemAsync(int id,string name,string description,CancellationToken ct);
  Task<string?> DeleteItemAsync(int id,CancellationToken ct);
+
+ Task<List<OpenLoanDto>> OpenLoansAsync(CancellationToken ct);
+ Task<int> DeleteOpenLoansAsync(IReadOnlyCollection<OpenLoanKey> keys, bool all, CancellationToken ct);
 }

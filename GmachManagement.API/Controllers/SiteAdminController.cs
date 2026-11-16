@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using GmachManagement.Service.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -82,5 +83,29 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
  public async Task<IActionResult> ItemDelete(int id,CancellationToken ct){
   if(!await Allowed(ct))return Forbid();
   return Result(await service.DeleteItemAsync(id,ct));
+ }
+
+ public sealed record DeleteOpenLoansInput(bool Confirmed, bool All, OpenLoanKey[]? Loans);
+
+ [HttpGet("open-loans")]
+ public async Task<IActionResult> OpenLoans(CancellationToken ct)
+ {
+     if (!await Allowed(ct)) return Forbid();
+     return Ok(await service.OpenLoansAsync(ct));
+ }
+
+ [HttpPost("open-loans/delete")]
+ public async Task<IActionResult> DeleteOpenLoans(DeleteOpenLoansInput request, CancellationToken ct)
+ {
+     if (!await Allowed(ct)) return Forbid();
+
+     if (!request.Confirmed || request.Loans is not { Length: > 0 } ||
+         request.Loans.Any(key => key is null || key.Id <= 0 || key.Kind is not ("standard" or "managed")))
+     {
+         return BadRequest(new { message = "יש לבחור השאלות פתוחות ולאשר את המחיקה." });
+     }
+
+     var deleted = await service.DeleteOpenLoansAsync(request.Loans.Distinct().ToArray(), request.All, ct);
+     return Ok(new { deleted });
  }
 }

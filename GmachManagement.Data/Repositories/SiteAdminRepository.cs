@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GmachManagement.Data.Repositories;
 
-public sealed class SiteAdminRepository(AppDbContext db) : ISiteAdminRepository {
+public sealed partial class SiteAdminRepository(AppDbContext db) : ISiteAdminRepository {
  private static string Normalize(string email)=>email.Trim().ToLowerInvariant();
  public Task<bool> IsSiteAdminAsync(int userId,string? bootstrapEmail,CancellationToken ct)=>
   db.Users.AsNoTracking().AnyAsync(u=>u.Id==userId && (u.Role==UserRole.SiteAdmin ||

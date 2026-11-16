@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Interfaces;
 using GmachManagement.Core.Entities;
 namespace GmachManagement.Service.Services;
@@ -16,4 +17,8 @@ public sealed class SiteAdminService(ISiteAdminRepository repo) {
  public Task<string?> DeleteGmachAsync(int id,CancellationToken ct)=>repo.DeleteGmachAsync(id,ct);
  public Task<string?> EditItemAsync(int id,string name,string description,CancellationToken ct)=>repo.EditItemAsync(id,name,description,ct);
  public Task<string?> DeleteItemAsync(int id,CancellationToken ct)=>repo.DeleteItemAsync(id,ct);
+
+ public Task<List<OpenLoanDto>> OpenLoansAsync(CancellationToken ct) => repo.OpenLoansAsync(ct);
+ public Task<int> DeleteOpenLoansAsync(IReadOnlyCollection<OpenLoanKey> keys, bool all, CancellationToken ct)
+     => repo.DeleteOpenLoansAsync(keys, all, ct);
 }
