@@ -290,8 +290,8 @@ authForm.addEventListener("submit", async (event) => {
             return;
         }
 
-        if (password.length < 15 || password.length > 128) {
-            showMessage(authMessage, "סיסמת ההרשמה חייבת להכיל 15 עד 128 תווים.", "error");
+        if (password.length < 8 || password.length > 128 || !hasRegistrationPasswordMix(password)) {
+            showMessage(authMessage, "יש להזין סיסמה באורך 8 עד 128 תווים שכוללת אות, ספרה וסימן.", "error");
             document.getElementById("password").focus();
             return;
         }
@@ -346,6 +346,28 @@ authForm.addEventListener("submit", async (event) => {
     }
 });
 
+function hasRegistrationPasswordMix(password) {
+    return /\p{L}/u.test(password) && /\p{Nd}/u.test(password) && /[\p{P}\p{S}]/u.test(password);
+}
+
+function suggestRegistrationPassword() {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*-_";
+    const bytes = new Uint8Array(32);
+    const limit = 256 - 256 % alphabet.length;
+    let password;
+    do {
+        password = "";
+        while (password.length < 20) {
+            crypto.getRandomValues(bytes);
+            for (const value of bytes) {
+                if (value < limit) password += alphabet[value % alphabet.length];
+                if (password.length === 20) break;
+            }
+        }
+    } while (!hasRegistrationPasswordMix(password));
+    return password;
+}
+
 function switchAuthMode(mode) {
     const password = document.getElementById("password");
     if (authMode !== mode) {
@@ -372,6 +394,10 @@ function switchAuthMode(mode) {
     password.autocomplete = mode === "register" ? "new-password" : "current-password";
     password.minLength = 0;
     document.getElementById("registerPasswordHint").hidden = mode !== "register";
+    const suggestion = document.getElementById("registerPasswordSuggestion");
+    const panel = document.getElementById("registerPasswordSuggestionPanel");
+    panel.hidden = mode !== "register" || !globalThis.crypto?.getRandomValues;
+    suggestion.textContent = panel.hidden ? "" : suggestion.textContent || suggestRegistrationPassword();
 
     document.getElementById("authSubmit").textContent =
         mode === "login" ? "התחברות" : "הרשמה";
@@ -383,6 +409,14 @@ function switchAuthMode(mode) {
 document.getElementById("loginTab").addEventListener(
     "click", () => switchAuthMode("login")
 );
+
+document.getElementById("useSuggestedPassword").addEventListener("click", () => {
+    if (authMode !== "register") return;
+    const password = document.getElementById("password");
+    password.value = document.getElementById("registerPasswordSuggestion").textContent;
+    password.dispatchEvent(new Event("input", {bubbles: true}));
+    password.focus();
+});
 
 document.getElementById("registerTab").addEventListener(
     "click", () => switchAuthMode("register")
