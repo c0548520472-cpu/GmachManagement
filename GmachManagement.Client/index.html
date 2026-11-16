@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=inline-loader">
+    <link rel="stylesheet" href="style.css?v=gmach-communications">
 </head>
 <body>
     <header class="header">
@@ -153,6 +153,11 @@
 
         <section id="accountPage" class="account-page" hidden>
             <div class="page-heading"><h2>האזור האישי שלי</h2><p class="muted">ניהול השאלות ופעולות אישיות</p></div>
+            <p id="borrowApprovalStatus" class="message" role="status"></p>
+            <section id="borrowApprovals" class="auth-card wide-card" hidden>
+                <h2>בקשות השאלה שאושרו</h2>
+                <ul id="borrowApprovalList"></ul>
+            </section>
             <section id="openLoansSection" class="auth-card wide-card"><h2>ההשאלות הפתוחות שלי</h2><label for="personalItemSearch">חיפוש השאלות לפי שם או תיאור פריט</label><input id="personalItemSearch" type="search" placeholder="הקלידי שם או תיאור פריט..." autocomplete="off"><p class="muted">השאלות שעדיין ממתינות להחזרה</p><div id="openPersonalList" class="items-grid"></div><p id="openPersonalMessage" class="message" role="status"></p><h3>השאלות פתוחות מהגמ״ח</h3><p id="myLoansMessage" class="message" role="status"></p><div id="myLoansList" class="items-grid"></div></section>
             <section id="personalSection" class="auth-card wide-card" style="margin-top:24px">
                 <h2>השאלה חדשה</h2>
@@ -186,7 +191,7 @@
             <div class="page-heading"><h2>אזור בעל הגמ״ח</h2><p class="muted">ניהול פריטים, השאלות וייבוא Excel</p></div>
             <section id="adminSection" class="auth-card wide-card" hidden style="margin-top:24px">
                 <h2>ניהול גמ"ח</h2>
-                <div id="ownerGmachInfo"></div><form id="claimGmachForm" hidden><h3>שיוך גמ״ח לחשבון קיים</h3><label for="claimGmachName">שם הגמ״ח</label><input id="claimGmachName" maxlength="150" required><label for="claimGmachCity">עיר</label><input id="claimGmachCity" maxlength="100" required><button type="submit" class="primary">יצירת הגמ״ח שלי</button></form><div id="ownerManagement" hidden><form id="excelImportForm" enctype="multipart/form-data"><label for="excelFile">ייבוא פריטים מ־Excel (עמודה A: שם פריט, עמודה B: תיאור, עמודה C: כמות הפריט בגמ״ח)</label><input id="excelFile" type="file" accept=".xlsx" required><button class="primary" type="submit">ייבוא Excel</button></form>
+                <div id="ownerGmachInfo"></div><form id="claimGmachForm" hidden><h3>שיוך גמ״ח לחשבון קיים</h3><label for="claimGmachName">שם הגמ״ח</label><input id="claimGmachName" maxlength="150" required><label for="claimGmachCity">עיר</label><input id="claimGmachCity" maxlength="100" required><button type="submit" class="primary">יצירת הגמ״ח שלי</button></form><div id="ownerManagement" hidden><button id="ownerChatInbox" class="secondary" type="button">הודעות צ׳אט</button><form id="excelImportForm" enctype="multipart/form-data"><label for="excelFile">ייבוא פריטים מ־Excel (עמודה A: שם פריט, עמודה B: תיאור, עמודה C: כמות הפריט בגמ״ח)</label><input id="excelFile" type="file" accept=".xlsx" required><button class="primary" type="submit">ייבוא Excel</button></form>
                 <form id="adminItemForm">
                     <label for="adminItemName">שם פריט</label><input id="adminItemName" required maxlength="150">
                     <label for="adminItemDescription">תיאור</label><input id="adminItemDescription">
@@ -219,6 +224,36 @@
                 <div class="dialog-actions"><button id="cancelOwnerBorrow" type="button" class="secondary">ביטול</button><button class="primary" type="submit">שמירת השאלה</button></div>
             </form>
         </dialog>
+        <dialog id="borrowSuccessDialog" class="borrow-confirmation" aria-labelledby="borrowSuccessTitle">
+            <div class="confirmation-check" aria-hidden="true">✓</div>
+            <h2 id="borrowSuccessTitle">בקשתך התקבלה בהצלחה</h2>
+            <p>בעל הגמ״ח יצור איתך קשר בהקדם.</p>
+            <form method="dialog"><button class="primary" type="submit">סגירה</button></form>
+        </dialog>
+
+        <dialog id="borrowApprovalDialog" class="borrow-confirmation" aria-labelledby="borrowApprovalTitle">
+            <div class="confirmation-check" aria-hidden="true">✓</div>
+            <h2 id="borrowApprovalTitle">בקשת ההשאלה אושרה</h2>
+            <p id="approvalText"></p>
+            <form method="dialog"><button class="primary" type="submit">הבנתי</button></form>
+        </dialog>
+
+        <dialog id="gmachChat" class="gmach-chat" aria-labelledby="gmachChatTitle">
+            <header>
+                <h2 id="gmachChatTitle">צ׳אט עם בעל הגמ״ח</h2>
+                <form method="dialog"><button class="secondary" type="submit" aria-label="סגירת הצ׳אט">×</button></form>
+            </header>
+            <div id="gmachChatInbox" class="chat-choices"></div>
+            <div id="gmachChatProducts" class="chat-choices"></div>
+            <div id="gmachChatMessages" class="chat-messages" role="log" aria-live="polite"></div>
+            <p id="gmachChatStatus" class="message" role="status"></p>
+            <form id="gmachChatForm" hidden>
+                <label for="gmachChatInput">הודעה</label>
+                <textarea id="gmachChatInput" rows="2" maxlength="1000" required></textarea>
+                <button id="gmachChatSend" class="primary" type="submit">שליחה</button>
+            </form>
+        </dialog>
+
         <dialog id="borrowDialog">
             <form id="borrowForm">
                 <h2>השאלת פריט</h2>
@@ -319,6 +354,6 @@
             <button id="cookieSave" class="primary" type="button">שמירת בחירה</button>
         </div>
     </section>
-    <script src="app.js?v=inline-loader"></script>
+    <script src="app.js?v=gmach-communications"></script>
 </body>
 </html>
