@@ -7,11 +7,21 @@ namespace GmachManagement.Data.Repositories;
 public sealed class GmachRepository : IGmachRepository {
  private readonly AppDbContext db;
  public GmachRepository(AppDbContext db) => this.db=db;
- public async Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct) {
+ public async Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct,int? applicantId = null) {
   var available=await db.Items.AnyAsync(i=>i.Id==itemId && i.IsActive && i.GmachId!=null && i.Copies.Any(c=>c.Status==GmachManagement.Core.Enums.ItemStatus.Available),ct);
   if(!available)return null;
   var request=new BorrowRequest{ItemId=itemId,ApplicantName=name.Trim(),Phone=phone?.Trim(),Email=email?.Trim(),CreatedAt=DateTime.UtcNow};
-  db.BorrowRequests.Add(request);await db.SaveChangesAsync(ct);return request;
+  await using var transaction = applicantId.HasValue ? await db.Database.BeginTransactionAsync(ct) : null;
+  db.BorrowRequests.Add(request);
+  await db.SaveChangesAsync(ct);
+  if (applicantId is int userId)
+  {
+   await db.Database.ExecuteSqlInterpolatedAsync($"""
+     INSERT INTO "BorrowRequestApplicants" ("RequestId", "UserId") VALUES ({request.Id}, {userId})
+     """, ct);
+   await transaction!.CommitAsync(ct);
+  }
+  return request;
  }
  public Task<List<BorrowRequest>> GetBorrowRequestsAsync(int ownerId,CancellationToken ct)=>
   db.BorrowRequests.AsNoTracking().Include(r=>r.Item)

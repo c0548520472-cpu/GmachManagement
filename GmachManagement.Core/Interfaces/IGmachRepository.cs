@@ -2,7 +2,7 @@ using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
 namespace GmachManagement.Core.Interfaces;
 public interface IGmachRepository {
- Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct);
+ Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct,int? applicantId = null);
  Task<List<BorrowRequest>> GetBorrowRequestsAsync(int ownerId,CancellationToken ct);
  Task<bool> FulfillBorrowRequestAsync(int ownerId,int requestId,CancellationToken ct);
  Task<List<Gmach>> SearchAsync(string? city,string? search,CancellationToken ct);

@@ -29,6 +29,12 @@ namespace GmachManagement.API
                 QueueLimit = 0,
                 AutoReplenishment = true
             }));
+    options.AddPolicy("gmach-chat-send", context =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anonymous",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions {
+                PermitLimit = 12, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+            }));
     options.RejectionStatusCode = 429;
 });
 builder.Services.AddMemoryCache();
@@ -152,6 +158,8 @@ builder.Services.AddControllers();
 
 
             builder.Services.AddScoped<IItemService, ItemService>();
+            builder.Services.AddScoped<GmachCommunicationService>();
+            builder.Services.AddHttpClient("GmachChatEmail", client => client.Timeout = TimeSpan.FromSeconds(8));
 
 
             var app = builder.Build();
@@ -180,8 +188,8 @@ builder.Services.AddControllers();
 
             app.UseCors("ClientPolicy");
 
+            app.UseAuthentication();
             app.UseRateLimiter();
-app.UseAuthentication();
             app.UseAuthorization();
 
 
