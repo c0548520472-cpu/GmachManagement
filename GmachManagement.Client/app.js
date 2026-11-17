@@ -18,6 +18,8 @@ let currentItems = [];
 let selectedCopyId = null;
 let gmachSearchSequence = 0;
 let gmachDetailsSequence = 0;
+let chatGreetingEntryTimer;
+let chatGreetingHideTimer;
 let activeChat = null;
 let selectedChatGmach = null;
 let openChatOnGmachLoad = null;
@@ -1002,7 +1004,7 @@ function showPage(page, push = true) {
     if (page === "gmach") { const id=Number(new URLSearchParams(location.search).get("gmach")); if(Number.isInteger(id)&&id>0)renderGmach(id);else showPage("home",true); }
     selectedChatGmach = null;
     if (page !== "gmach") openChatOnGmachLoad = null;
-    document.getElementById("floatingGmachChat").classList.toggle("is-gmach", page === "gmach");
+    updateChatGreetingForPage(page === "gmach");
     const chat = document.getElementById("gmachChat");
     if (chat.open) chat.close();
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); loadBorrowApprovals(); }
@@ -1829,7 +1831,29 @@ async function openFloatingGmachChat() {
     }
 }
 
-document.getElementById("floatingGmachChat").addEventListener("click", openFloatingGmachChat);
+function updateChatGreetingForPage(isGmach) {
+    const launcher = document.getElementById("floatingGmachChat");
+    clearTimeout(chatGreetingEntryTimer);
+    clearTimeout(chatGreetingHideTimer);
+    launcher.classList.remove("show-greeting");
+    launcher.classList.toggle("is-gmach", isGmach);
+    if (isGmach) chatGreetingEntryTimer = setTimeout(showChatGreeting, 500);
+}
+
+function showChatGreeting() {
+    const launcher = document.getElementById("floatingGmachChat");
+    if (!launcher.classList.contains("is-gmach")) return;
+    clearTimeout(chatGreetingEntryTimer);
+    clearTimeout(chatGreetingHideTimer);
+    launcher.classList.add("show-greeting");
+    chatGreetingHideTimer = setTimeout(() => launcher.classList.remove("show-greeting"), 5000);
+}
+
+const chatLauncher = document.getElementById("floatingGmachChat");
+chatLauncher.querySelector(".floating-chat-icon").addEventListener("pointerenter", event => {
+    if (event.pointerType === "mouse" && chatLauncher.classList.contains("is-gmach")) showChatGreeting();
+});
+chatLauncher.addEventListener("click", openFloatingGmachChat);
 
 function resizeChatInput() {
     const input = document.getElementById("gmachChatInput");
