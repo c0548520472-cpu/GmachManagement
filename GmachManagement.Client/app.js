@@ -1384,6 +1384,7 @@ async function loadSiteAdmin(keepMessage=false) {
             const title=document.createElement("h3");title.textContent=g.name;
             const details=document.createElement("p");details.textContent=g.city+" | בעלים מספר "+g.ownerId;
             card.append(title,details);
+            card.append(adminActionButton("צ׳אט עם מנהל הגמ״ח", () => openCustomerChat(g, true)));
             card.append(adminActionButton("עריכת פרטי גמ״ח",async()=>{
                 const name=prompt("שם הגמ״ח",g.name);if(name===null)return;
                 const city=prompt("עיר",g.city);if(city===null)return;
@@ -1580,9 +1581,14 @@ function showChatPanel(title) {
     if (!panel.open) panel.show();
 }
 
-function openCustomerChat(gmach) {
+function openCustomerChat(gmach, freeText = false) {
     showChatPanel(gmach.name);
     const chat = {gmachId: gmach.id, token};
+    if (freeText) {
+        startChat(chat);
+        document.getElementById("gmachChatInput").focus();
+        return;
+    }
     const choices = document.getElementById("gmachChatProducts");
     const intro = document.createElement("p");
     intro.textContent = "באיזה מוצר מהגמ״ח אתם מתעניינים?";
@@ -1614,9 +1620,10 @@ async function showOwnerChatInbox() {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "secondary";
-            button.textContent = thread.customerName;
+            const sender = `${thread.customerName} · משתמש מס׳ ${thread.customerId}`;
+            button.textContent = sender;
             button.addEventListener("click", () => {
-                showChatPanel(thread.customerName);
+                showChatPanel(`פנייה מאת ${sender}`);
                 const back = document.createElement("button");
                 back.type = "button";
                 back.className = "secondary";
@@ -1791,13 +1798,14 @@ async function openFloatingGmachChat() {
     }
 
     const chooser = {token};
+    const fromSiteAdmin = isSiteAdminToken() && !document.getElementById("siteAdminPage").hidden;
     clearInterval(chatTimer);
     activeChat = chooser;
-    showChatPanel("עם איזה גמ״ח תרצו להתכתב?");
+    showChatPanel(fromSiteAdmin ? "בחירת מנהל גמ״ח לשיחה" : "עם איזה גמ״ח תרצו להתכתב?");
     const status = document.getElementById("gmachChatStatus");
     showMessage(status, "טוען גמ״חים…", "loading");
     try {
-        const gmachs = await apiRequest("/gmachs");
+        const gmachs = await apiRequest(fromSiteAdmin ? "/site-admin/gmachs" : "/gmachs");
         if (activeChat !== chooser || token !== chooser.token) return;
         showMessage(status, gmachs.length ? "" : "אין גמ״חים זמינים.");
         const inbox = document.getElementById("gmachChatInbox");
@@ -1807,6 +1815,10 @@ async function openFloatingGmachChat() {
             choice.className = "secondary";
             choice.textContent = `${gmach.name} · ${normalizeCity(gmach.city)}`;
             choice.addEventListener("click", () => {
+                if (fromSiteAdmin) {
+                    openCustomerChat(gmach, true);
+                    return;
+                }
                 openChatOnGmachLoad = gmach.id;
                 showGmach(gmach.id);
             });
