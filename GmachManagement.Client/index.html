@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=chat-pulse">
+    <link rel="stylesheet" href="style.css?v=chat-composer-files">
 </head>
 <body>
     <header class="header">
@@ -254,9 +254,20 @@
             <div id="gmachChatMessages" class="chat-messages" role="log" aria-live="polite"></div>
             <p id="gmachChatStatus" class="message" role="status"></p>
             <form id="gmachChatForm" hidden>
-                <label for="gmachChatInput">הודעה</label>
-                <textarea id="gmachChatInput" rows="2" maxlength="1000" required></textarea>
-                <button id="gmachChatSend" class="primary" type="submit">שליחה</button>
+                <div id="gmachChatAttachmentPreview" class="chat-attachment-preview" hidden>
+                    <span id="gmachChatAttachmentName" dir="auto"></span>
+                    <button id="gmachChatRemoveAttachment" class="chat-composer-button secondary" type="button" aria-label="הסרת קובץ מצורף">×</button>
+                </div>
+                <div class="chat-composer">
+                    <input id="gmachChatFile" type="file" accept=".jpg,.jpeg,.png,.pdf" hidden>
+                    <button id="gmachChatAttach" class="chat-composer-button secondary" type="button" aria-label="צירוף קובץ" title="צירוף JPG, PNG או PDF עד 1 MB">
+                        <span aria-hidden="true">📎</span>
+                    </button>
+                    <textarea id="gmachChatInput" rows="1" maxlength="1000" placeholder="כתיבת הודעה…" aria-label="הודעה" dir="auto"></textarea>
+                    <button id="gmachChatSend" class="chat-composer-button primary" type="submit" aria-label="שליחת הודעה" title="שליחה">
+                        <span class="chat-send-icon" aria-hidden="true">➤</span>
+                    </button>
+                </div>
             </form>
         </dialog>
 
@@ -364,6 +375,6 @@
         <span class="floating-chat-icon" aria-hidden="true"><span></span></span>
         <span class="floating-chat-greeting chat-greeting-bubble" aria-hidden="true">היי, לכל שאלה אנחנו כאן<bdi dir="ltr">:)</bdi></span>
     </button>
-    <script src="app.js?v=chat-message-layout"></script>
+    <script src="app.js?v=chat-composer-files"></script>
 </body>
 </html>

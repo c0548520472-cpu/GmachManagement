@@ -1572,6 +1572,8 @@ function showChatPanel(title) {
     document.getElementById("gmachChatProducts").replaceChildren();
     document.getElementById("gmachChatMessages").replaceChildren();
     document.getElementById("gmachChatInput").value = "";
+    resizeChatInput();
+    clearChatAttachment();
     document.getElementById("gmachChatSend").disabled = false;
     document.getElementById("gmachChatForm").hidden = true;
     showMessage(document.getElementById("gmachChatStatus"), "");
@@ -1634,6 +1636,7 @@ function startChat(chat) {
     clearInterval(chatTimer);
     activeChat = chat;
     document.getElementById("gmachChatForm").hidden = false;
+    resizeChatInput();
     document.getElementById("gmachChatMessages").replaceChildren(createDataLoader("טוען הודעות…"));
     refreshChat(chat);
     chatTimer = setInterval(() => refreshChat(chat), 8000);
@@ -1655,7 +1658,8 @@ async function refreshChat(chat) {
             chat.pendingBubble = null;
             messages.replaceChildren(...result.map(message => createChatBubble(
                 message.text, message.mine,
-                message.mine && !chat.customerId ? (message.readByOwner ? "read" : "sent") : null
+                message.mine && !chat.customerId ? (message.readByOwner ? "read" : "sent") : null,
+                message.attachmentName, message.id, chat.gmachId
             )));
             if (shouldScroll) messages.scrollTop = messages.scrollHeight;
         }
@@ -1676,13 +1680,26 @@ async function refreshChat(chat) {
     }
 }
 
-function createChatBubble(text, mine, receipt) {
-    const bubble = document.createElement("p");
+function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachId) {
+    const row = document.createElement("div");
+    row.className = mine ? "chat-message-row chat-message-row-mine" : "chat-message-row";
+    const bubble = document.createElement("div");
     bubble.className = mine ? "chat-message chat-message-mine" : "chat-message";
     const message = document.createElement("bdi");
     message.className = "chat-message-text";
     message.textContent = text;
-    bubble.append(message);
+    if (text) bubble.append(message);
+    if (attachmentName) {
+        const attachment = document.createElement(messageId ? "button" : "span");
+        attachment.className = "chat-attachment";
+        attachment.textContent = "📎 " + attachmentName;
+        if (messageId) {
+            attachment.type = "button";
+            attachment.addEventListener("click", () => downloadChatAttachment(gmachId, messageId, attachmentName));
+        }
+        bubble.append(attachment);
+    }
+    row.append(bubble);
     if (receipt) {
         const marks = document.createElement("span");
         marks.className = `chat-ticks chat-ticks-${receipt}`;
@@ -1696,29 +1713,43 @@ function createChatBubble(text, mine, receipt) {
             tick.setAttribute("aria-hidden", "true");
             marks.append(tick);
         }
-        bubble.append(marks);
+        row.prepend(marks);
     }
-    return bubble;
+    return row;
 }
 
-async function sendChatMessage(chat, payload, productName = "") {
+async function sendChatMessage(chat, payload, productName = "", file = null) {
     if (!chat || chat.sending || activeChat !== chat || chat.token !== token) return;
     chat.sending = true;
     const submit = document.getElementById("gmachChatSend");
     const status = document.getElementById("gmachChatStatus");
     const messages = document.getElementById("gmachChatMessages");
-    const text = payload.text || `אני מתעניין בפריט ${productName}`;
-    const pending = createChatBubble(text, true, chat.customerId ? null : "pending");
+    const text = payload.text || (productName ? `אני מתעניין בפריט ${productName}` : "");
+    const pending = createChatBubble(text, true, chat.customerId ? null : "pending", file?.name);
     chat.pendingBubble = pending;
     messages.append(pending);
     messages.scrollTop = messages.scrollHeight;
     submit.disabled = true;
     showMessage(status, "שולח…");
     try {
+        if (file) {
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            const encoded = [];
+            for (let start = 0; start < bytes.length; start += 8192) {
+                encoded.push(String.fromCharCode(...bytes.subarray(start, start + 8192)));
+            }
+            if (activeChat !== chat || chat.token !== token) return;
+            payload = {...payload, attachmentName: file.name, attachmentBase64: btoa(encoded.join(""))};
+        }
         await apiRequest(chatPath(chat), {method: "POST", body: JSON.stringify(payload)});
         if (activeChat !== chat || chat.token !== token) return;
-        if (payload.text) document.getElementById("gmachChatInput").value = "";
-        const sent = createChatBubble(text, true, chat.customerId ? null : "sent");
+        const input = document.getElementById("gmachChatInput");
+        if (payload.text && input.value.trim() === payload.text) {
+            input.value = "";
+            resizeChatInput();
+        }
+        if (file && document.getElementById("gmachChatFile").files[0] === file) clearChatAttachment();
+        const sent = createChatBubble(text, true, chat.customerId ? null : "sent", file?.name);
         pending.replaceWith(sent);
         chat.pendingBubble = sent;
         showMessage(status, "ההודעה נשלחה.", "success");
@@ -1788,10 +1819,65 @@ async function openFloatingGmachChat() {
 
 document.getElementById("floatingGmachChat").addEventListener("click", openFloatingGmachChat);
 
-document.getElementById("gmachChatForm").addEventListener("submit", event => {
+function resizeChatInput() {
+    const input = document.getElementById("gmachChatInput");
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 120) + "px";
+}
+
+function clearChatAttachment() {
+    document.getElementById("gmachChatFile").value = "";
+    document.getElementById("gmachChatAttachmentPreview").hidden = true;
+    document.getElementById("gmachChatAttachmentName").textContent = "";
+}
+
+async function downloadChatAttachment(gmachId, messageId, name) {
+    const status = document.getElementById("gmachChatStatus");
+    try {
+        const response = await fetch(`${API_BASE}/gmach-communication/${gmachId}/messages/${messageId}/attachment`, {
+            headers: {Authorization: `Bearer ${token}`}, cache: "no-store"
+        });
+        if (!response.ok) throw new Error("לא ניתן להוריד את הקובץ.");
+        const url = URL.createObjectURL(await response.blob());
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+        showMessage(status, error.message, "error");
+    }
+}
+
+const chatInput = document.getElementById("gmachChatInput");
+const chatFile = document.getElementById("gmachChatFile");
+const chatForm = document.getElementById("gmachChatForm");
+chatInput.addEventListener("input", resizeChatInput);
+chatInput.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing && !event.repeat) {
+        event.preventDefault();
+        chatForm.requestSubmit();
+    }
+});
+document.getElementById("gmachChatAttach").addEventListener("click", () => chatFile.click());
+document.getElementById("gmachChatRemoveAttachment").addEventListener("click", clearChatAttachment);
+chatFile.addEventListener("change", () => {
+    const file = chatFile.files[0];
+    if (!file) return clearChatAttachment();
+    if (!/\.(jpe?g|png|pdf)$/i.test(file.name) || file.size === 0 || file.size > 1024 * 1024 || file.name.length > 150) {
+        clearChatAttachment();
+        showMessage(document.getElementById("gmachChatStatus"), "אפשר לצרף תמונת JPG או PNG או קובץ PDF עד 1 MB.", "error");
+        return;
+    }
+    document.getElementById("gmachChatAttachmentName").textContent = file.name;
+    document.getElementById("gmachChatAttachmentPreview").hidden = false;
+    showMessage(document.getElementById("gmachChatStatus"), "");
+});
+chatForm.addEventListener("submit", event => {
     event.preventDefault();
-    const text = document.getElementById("gmachChatInput").value.trim();
-    if (text) sendChatMessage(activeChat, {text});
+    const text = chatInput.value.trim();
+    const file = chatFile.files[0];
+    if (text || file) sendChatMessage(activeChat, {text}, "", file);
 });
 document.getElementById("gmachChat").addEventListener("close", () => {
     if (document.getElementById("gmachChat").open) return;
