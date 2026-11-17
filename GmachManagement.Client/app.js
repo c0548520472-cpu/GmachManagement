@@ -1735,7 +1735,15 @@ async function sendChatMessage(chat, payload, productName = "") {
 
 async function openFloatingGmachChat() {
     if (!token) {
-        showLogin();
+        showChatPanel("צ׳אט עם בעל הגמ״ח");
+        const notice = document.createElement("p");
+        notice.textContent = "בשביל להתכתב יש להתחבר.";
+        const login = document.createElement("button");
+        login.type = "button";
+        login.className = "primary";
+        login.textContent = "התחברות";
+        login.addEventListener("click", showLogin);
+        document.getElementById("gmachChatProducts").append(notice, login);
         return;
     }
     if (selectedChatGmach) {
