@@ -16,6 +16,12 @@ public sealed class GmachCommunicationService(IGmachCommunicationRepository repo
     public Task<List<GmachChatMessage>?> GetChatAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
         => repository.GetChatAsync(gmachId, customerId, actorId, ct);
 
+    public Task<bool> CanAccessChatAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
+        => repository.CanAccessChatAsync(gmachId, customerId, actorId, ct);
+
+    public Task MarkChatReadByCustomerAsync(int gmachId, int customerId, int throughId, CancellationToken ct)
+        => repository.MarkChatReadByCustomerAsync(gmachId, customerId, throughId, ct);
+
     public Task MarkChatReadByOwnerAsync(int gmachId, int customerId, int ownerId, int throughId, CancellationToken ct)
         => repository.MarkChatReadByOwnerAsync(gmachId, customerId, ownerId, throughId, ct);
 

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using GmachManagement.Core.Interfaces;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
@@ -12,6 +13,7 @@ namespace GmachManagement.API.Controllers;
 public sealed class GmachCommunicationController(
     GmachCommunicationService service,
     IHttpClientFactory clients,
+    IMemoryCache cache,
     IConfiguration config,
     ILogger<GmachCommunicationController> logger) : ControllerBase
 {
@@ -34,26 +36,53 @@ public sealed class GmachCommunicationController(
         => ActorId > 0 ? Ok(await service.GetOwnerInboxAsync(ActorId, ct)) : Unauthorized();
 
     [HttpGet("{gmachId:int}/messages")]
-    public async Task<IActionResult> Chat(int gmachId, [FromQuery] int? customerId, CancellationToken ct)
+    public async Task<IActionResult> Chat(int gmachId, [FromQuery] int? customerId, [FromQuery] bool presence, CancellationToken ct)
     {
         if (ActorId <= 0) return Unauthorized();
         var messages = await service.GetChatAsync(gmachId, customerId, ActorId, ct);
         if (messages == null) return NotFound();
-        return Ok(messages.AsEnumerable().Reverse().Select(message => new
+        var result = messages.AsEnumerable().Reverse().Select(message => new
         {
             message.Id, message.Text, message.SentAt, message.AttachmentName, Mine = message.SenderId == ActorId,
-            ReadByOwner = message.ReadByOwnerAt.HasValue
-        }));
+            ReadByOwner = message.ReadByOwnerAt.HasValue,
+            ReadByRecipient = message.SenderId == (customerId ?? ActorId)
+                ? message.ReadByOwnerAt.HasValue : message.ReadByCustomerAt.HasValue
+        });
+        if (!presence) return Ok(result);
+        var counterpartTyping = cache.TryGetValue(TypingKey(gmachId, customerId ?? ActorId, !customerId.HasValue), out _);
+        return Ok(new { messages = result, counterpartTyping });
     }
 
     public sealed record ChatReadReceipt([Range(1, int.MaxValue)] int ThroughId);
 
-    [Authorize(Roles = "GmachAdmin"), HttpPost("{gmachId:int}/messages/read")]
-    public async Task<IActionResult> MarkChatRead(int gmachId, [FromQuery] int customerId, ChatReadReceipt input, CancellationToken ct)
+    [HttpPost("{gmachId:int}/messages/read")]
+    public async Task<IActionResult> MarkChatRead(int gmachId, [FromQuery] int? customerId, ChatReadReceipt input, CancellationToken ct)
     {
         if (ActorId <= 0) return Unauthorized();
         if (gmachId <= 0 || customerId <= 0) return BadRequest();
-        await service.MarkChatReadByOwnerAsync(gmachId, customerId, ActorId, input.ThroughId, ct);
+        if (customerId is int customer)
+        {
+            if (!User.IsInRole("GmachAdmin")) return Forbid();
+            await service.MarkChatReadByOwnerAsync(gmachId, customer, ActorId, input.ThroughId, ct);
+        }
+        else
+        {
+            await service.MarkChatReadByCustomerAsync(gmachId, ActorId, input.ThroughId, ct);
+        }
+        return NoContent();
+    }
+
+    private static (string, int, int, bool) TypingKey(int gmachId, int customerId, bool asOwner)
+        => ("GmachTyping", gmachId, customerId, asOwner);
+
+    [HttpPost("{gmachId:int}/typing")]
+    public async Task<IActionResult> Typing(int gmachId, [FromQuery] int? customerId, CancellationToken ct)
+    {
+        if (ActorId <= 0) return Unauthorized();
+        if (gmachId <= 0 || customerId <= 0) return BadRequest();
+        if (customerId.HasValue && !User.IsInRole("GmachAdmin")) return Forbid();
+        if (!await service.CanAccessChatAsync(gmachId, customerId, ActorId, ct)) return NotFound();
+        cache.Set(TypingKey(gmachId, customerId ?? ActorId, customerId.HasValue), true, TimeSpan.FromSeconds(7));
         return NoContent();
     }
 
@@ -88,6 +117,7 @@ public sealed class GmachCommunicationController(
 
         var saved = await service.AddMessageAsync(gmachId, customerId, ActorId, message, input.ItemId, attachment, ct);
         if (!saved.Saved) return NotFound();
+        cache.Remove(TypingKey(gmachId, customerId ?? ActorId, customerId.HasValue));
         if (saved.OwnerEmail is { } email)
             await NotifyOwnerAsync(email);
         return NoContent();
