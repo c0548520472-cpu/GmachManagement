@@ -1752,7 +1752,7 @@ async function sendChatMessage(chat, payload, productName = "", file = null) {
         const sent = createChatBubble(text, true, chat.customerId ? null : "sent", file?.name);
         pending.replaceWith(sent);
         chat.pendingBubble = sent;
-        showMessage(status, "ההודעה נשלחה.", "success");
+        showMessage(status, chat.customerId ? "ההודעה נשלחה." : "ממתין לנציג הגמ״ח", "success");
     } catch (error) {
         pending.remove();
         chat.pendingBubble = null;
