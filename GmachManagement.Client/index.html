@@ -61,11 +61,7 @@
                 <label for="password">סיסמה</label>
                 <div class="password-field"><input id="password" name="password" type="password" required autocomplete="current-password" aria-describedby="registerPasswordHint"><label class="password-toggle"><input id="showPassword" type="checkbox"> הצג סיסמה</label></div>
 
-                <p id="registerPasswordHint" class="muted" hidden>הסיסמה צריכה לכלול 8 עד 128 תווים, ובהם לפחות אות, ספרה וסימן.</p>
-                <div id="registerPasswordSuggestionPanel" hidden>
-                    <p>סיסמה חזקה מוצעת: <code id="registerPasswordSuggestion" dir="ltr"></code></p>
-                    <button id="useSuggestedPassword" type="button" class="secondary">השתמש בסיסמה המוצעת</button>
-                </div>
+                <p id="registerPasswordHint" class="muted" hidden>הסיסמה חייבת לכלול לפחות 8 תווים, ובהם אות, ספרה וסימן.</p>
                 <button type="submit" class="primary full-width"
                         id="authSubmit">
                     התחברות
@@ -365,6 +361,6 @@
         <span class="floating-chat-icon" aria-hidden="true"><span></span></span>
         <span class="floating-chat-greeting" aria-hidden="true">היי, לכל שאלה אנחנו כאן.</span>
     </button>
-    <script src="app.js?v=google-identity"></script>
+    <script src="app.js?v=native-password"></script>
 </body>
 </html>
