@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=chat-duplex-status">
+    <link rel="stylesheet" href="style.css?v=gmach-guide-1">
 </head>
 <body>
     <header class="header">
@@ -376,6 +376,25 @@
         <span class="floating-chat-icon" aria-hidden="true"><span></span></span>
         <span class="floating-chat-greeting chat-greeting-bubble" aria-hidden="true"><span>היי, לכל שאלה אנחנו כאן</span><bdi class="floating-chat-smile" dir="ltr">😊</bdi></span>
     </button>
+    <button id="gmachGuideLauncher" class="gmach-guide-launcher" type="button" aria-label="פתיחת העוזר למציאת גמ״ח" aria-haspopup="dialog" aria-controls="gmachGuide">
+        <span class="gmach-guide-icon" aria-hidden="true"></span>
+    </button>
+    <dialog id="gmachGuide" class="gmach-guide" dir="rtl" aria-labelledby="gmachGuideTitle">
+        <header class="gmach-guide-header">
+            <h2 id="gmachGuideTitle">עוזר למציאת גמ״ח</h2>
+            <div>
+                <button id="gmachGuideReset" type="button">שיחה חדשה</button>
+                <button id="gmachGuideClose" type="button" aria-label="סגירת העוזר">×</button>
+            </div>
+        </header>
+        <div id="gmachGuideLog" class="gmach-guide-log" role="log" aria-label="השיחה עם העוזר"></div>
+        <p id="gmachGuideStatus" class="gmach-guide-status" role="status"></p>
+        <form id="gmachGuideForm" class="gmach-guide-form">
+            <input id="gmachGuideInput" type="text" aria-label="מה מחפשים?" placeholder="למשל כיסא גלגלים בירושלים" maxlength="180" autocomplete="off" required>
+            <button id="gmachGuideSend" type="submit">שליחה</button>
+        </form>
+    </dialog>
     <script src="app.js?v=chat-duplex-status"></script>
+    <script src="gmach-guide.js?v=1"></script>
 </body>
 </html>
