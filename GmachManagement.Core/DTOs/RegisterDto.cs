@@ -22,7 +22,8 @@ public class RegisterDto : IValidatableObject
     [StringLength(100)] public string? City { get; set; }
 
     [Required]
-    [StringLength(128, MinimumLength = 8, ErrorMessage = "סיסמת ההרשמה חייבת להכיל 8 עד 128 תווים.")]
+    [MinLength(8, ErrorMessage = "הסיסמה חייבת לכלול לפחות 8 תווים.")]
+    [MaxLength(128, ErrorMessage = "הסיסמה ארוכה מדי.")]
     [RegularExpression(@"(?s)\A(?=.*\p{L})(?=.*\p{Nd})(?=.*[\p{P}\p{S}]).*\z",
         ErrorMessage = "הסיסמה חייבת לכלול לפחות אות אחת, ספרה אחת וסימן אחד.")]
     public string Password { get; set; } = string.Empty;
