@@ -42,7 +42,7 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
 
         var customer = customerId ?? actorId;
         return await db.Database.SqlQuery<GmachChatMessage>($"""
-            SELECT "Id", "SenderId", "Text", "SentAt", "ReadByOwnerAt"
+            SELECT "Id", "SenderId", "Text", "SentAt", "ReadByOwnerAt", "AttachmentName"
             FROM "GmachChatMessages"
             WHERE "GmachId" = {gmachId} AND "CustomerId" = {customer}
             """).OrderByDescending(message => message.Id).Take(250).ToListAsync(ct);
@@ -60,8 +60,18 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
             """, ct);
     }
 
+    public Task<ChatAttachment?> GetAttachmentAsync(int gmachId, int messageId, int actorId, CancellationToken ct)
+        => db.Database.SqlQuery<ChatAttachment>($"""
+            SELECT m."AttachmentName" AS "Name", m."AttachmentContent" AS "Content"
+            FROM "GmachChatMessages" m
+            JOIN "Gmachs" g ON g."Id" = m."GmachId"
+            WHERE m."Id" = {messageId} AND m."GmachId" = {gmachId}
+              AND m."AttachmentContent" IS NOT NULL
+              AND (g."OwnerId" = {actorId} OR m."CustomerId" = {actorId})
+            """).SingleOrDefaultAsync(ct);
+
     public async Task<(bool Saved, string? OwnerEmail)> AddMessageAsync(
-        int gmachId, int? customerId, int actorId, string message, int? itemId, CancellationToken ct)
+        int gmachId, int? customerId, int actorId, string message, int? itemId, ChatAttachment? attachment, CancellationToken ct)
     {
         var owner = await FindOwnerAsync(gmachId, ct);
         if (owner == null || (customerId.HasValue ? owner.Id != actorId : owner.Id == actorId))
@@ -83,10 +93,21 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
         }
 
         var now = DateTime.UtcNow;
-        await db.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO "GmachChatMessages" ("GmachId", "CustomerId", "SenderId", "Text", "SentAt")
-            VALUES ({gmachId}, {customer}, {actorId}, {message}, {now})
-            """, ct);
+        if (attachment is null)
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GmachChatMessages" ("GmachId", "CustomerId", "SenderId", "Text", "SentAt")
+                VALUES ({gmachId}, {customer}, {actorId}, {message}, {now})
+                """, ct);
+        }
+        else
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GmachChatMessages" ("GmachId", "CustomerId", "SenderId", "Text", "SentAt",
+                    "AttachmentName", "AttachmentContent")
+                VALUES ({gmachId}, {customer}, {actorId}, {message}, {now}, {attachment.Name}, {attachment.Content})
+                """, ct);
+        }
         return (true, customerId.HasValue ? null : owner.Email);
     }
 
