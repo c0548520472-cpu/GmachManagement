@@ -914,9 +914,14 @@ dialog.gmach-chat {
 .floating-chat-icon {
   display: grid; place-items: center; flex: none; width: 3.25rem; height: 3.25rem;
   color: white; background: #087e88; border-radius: 50%;
-  box-shadow: 0 .35rem 1.2rem #0a535655; transition: width .2s, height .2s;
+  box-shadow: 0 .35rem 1.2rem #0a535655;
 }
-.floating-gmach-chat.is-gmach .floating-chat-icon { width: 3.65rem; height: 3.65rem; }
+.floating-gmach-chat.is-gmach .floating-chat-icon {
+  animation: floating-chat-pulse .45s ease-in-out 2;
+}
+@keyframes floating-chat-pulse {
+  50% { transform: scale(1.15); }
+}
 .floating-chat-icon > span {
   display: block; position: relative; width: 1.45rem; height: 1.1rem;
   background: white; color: #087e88; border-radius: .45rem;
@@ -939,18 +944,20 @@ dialog.gmach-chat {
 .chat-choices p.chat-greeting-bubble { width: fit-content; max-width: 100%; }
 body:has(dialog.gmach-chat[open]) .floating-gmach-chat { visibility: hidden; }
 .chat-message-mine:has(.chat-ticks) {
-  display: flex; align-items: flex-end; gap: .5rem;
+  display: flex; direction: rtl; align-items: flex-end; gap: .5rem;
   background: #125963; color: #fff;
 }
 .chat-message-text { min-width: 0; }
 .chat-ticks {
-  display: inline-flex; flex: 0 0 auto; direction: ltr; gap: .1rem;
+  display: inline-flex; order: -1; flex: 0 0 auto; direction: ltr; gap: .1rem;
   color: #fff; font-size: 1.2em; line-height: 1; font-weight: 900;
 }
 .chat-ticks-sent > span:first-child, .chat-ticks-read > span {
   color: #42ccff;
   text-shadow: 0 0 1px #001c31, 0 0 5px #42ccff75;
 }
-@media (prefers-reduced-motion: reduce) { .floating-chat-icon { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .floating-gmach-chat.is-gmach .floating-chat-icon { animation: none; }
+}
 
 #authSection :is(#authForm, #registrationForm)[hidden] { display: none; }
