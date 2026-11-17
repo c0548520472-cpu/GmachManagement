@@ -1563,9 +1563,26 @@ document.getElementById("borrowApprovalDialog").addEventListener("close", async 
 });
 setInterval(loadBorrowApprovals, 15000);
 
-function chatPath(chat) {
-    const base = `/gmach-communication/${chat.gmachId}/messages`;
-    return chat.customerId ? `${base}?customerId=${chat.customerId}` : base;
+function chatPath(chat, endpoint = "messages", includePresence = false) {
+    const base = `/gmach-communication/${chat.gmachId}/${endpoint}`;
+    const query = new URLSearchParams();
+    if (chat.customerId) query.set("customerId", chat.customerId);
+    if (includePresence) query.set("presence", "true");
+    return query.size ? `${base}?${query}` : base;
+}
+
+async function signalChatTyping(chat) {
+    if (!chat?.gmachId || chat.token !== token || chat.sending || !chatInput.value.trim() ||
+        chat.typingRequest || Date.now() - (chat.lastTyping ?? 0) < 3000) return;
+    chat.lastTyping = Date.now();
+    chat.typingRequest = true;
+    try {
+        await requestFromServer(chatPath(chat, "typing"), {method: "POST"});
+    } catch {
+        // Typing presence is optional; it must never interrupt sending messages.
+    } finally {
+        chat.typingRequest = false;
+    }
 }
 
 function showChatPanel(title) {
@@ -1574,6 +1591,7 @@ function showChatPanel(title) {
     document.getElementById("gmachChatInbox").replaceChildren();
     document.getElementById("gmachChatProducts").replaceChildren();
     document.getElementById("gmachChatMessages").replaceChildren();
+    document.getElementById("gmachChatTyping").hidden = true;
     document.getElementById("gmachChatInput").value = "";
     resizeChatInput();
     clearChatAttachment();
@@ -1648,7 +1666,7 @@ function startChat(chat) {
     resizeChatInput();
     document.getElementById("gmachChatMessages").replaceChildren(createDataLoader("טוען הודעות…"));
     refreshChat(chat);
-    chatTimer = setInterval(() => refreshChat(chat), 8000);
+    chatTimer = setInterval(() => refreshChat(chat), 3000);
 }
 
 async function refreshChat(chat) {
@@ -1657,9 +1675,13 @@ async function refreshChat(chat) {
     const messages = document.getElementById("gmachChatMessages");
     const status = document.getElementById("gmachChatStatus");
     try {
-        const result = await apiRequest(chatPath(chat));
+        const response = await apiRequest(chatPath(chat, "messages", true));
         if (chat.sending || activeChat !== chat || chat.token !== token || document.hidden) return;
-        const signature = result.map(message => `${message.id}:${message.readByOwner}`).join("|");
+        const result = response.messages;
+        const typing = document.getElementById("gmachChatTyping");
+        typing.textContent = chat.customerId ? "הלקוח מקליד…" : "מנהל הגמ״ח מקליד…";
+        typing.hidden = !response.counterpartTyping;
+        const signature = result.map(message => `${message.id}:${message.readByRecipient}`).join("|");
         if (chat.signature !== signature || chat.pendingBubble) {
             const shouldScroll = chat.newest !== result.at(-1)?.id || chat.pendingBubble;
             chat.signature = signature;
@@ -1667,14 +1689,14 @@ async function refreshChat(chat) {
             chat.pendingBubble = null;
             messages.replaceChildren(...result.map(message => createChatBubble(
                 message.text, message.mine,
-                message.mine && !chat.customerId ? (message.readByOwner ? "read" : "sent") : null,
+                message.mine ? (message.readByRecipient ? "read" : "sent") : null,
                 message.attachmentName, message.id, chat.gmachId
             )));
             if (shouldScroll) messages.scrollTop = messages.scrollHeight;
         }
-        const unread = chat.customerId && result.findLast(message => !message.mine && !message.readByOwner);
+        const unread = result.findLast(message => !message.mine && !message.readByRecipient);
         if (unread && unread.id > (chat.readThrough ?? 0)) {
-            await apiRequest(`/gmach-communication/${chat.gmachId}/messages/read?customerId=${chat.customerId}`, {
+            await requestFromServer(chatPath(chat, "messages/read"), {
                 method: "POST", body: JSON.stringify({throughId: unread.id})
             });
             chat.readThrough = unread.id;
@@ -1712,7 +1734,7 @@ function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachI
     if (receipt) {
         const marks = document.createElement("span");
         marks.className = `chat-ticks chat-ticks-${receipt}`;
-        const label = {pending: "נשלחת", sent: "נשלחה", read: "נקראה על ידי בעל הגמ״ח"}[receipt];
+        const label = {pending: "נשלחת", sent: "נשלחה", read: "נקראה על ידי הצד השני"}[receipt];
         marks.setAttribute("role", "img");
         marks.setAttribute("aria-label", label);
         marks.title = label;
@@ -1734,7 +1756,7 @@ async function sendChatMessage(chat, payload, productName = "", file = null) {
     const status = document.getElementById("gmachChatStatus");
     const messages = document.getElementById("gmachChatMessages");
     const text = payload.text || (productName ? `אני מתעניין בפריט ${productName}` : "");
-    const pending = createChatBubble(text, true, chat.customerId ? null : "pending", file?.name);
+    const pending = createChatBubble(text, true, "pending", file?.name);
     chat.pendingBubble = pending;
     messages.append(pending);
     messages.scrollTop = messages.scrollHeight;
@@ -1758,10 +1780,10 @@ async function sendChatMessage(chat, payload, productName = "", file = null) {
             resizeChatInput();
         }
         if (file && document.getElementById("gmachChatFile").files[0] === file) clearChatAttachment();
-        const sent = createChatBubble(text, true, chat.customerId ? null : "sent", file?.name);
+        const sent = createChatBubble(text, true, "sent", file?.name);
         pending.replaceWith(sent);
         chat.pendingBubble = sent;
-        showMessage(status, chat.customerId ? "ההודעה נשלחה." : "ממתין לנציג הגמ״ח", "success");
+        showMessage(status, chat.customerId ? "ממתין לתגובת הלקוח" : "ממתין לנציג הגמ״ח", "success");
     } catch (error) {
         pending.remove();
         chat.pendingBubble = null;
@@ -1894,7 +1916,10 @@ async function downloadChatAttachment(gmachId, messageId, name) {
 const chatInput = document.getElementById("gmachChatInput");
 const chatFile = document.getElementById("gmachChatFile");
 const chatForm = document.getElementById("gmachChatForm");
-chatInput.addEventListener("input", resizeChatInput);
+chatInput.addEventListener("input", () => {
+    resizeChatInput();
+    signalChatTyping(activeChat);
+});
 chatInput.addEventListener("keydown", event => {
     if (event.key === "Enter" && !event.shiftKey && !event.isComposing && !event.repeat) {
         event.preventDefault();

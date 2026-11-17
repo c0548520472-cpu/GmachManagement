@@ -992,7 +992,9 @@ body:has(dialog.gmach-chat[open]) .floating-gmach-chat { visibility: hidden; }
 }
 .chat-ticks > span + span { margin-inline-start: -.34rem; }
 .chat-ticks > span { -webkit-text-stroke: .6px #52666e; }
-.chat-ticks-read > span { color: #15803d; -webkit-text-stroke: 0; }
+.chat-ticks-sent > span:first-child, .chat-ticks-read > span { color: #15803d; -webkit-text-stroke: 0; }
+.chat-typing { margin: .3rem 0 .5rem; color: #356368; font-size: .85rem; }
+.chat-typing[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .floating-gmach-chat.is-gmach .floating-chat-icon { animation: none; }
 }

@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=green-chat-receipts">
+    <link rel="stylesheet" href="style.css?v=chat-duplex-status">
 </head>
 <body>
     <header class="header">
@@ -252,6 +252,7 @@
             <div id="gmachChatInbox" class="chat-choices"></div>
             <div id="gmachChatProducts" class="chat-choices"></div>
             <div id="gmachChatMessages" class="chat-messages" role="log" aria-live="polite"></div>
+            <p id="gmachChatTyping" class="chat-typing" role="status" hidden></p>
             <p id="gmachChatStatus" class="message" role="status"></p>
             <form id="gmachChatForm" hidden>
                 <div id="gmachChatAttachmentPreview" class="chat-attachment-preview" hidden>
@@ -375,6 +376,6 @@
         <span class="floating-chat-icon" aria-hidden="true"><span></span></span>
         <span class="floating-chat-greeting chat-greeting-bubble" aria-hidden="true"><span>היי, לכל שאלה אנחנו כאן</span><bdi class="floating-chat-smile" dir="ltr">):</bdi></span>
     </button>
-    <script src="app.js?v=green-chat-receipts"></script>
+    <script src="app.js?v=chat-duplex-status"></script>
 </body>
 </html>
