@@ -6,6 +6,7 @@ const normalizeCity = value => String(value ?? "").replaceAll("ירושליים"
 const authSection = document.getElementById("authSection");
 const dashboardSection = document.getElementById("dashboardSection");
 const authForm = document.getElementById("authForm");
+const registrationForm = document.getElementById("registrationForm");
 const authMessage = document.getElementById("authMessage");
 const itemsMessage = document.getElementById("itemsMessage");
 const borrowMessage = document.getElementById("borrowMessage");
@@ -278,51 +279,48 @@ document.getElementById("forgotPasswordBtn").addEventListener("click",()=>{
 });
 
 // התחברות
-authForm.addEventListener("submit", async (event) => {
+registrationForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const name = document.getElementById("fullName").value.trim();
+    const email = document.getElementById("registrationEmail").value.trim();
+    const password = document.getElementById("registrationPassword").value;
 
-    if (authMode === "register") {
-        const name = document.getElementById("fullName").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-
-        if (!name) {
-            showMessage(authMessage, "יש להזין שם מלא כדי להירשם.", "error");
-            document.getElementById("fullName").focus();
-            return;
-        }
-
-        if (password.length < 8 || password.length > 128 || !hasRegistrationPasswordMix(password)) {
-            showMessage(authMessage, password.length > 128
-                ? "הסיסמה ארוכה מדי."
-                : "הסיסמה חייבת לכלול לפחות 8 תווים, ובהם אות, ספרה וסימן.", "error");
-            document.getElementById("password").focus();
-            return;
-        }
-        showMessage(authMessage, "מבצע הרשמה...");
-
-        try {
-            const registration = await apiRequest("/Auth/register", {
-                method: "POST",
-                body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), city: normalizeCity(document.getElementById("gmachCity").value.trim()) })
-            });
-
-            switchAuthMode("login");
-
-
-            showMessage(
-                authMessage,
-                "ההרשמה הצליחה! כעת אפשר להתחבר.",
-                "success"
-            );
-        } catch (error) {
-            showMessage(authMessage, error.message, "error");
-        }
-
+    if (!name) {
+        showMessage(authMessage, "יש להזין שם מלא כדי להירשם.", "error");
+        document.getElementById("fullName").focus();
         return;
     }
 
+    if (password.length < 8 || password.length > 128 || !hasRegistrationPasswordMix(password)) {
+        showMessage(authMessage, password.length > 128
+            ? "הסיסמה ארוכה מדי."
+            : "הסיסמה חייבת לכלול לפחות 8 תווים, ובהם אות, ספרה וסימן.", "error");
+        document.getElementById("registrationPassword").focus();
+        return;
+    }
+    showMessage(authMessage, "מבצע הרשמה...");
 
+    try {
+        await apiRequest("/Auth/register", {
+            method: "POST",
+            body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), city: normalizeCity(document.getElementById("gmachCity").value.trim()) })
+        });
+
+        switchAuthMode("login");
+
+
+        showMessage(
+            authMessage,
+            "ההרשמה הצליחה! כעת אפשר להתחבר.",
+            "success"
+        );
+    } catch (error) {
+        showMessage(authMessage, error.message, "error");
+    }
+});
+
+authForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
 
@@ -355,37 +353,26 @@ function hasRegistrationPasswordMix(password) {
 }
 
 function switchAuthMode(mode) {
-    const password = document.getElementById("password");
+    const isRegistration = mode === "register";
     if (authMode !== mode) {
+        const password = document.getElementById(authMode === "register" ? "registrationPassword" : "password");
+        const toggle = document.getElementById(authMode === "register" ? "registrationShowPassword" : "showPassword");
         password.value = "";
         password.type = "password";
-        document.getElementById("showPassword").checked = false;
+        toggle.checked = false;
     }
     authMode = mode;
-    authForm.hidden=false;
-    document.querySelector("#authSection .tabs").hidden=false;
-
-    document.getElementById("loginTab")
-        .classList.toggle("active", mode === "login");
-
-    document.getElementById("registerTab")
-        .classList.toggle("active", mode === "register");
-
-    document.getElementById("nameGroup").hidden =
-        mode !== "register";
-    document.getElementById("ownerRegistration").hidden = mode !== "register";
-    // Password recovery belongs to login only, never to registration.
-    document.getElementById("forgotPasswordBtn").hidden = mode !== "login";
+    authForm.hidden = isRegistration;
+    authForm.inert = isRegistration;
+    registrationForm.hidden = !isRegistration;
+    registrationForm.inert = !isRegistration;
+    document.querySelector("#authSection .tabs").hidden = false;
+    document.getElementById("loginTab").classList.toggle("active", !isRegistration);
+    document.getElementById("registerTab").classList.toggle("active", isRegistration);
+    document.getElementById("forgotPasswordBtn").hidden = isRegistration;
     document.getElementById("forgotPasswordNotice").hidden = true;
-    password.autocomplete = mode === "register" ? "new-password" : "current-password";
-    password.minLength = 0;
-    document.getElementById("registerPasswordHint").hidden = mode !== "register";
-    document.getElementById("authSubmit").textContent =
-        mode === "login" ? "התחברות" : "הרשמה";
-
     showMessage(authMessage, "");
 }
-
 
 document.getElementById("loginTab").addEventListener(
     "click", () => switchAuthMode("login")
@@ -395,7 +382,7 @@ document.getElementById("registerTab").addEventListener(
     "click", () => switchAuthMode("register")
 );
 
-document.getElementById("password").addEventListener("input",()=>{if (authMode === "register") showMessage(authMessage, "");});
+document.getElementById("registrationPassword").addEventListener("input", () => showMessage(authMessage, ""));
 
 document.getElementById("logoutBtn").addEventListener(
     "click", logout
@@ -1221,7 +1208,7 @@ document.getElementById("claimGmachForm").addEventListener("submit",async event=
 });
 
 // Password visibility is local to each password field.
-for (const [checkboxId, inputId] of [["showPassword","password"],["showNewPassword","newPassword"]]) {
+for (const [checkboxId, inputId] of [["showPassword","password"],["registrationShowPassword","registrationPassword"],["showNewPassword","newPassword"]]) {
     const checkbox = document.getElementById(checkboxId);
     const input = document.getElementById(inputId);
     if (checkbox && input) checkbox.addEventListener("change", event => {

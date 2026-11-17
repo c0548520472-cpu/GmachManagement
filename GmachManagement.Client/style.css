@@ -533,15 +533,15 @@ dialog {text-align:center;}
 #authSection.auth-card,
 #authSection.auth-card h2,
 #authSection.auth-card > p,
-#authSection #authForm,
-#authSection #authForm *,
+#authSection :is(#authForm, #registrationForm),
+#authSection :is(#authForm, #registrationForm) *,
 #authSection #authMessage,
 #authSection #forgotPasswordNotice {
     text-align: right;
 }
-#authSection #authForm input:not([type="checkbox"]),
-#authSection #authForm select,
-#authSection #authForm textarea {
+#authSection :is(#authForm, #registrationForm) input:not([type="checkbox"]),
+#authSection :is(#authForm, #registrationForm) select,
+#authSection :is(#authForm, #registrationForm) textarea {
     text-align: right;
     direction: rtl;
 }
@@ -555,7 +555,7 @@ dialog {text-align:center;}
 #authSection .tabs {
     justify-content: flex-start;
 }
-#authSection #authSubmit {
+#authSection :is(#authSubmit, #registrationSubmit) {
     text-align: center;
 }
 
@@ -946,3 +946,5 @@ body:has(dialog.gmach-chat[open]) .floating-gmach-chat { visibility: hidden; }
   text-shadow: 0 0 1px #001c31, 0 0 5px #42ccff75;
 }
 @media (prefers-reduced-motion: reduce) { .floating-chat-icon { transition: none; } }
+
+#authSection :is(#authForm, #registrationForm)[hidden] { display: none; }
