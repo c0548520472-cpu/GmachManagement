@@ -42,10 +42,26 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
 
         var customer = customerId ?? actorId;
         return await db.Database.SqlQuery<GmachChatMessage>($"""
-            SELECT "Id", "SenderId", "Text", "SentAt", "ReadByOwnerAt", "AttachmentName"
+            SELECT "Id", "SenderId", "Text", "SentAt", "ReadByOwnerAt", "ReadByCustomerAt", "AttachmentName"
             FROM "GmachChatMessages"
             WHERE "GmachId" = {gmachId} AND "CustomerId" = {customer}
             """).OrderByDescending(message => message.Id).Take(250).ToListAsync(ct);
+    }
+
+    public Task<bool> CanAccessChatAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
+        => db.Gmachs.AnyAsync(gmach => gmach.Id == gmachId &&
+            (customerId.HasValue ? gmach.OwnerId == actorId && customerId.Value != actorId : gmach.OwnerId != actorId), ct);
+
+    public async Task MarkChatReadByCustomerAsync(int gmachId, int customerId, int throughId, CancellationToken ct)
+    {
+        var readAt = DateTime.UtcNow;
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "GmachChatMessages" AS m
+            SET "ReadByCustomerAt" = {readAt}
+            WHERE m."GmachId" = {gmachId} AND m."CustomerId" = {customerId}
+              AND m."SenderId" <> {customerId} AND m."Id" <= {throughId} AND m."ReadByCustomerAt" IS NULL
+              AND EXISTS (SELECT 1 FROM "Gmachs" g WHERE g."Id" = m."GmachId" AND g."OwnerId" <> {customerId})
+            """, ct);
     }
 
     public async Task MarkChatReadByOwnerAsync(int gmachId, int customerId, int ownerId, int throughId, CancellationToken ct)
