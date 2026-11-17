@@ -1850,8 +1850,14 @@ function showChatGreeting() {
 }
 
 const chatLauncher = document.getElementById("floatingGmachChat");
-chatLauncher.querySelector(".floating-chat-icon").addEventListener("pointerenter", event => {
-    if (event.pointerType === "mouse" && chatLauncher.classList.contains("is-gmach")) showChatGreeting();
+const chatIcon = chatLauncher.querySelector(".floating-chat-icon");
+chatIcon.addEventListener("pointerenter", event => {
+    if (event.pointerType === "mouse") showChatGreeting();
+});
+chatIcon.addEventListener("pointerleave", event => {
+    if (event.pointerType !== "mouse") return;
+    clearTimeout(chatGreetingHideTimer);
+    chatLauncher.classList.remove("show-greeting");
 });
 chatLauncher.addEventListener("click", openFloatingGmachChat);
 

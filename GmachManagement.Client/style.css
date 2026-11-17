@@ -988,10 +988,11 @@ body:has(dialog.gmach-chat[open]) .floating-gmach-chat { visibility: hidden; }
 .chat-ticks {
   flex: 0 0 auto; display: inline-flex; align-items: center; direction: ltr;
   margin-block-end: .18rem; padding-inline-end: .15rem;
-  color: #51666e; font-size: 1.12rem; line-height: 1; font-weight: 700;
+  color: #fff; font-size: 1.12rem; line-height: 1; font-weight: 700;
 }
 .chat-ticks > span + span { margin-inline-start: -.34rem; }
-.chat-ticks-sent > span:first-child, .chat-ticks-read > span { color: #006eaa; }
+.chat-ticks > span { -webkit-text-stroke: .6px #52666e; }
+.chat-ticks-read > span { color: #15803d; -webkit-text-stroke: 0; }
 @media (prefers-reduced-motion: reduce) {
   .floating-gmach-chat.is-gmach .floating-chat-icon { animation: none; }
 }
