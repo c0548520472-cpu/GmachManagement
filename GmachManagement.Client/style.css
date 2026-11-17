@@ -962,7 +962,23 @@ dialog.gmach-chat {
   background: #fff; color: #104e50; box-shadow: 0 .25rem .9rem #0a535622;
 }
 .floating-chat-greeting { display: none; }
-.floating-gmach-chat.is-gmach .floating-chat-greeting { display: block; }
+.floating-gmach-chat.is-gmach .floating-chat-greeting {
+  display: block;
+  transform-origin: right center;
+  animation: floating-chat-greeting-retract .28s ease-in 5s both;
+}
+@keyframes floating-chat-greeting-retract {
+  to { transform: translateX(1.65rem) scale(0); opacity: 0; visibility: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floating-gmach-chat.is-gmach .floating-chat-greeting {
+    animation-name: floating-chat-greeting-hide;
+    animation-duration: 0s;
+  }
+}
+@keyframes floating-chat-greeting-hide {
+  to { opacity: 0; visibility: hidden; }
+}
 .chat-choices p.chat-greeting-bubble { width: fit-content; max-width: 100%; }
 body:has(dialog.gmach-chat[open]) .floating-gmach-chat { visibility: hidden; }
 .chat-message-row {
