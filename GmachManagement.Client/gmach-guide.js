@@ -6,7 +6,20 @@
     const form = document.getElementById("gmachGuideForm");
     const input = document.getElementById("gmachGuideInput");
     const send = document.getElementById("gmachGuideSend");
-    const filler = new Set("שלום היי אני אנחנו מחפש מחפשת מחפשים צריך צריכה צריכים רוצה רוצים אפשר האם יש לכם גמח איפה ניתן להשאיל השאלה לשאול למצוא פריט באזור בעיר של את לי תודה בבקשה דחוף היום מחר עכשיו מחפשת היכן בשביל עבור לקבל לקחת תמצאו תמצא מעוניין מעוניינת אולי במקרה ומה לגבי במקום עדיף דווקא רק משהו כזה אותו באזורכם קרוב ליד סביבות נמצא נמצאת באזורי".split(" "));
+    const filler = new Set("שלום היי אני אנחנו מחפש מחפשת מחפשים צריך צריכה צריכים רוצה רוצים אפשר האם יש לכם גמח איפה ניתן להשאיל השאלה לשאול למצוא פריט באזור בעיר של את לי תודה בבקשה דחוף היום מחר עכשיו מחפשת היכן בשביל עבור לקבל לקחת תמצאו תמצא מעוניין מעוניינת אולי במקרה ומה לגבי במקום עדיף דווקא רק משהו כזה אותו באזורכם קרוב אילו איזה איזו סוגי כזה ניתן אם מה מקום מקומות שמשאילים שמשאיל משאילים לשימוש ליד סביבות נמצא נמצאת באזורי עדיין אצלכם אצל להשאלה להשאיל מחפשים זקוק זקוקה זקוקים מחפש מחפשת צריך צריכה אפשרות ברשותכם מעוניינים ניתן זמין זמינה זמינים במלאי בכלל גם בשבילי בבקשת".split(" "));
+    // The same aliases normalize questions and catalog entries. Availability is checked on the original items.
+    const aliases = [
+        ["כסא גלגלים", /כיסא עם גלגלים|כסא עם גלגלים|כיסאות גלגלים|כסאות גלגלים|כיסא גלגלי?ים|כסא גלגלי?ים/gu],
+        ["הליכון", /הליכונים|מכשיר עזר להליכה|מתקן עזר להליכה|משהו שיעזור לי ללכת/gu],
+        ["קביים", /קבי הליכה|קבים/gu],
+        ["מקדחה", /מקדחות|מכשיר לקידוח|משהו לקדוח איתו|כלי לקידוח/gu],
+        ["מחשב נייד", /מחשבים ניידים|לפטופים|לפטופ|לאפטופ/gu],
+        ["אמבטיית תינוק", /אמבטיה לתינוק(?:ות|ת)?|אמבטיות לתינוק(?:ות)?|אמבטיית תינוקות/gu],
+        ["מטען נייד", /מטענים ניידים|סוללה ניידת|פאוור בנק|power bank(?:s)?/gu],
+        ["מקרן", /מקרנים|פרוג קטור|פרוג׳קטור|פרוגקטור|projector/gu],
+        ["מכונת שטיפה בלחץ", /מכונות שטיפה בלחץ|גרניק|מכונת לחץ מים/gu],
+        ["מד לחץ דם", /מדי לחץ דם|מכשיר למדידת לחץ דם|מכשיר לבדיקת לחץ דם/gu]
+    ];
     let product = "";
     let city = "";
     let requestNumber = 0;
@@ -20,7 +33,18 @@
     }
 
     function searchable(value) {
-        return clean(value).replaceAll("כיסא", "כסא").replaceAll("גלגליים", "גלגלים");
+        return aliases.reduce((text, [name, pattern]) => text.replace(pattern, name), clean(value));
+    }
+
+    function productTerms(terms) {
+        return terms
+            .replace(/^(ו?מה עם|מה לגבי|יש גם|ואולי|ואם יש|ו?איפה יש)(?: |$)/, "")
+            .replace(/(?:^| )(?:רציתי לדעת(?: אם)?|רק רציתי לשאול|אתם יודעים(?: אם)?|מישהו יודע(?: אם)?|יש מצב(?: שיש)?|אשמח לדעת(?: אם)?|אני מחפש(?:ת)?|אפשר לעזור לי למצוא|האם אתם יכולים למצוא לי|להשאיל לי|שאפשר להשאיל|גמח שמשאיל|לכמה ימים|ליום אחד|לזמן קצר)(?= |$)/g, " ")
+            .split(" ").filter(word => word && !filler.has(word)).join(" ");
+    }
+
+    function includesPhrase(text, phrase) {
+        return (" " + text + " ").includes(" " + phrase + " ");
     }
 
     function message(text, isUser = false) {
@@ -92,12 +116,12 @@
         const currentRequest = ++requestNumber;
         message(question, true);
         input.value = "";
-        let terms = clean(question);
+        let terms = clean(question).replace(/^(?:היי|שלום|אהלן) (?!רב(?:ה)?$)/, "").replace(/ תודה(?: רבה)?$/, "");
         if (/^(שלום|היי|הי|אהלן|בוקר טוב|ערב טוב|מה נשמע)$/.test(terms)) {
             message(product ? "היי! אפשר להמשיך עם החיפוש, או לכתוב שם של פריט אחר." : "היי! בשמחה אעזור למצוא גמ״ח. מה מחפשים?");
             return;
         }
-        if (/^(תודה( רבה| לך)?|מעולה|מצוין|סבבה תודה|אחלה תודה)$/.test(terms)) {
+        if (/^(תודה( רבה| לך| לכם| על העזרה| עזרת לי)?|תודה רבה על העזרה|מעולה|מצוין|סבבה תודה|אחלה תודה)$/.test(terms)) {
             message("בשמחה! אפשר לעזור בעוד משהו?");
             return;
         }
@@ -114,16 +138,16 @@
             message("בטח, בואו ננסה משהו אחר. איזה פריט לחפש?");
             return;
         }
-        if (/^(איך (אפשר )?(משאילים|להשאיל|לשאול|מבקשים|לבקש)( פריט)?|איך (זה עובד|יוצרים קשר|אפשר ליצור קשר)|מה עושים עכשיו)$/.test(terms)) {
+        if (/^(איך (אפשר )?(משאילים|להשאיל|לשאול|מבקשים|לבקש|מזמינים|להזמין|אוספים|לאסוף)( את)?( הפריט| פריט| זה| אותו)?|איך (זה עובד|יוצרים קשר|אפשר ליצור קשר|מדברים עם הגמח)|מה עושים עכשיו)$/.test(terms)) {
             message("פתחו את דף הגמ״ח ובחרו ״השאלה״ ליד הפריט. אפשר גם לפתוח את הצ׳אט של הגמ״ח כדי לשאול את הבעלים.");
             return;
         }
-        if (/^(כמה( עותקים)?( יש| זמינים)?|יש במלאי|זה זמין|יש זמין)$/.test(terms) && lastMatches.length) {
+        if (/^(כמה( עותקים| יחידות)?( יש| זמינים| זמינות| נשארו| יש במלאי)?|יש במלאי|זה( עדיין)? זמין|יש זמין|עוד יש במלאי)$/.test(terms) && lastMatches.length) {
             message("מספר העותקים הזמינים מופיע ליד כל פריט בתוצאות.");
             showResults(lastMatches.slice(0, 5));
             return;
         }
-        const wantMore = /^(יש עוד( אפשרויות)?|עוד( אפשרויות| תוצאות)?|תראה לי עוד)$/.test(terms);
+        const wantMore = /^(יש עוד( אפשרויות| תוצאות| מקומות)?|עוד( אפשרויות| תוצאות)?|תראה לי עוד|איפה עוד( יש| אפשר למצוא)?|יש מקום נוסף)$/.test(terms);
         if (wantMore && shownMatches < lastMatches.length) {
             message("כן, הנה עוד אפשרויות שמצאתי.");
             showNextMatches();
@@ -144,7 +168,7 @@
                 const words = " " + terms + " ";
                 return words.includes(" " + name + " ") || words.includes(" ב" + name + " ");
             });
-            const everywhere = wantMore || /^(ב?כל הארץ|ב?כל עיר|לא משנה( לי)?( העיר)?|אין העדפה|איפה שיש|תחפש בכל הארץ)$/.test(terms);
+            const everywhere = wantMore || /^(ב?כל הארץ|ב?כל עיר|לא משנה( לי)?( העיר| איפה)?|אין העדפה|איפה שיש|(?:תחפש|אפשר לחפש|חפש)(?: גם)? בכל הארץ|מבחינתי בכל מקום|איפה שבא לך)$/.test(terms);
             const locationOnly = /^(ומה עם|מה לגבי|אולי ב|בעיר|באזור|ליד) (.+)$/.exec(terms);
             const locationSuffix = /^(.*?) (?:באזור|בעיר|ליד) (.+)$/.exec(terms);
             if (everywhere) {
@@ -155,7 +179,7 @@
                 terms = (" " + terms + " ").replace(" ב" + cityName + " ", " ").replace(" " + cityName + " ", " ").trim();
             } else if (locationSuffix || (product && locationOnly && /^(בעיר|באזור|ליד)$/.test(locationOnly[1]))) {
                 const unknownCity = locationSuffix?.[2] || locationOnly[2];
-                const requestedProduct = (locationSuffix?.[1] || "").split(" ").filter(word => !filler.has(word)).join(" ");
+                const requestedProduct = productTerms(searchable(locationSuffix?.[1] || ""));
                 if (requestedProduct) product = requestedProduct;
                 lastMatches = [];
                 shownMatches = 0;
@@ -167,7 +191,7 @@
                 return;
             }
 
-            const nextProduct = terms.replace(/^(ו?מה עם|מה לגבי|יש גם|ואולי|ואם יש|ו?איפה יש)(?: |$)/, "").split(" ").filter(word => !filler.has(word)).join(" ");
+            const nextProduct = productTerms(searchable(terms));
             if (nextProduct) product = nextProduct;
             if (!product) {
                 message(city ? "יש לי את העיר. איזה פריט תרצו לשאול?" : "מה תרצו לשאול? אפשר גם לכתוב שם של גמ״ח.");
@@ -187,9 +211,16 @@
             const matchingCity = group => !city || clean(group.city) === city;
             const term = searchable(product);
             const namedGroups = directory.filter(group => matchingCity(group) && searchable(group.name).includes(term));
-            const variants = [...new Set([product, product.replaceAll("כיסא", "כסא"), product.replaceAll("כסא", "כיסא")])];
+            const variants = [...new Set([product, term, term.replaceAll("כסא", "כיסא")])];
+            // A singular query may miss a catalog name written with another spelling or plural.
+            const concept = aliases.find(([name]) => includesPhrase(term, name));
+            if (concept) {
+                const [name] = concept;
+                const firstWord = name.split(" ")[0];
+                variants.push(name, firstWord.replace(/(?:ת|ה|ן)$/, ""));
+            }
             const findGroups = query => apiRequest("/gmachs?" + new URLSearchParams({ query }));
-            const lists = await Promise.all(variants.map(findGroups));
+            const lists = await Promise.all([...new Set(variants)].map(findGroups));
             let candidates = lists.flat().filter(matchingCity);
             const words = term.split(" ");
             if (!candidates.length && words.length > 1) {
@@ -203,8 +234,8 @@
             const checks = await Promise.allSettled([...groups.values()].slice(0, 12).map(async group => {
                 const details = await apiRequest("/gmachs/" + encodeURIComponent(group.id));
                 const item = details.items.find(item => {
-                    const description = searchable(item.name + " " + (item.description || ""));
-                    return item.isActive && item.availableCopies > 0 && words.every(word => description.includes(word));
+                    const description = searchable(item.name + " " + (item.description || "")).split(" ");
+                    return item.isActive && item.availableCopies > 0 && words.every(word => (description.includes(word) || description.includes("ה" + word)));
                 });
                 return { group, item };
             }));
