@@ -930,16 +930,22 @@ dialog.gmach-chat {
   width: .16rem; height: .16rem; border-radius: 50%; background: currentColor;
   box-shadow: .25rem 0 currentColor, .5rem 0 currentColor;
 }
-.floating-chat-greeting {
-  display: none; padding: .55rem .8rem; border: 1px solid #c3e5e2; border-radius: 2rem;
+.chat-greeting-bubble {
+  padding: .55rem .8rem; border: 1px solid #c3e5e2; border-radius: 2rem;
   background: #fff; color: #104e50; box-shadow: 0 .25rem .9rem #0a535622;
 }
+.floating-chat-greeting { display: none; }
 .floating-gmach-chat.is-gmach .floating-chat-greeting { display: block; }
+.chat-choices p.chat-greeting-bubble { width: fit-content; max-width: 100%; }
 body:has(dialog.gmach-chat[open]) .floating-gmach-chat { visibility: hidden; }
-.chat-message-mine:has(.chat-ticks) { background: #125963; color: #fff; }
+.chat-message-mine:has(.chat-ticks) {
+  display: flex; align-items: flex-end; gap: .5rem;
+  background: #125963; color: #fff;
+}
+.chat-message-text { min-width: 0; }
 .chat-ticks {
-  display: inline-flex; direction: ltr; vertical-align: baseline; gap: .1rem;
-  margin-inline-start: .5rem; color: #fff; font-size: 1.2em; line-height: 1; font-weight: 900;
+  display: inline-flex; flex: 0 0 auto; direction: ltr; gap: .1rem;
+  color: #fff; font-size: 1.2em; line-height: 1; font-weight: 900;
 }
 .chat-ticks-sent > span:first-child, .chat-ticks-read > span {
   color: #42ccff;

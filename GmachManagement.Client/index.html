@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=separate-auth-forms">
+    <link rel="stylesheet" href="style.css?v=chat-message-layout">
 </head>
 <body>
     <header class="header">
@@ -67,7 +67,7 @@
                 <input id="registrationEmail" name="registration-email" type="email" required autocomplete="section-registration email">
                 <label for="registrationPassword">סיסמה חדשה</label>
                 <div class="password-field"><input id="registrationPassword" name="new-password" type="password" required autocomplete="section-registration new-password" aria-describedby="registerPasswordHint"><label class="password-toggle"><input id="registrationShowPassword" type="checkbox"> הצג סיסמה</label></div>
-                <p id="registerPasswordHint" class="muted">הסיסמה חייבת לכלול לפחות 8 תווים, ובהם אות, ספרה וסימן.</p>
+                <p id="registerPasswordHint" class="muted">הסיסמה חייבת לכלול לפחות 8 תווים, ובהם אות וספרה.</p>
                 <button type="submit" class="primary full-width" id="registrationSubmit">הרשמה</button>
             </form>
 
@@ -362,8 +362,8 @@
     </section>
     <button id="floatingGmachChat" class="floating-gmach-chat" type="button" aria-label="פתיחת צ׳אט" aria-controls="gmachChat">
         <span class="floating-chat-icon" aria-hidden="true"><span></span></span>
-        <span class="floating-chat-greeting" aria-hidden="true">היי, לכל שאלה אנחנו כאן<bdi dir="ltr">:)</bdi></span>
+        <span class="floating-chat-greeting chat-greeting-bubble" aria-hidden="true">היי, לכל שאלה אנחנו כאן<bdi dir="ltr">:(</bdi></span>
     </button>
-    <script src="app.js?v=chat-guest-notice"></script>
+    <script src="app.js?v=chat-message-layout"></script>
 </body>
 </html>

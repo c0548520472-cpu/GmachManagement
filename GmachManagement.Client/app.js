@@ -294,7 +294,7 @@ registrationForm.addEventListener("submit", async (event) => {
     if (password.length < 8 || password.length > 128 || !hasRegistrationPasswordMix(password)) {
         showMessage(authMessage, password.length > 128
             ? "הסיסמה ארוכה מדי."
-            : "הסיסמה חייבת לכלול לפחות 8 תווים, ובהם אות, ספרה וסימן.", "error");
+            : "הסיסמה חייבת לכלול לפחות 8 תווים, ובהם אות וספרה.", "error");
         document.getElementById("registrationPassword").focus();
         return;
     }
@@ -349,7 +349,7 @@ authForm.addEventListener("submit", async (event) => {
 });
 
 function hasRegistrationPasswordMix(password) {
-    return /\p{L}/u.test(password) && /\p{Nd}/u.test(password) && /[\p{P}\p{S}]/u.test(password);
+    return /\p{L}/u.test(password) && /\p{Nd}/u.test(password);
 }
 
 function switchAuthMode(mode) {
@@ -1002,7 +1002,7 @@ function showPage(page, push = true) {
     if (page === "gmach") { const id=Number(new URLSearchParams(location.search).get("gmach")); if(Number.isInteger(id)&&id>0)renderGmach(id);else showPage("home",true); }
     selectedChatGmach = null;
     if (page !== "gmach") openChatOnGmachLoad = null;
-    document.getElementById("floatingGmachChat").classList.remove("is-gmach");
+    document.getElementById("floatingGmachChat").classList.toggle("is-gmach", page === "gmach");
     const chat = document.getElementById("gmachChat");
     if (chat.open) chat.close();
     if (page === "account") { loadMyLoans(); loadPersonalTransactions(); loadBorrowApprovals(); }
@@ -1167,7 +1167,6 @@ async function renderGmach(id){
  const title=document.createElement("h2");title.textContent=g.name+" — "+normalizeCity(g.city);section.append(title);
  const desc=document.createElement("p");desc.textContent=g.description||"";section.append(desc);
  selectedChatGmach = g;
- document.getElementById("floatingGmachChat").classList.add("is-gmach");
  if (openChatOnGmachLoad === id) {
   openChatOnGmachLoad = null;
   if (token) openCustomerChat(g);
@@ -1680,7 +1679,10 @@ async function refreshChat(chat) {
 function createChatBubble(text, mine, receipt) {
     const bubble = document.createElement("p");
     bubble.className = mine ? "chat-message chat-message-mine" : "chat-message";
-    bubble.textContent = text;
+    const message = document.createElement("bdi");
+    message.className = "chat-message-text";
+    message.textContent = text;
+    bubble.append(message);
     if (receipt) {
         const marks = document.createElement("span");
         marks.className = `chat-ticks chat-ticks-${receipt}`;
@@ -1737,6 +1739,7 @@ async function openFloatingGmachChat() {
     if (!token) {
         showChatPanel("צ׳אט עם בעל הגמ״ח");
         const notice = document.createElement("p");
+        notice.className = "chat-greeting-bubble";
         notice.textContent = "בשביל להתכתב יש להתחבר.";
         const login = document.createElement("button");
         login.type = "button";
