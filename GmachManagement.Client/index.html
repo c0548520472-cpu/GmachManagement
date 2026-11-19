@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=activity-tracking-20261119">
+    <link rel="stylesheet" href="style.css?v=admin-categories-20261119">
 </head>
 <body>
     <header class="header">
@@ -300,6 +300,17 @@
         <section id="siteAdminPage" hidden>
             <div class="page-heading"><h2>ניהול האתר</h2><p class="muted">למנהלי האתר בלבד</p></div>
             <section class="auth-card wide-card">
+                <nav class="site-admin-tabs" aria-label="קטגוריות ניהול האתר">
+                    <button type="button" class="site-admin-tab active" data-admin-tab="approvals" aria-selected="true">בקשות אישור</button>
+                    <button type="button" class="site-admin-tab" data-admin-tab="users" aria-selected="false">משתמשים</button>
+                    <button type="button" class="site-admin-tab" data-admin-tab="gmachs" aria-selected="false">גמ״חים</button>
+                    <button type="button" class="site-admin-tab" data-admin-tab="items" aria-selected="false">פריטים</button>
+                    <button type="button" class="site-admin-tab" data-admin-tab="loans" aria-selected="false">השאלות</button>
+                    <button type="button" class="site-admin-tab" data-admin-tab="activity" aria-selected="false">דוחות פעילות</button>
+                    <button type="button" class="site-admin-tab" data-admin-tab="admins" aria-selected="false">הרשאות מנהלים</button>
+                </nav>
+                <div class="site-admin-panel" data-admin-panel="admins" hidden>
+
                 <h3>ניהול הרשאות מנהלים</h3>
                 <p class="muted">כדי להוסיף מנהל, כתובת האימייל צריכה להיות רשומה באתר. ניתן לערוך כתובות של חשבונות קיימים.</p>
                 <form id="siteAdminGrantForm" class="toolbar">
@@ -308,6 +319,8 @@
                     <button class="primary" type="submit">הוספת מנהל אתר</button>
                 </form>
                 <p id="siteAdminMessage" class="message" role="status"></p>
+                </div>
+                <div class="site-admin-panel" data-admin-panel="approvals">
                 <section class="site-admin-approvals" aria-labelledby="siteAdminApprovalsTitle">
                     <h3 id="siteAdminApprovalsTitle">בקשות לאישור הרשמה מחדש <span id="siteAdminApprovalCount" class="site-admin-approval-count" hidden></span></h3>
                     <p class="muted">משתמשים שחשבונם נמחק וממתינים לאישור מנהל האתר. לאחר האישור המשתמש יוכל להירשם מחדש.</p>
@@ -315,6 +328,8 @@
                     <p id="siteAdminApprovalsMessage" class="message" role="status" aria-live="polite"></p>
                     <div id="siteAdminApprovals" class="site-admin-user-list"></div>
                 </section>
+                </div>
+                <div class="site-admin-panel" data-admin-panel="activity" hidden>
                 <section class="site-admin-activity" aria-labelledby="siteAdminActivityTitle">
 <h3 id="siteAdminActivityTitle">דוח פעילות מפורט באתר</h3>
 <p class="muted">פעילות שנאספה מאז הפעלת המעקב. משתמשים מחוברים מזוהים לפי החשבון, ואורחים מוצגים לפי מזהה ביקור זמני.</p>
@@ -326,13 +341,19 @@
 <p id="activityReportStatus" class="message" role="status"></p>
 <div id="activityReportList" class="site-admin-activity-list"></div>
 </section>
+                </div>
+                <div class="site-admin-panel" data-admin-panel="users" hidden>
 <h3>כל המשתמשים הרשומים</h3>
 <label for="siteAdminUserSearch">חיפוש משתמש לפי שם או אימייל</label>
 <input id="siteAdminUserSearch" type="search" placeholder="חיפוש משתמש..." autocomplete="off">
 <p id="siteAdminUserCount" class="muted" aria-live="polite"></p>
 <div class="site-admin-bulk-toolbar" id="siteAdminUsersBulk"><label><input type="checkbox" id="siteAdminSelectAllUsers"> בחירת כל המשתמשים הניתנים למחיקה</label><span id="siteAdminUsersSelectedCount">0 נבחרו</span><button id="siteAdminDeleteUsers" class="secondary" type="button" disabled>מחיקת משתמשים נבחרים</button></div>
 <div id="siteAdminUsers" class="site-admin-user-list"></div>
+                </div>
+                <div class="site-admin-panel" data-admin-panel="gmachs" hidden>
                 <h3>גמ״חים</h3><div class="site-admin-bulk-toolbar"><label><input type="checkbox" id="siteAdminSelectAllGmachs"> בחירת כל הגמ״חים</label><span id="siteAdminGmachsSelectedCount">0 נבחרו</span><button id="siteAdminDeleteGmachs" class="secondary" type="button" disabled>מחיקת גמ״חים נבחרים</button></div><div id="siteAdminGmachs" class="items-grid"></div>
+                </div>
+                <div class="site-admin-panel" data-admin-panel="loans" hidden>
                 <section aria-labelledby="siteAdminOpenLoansTitle">
                     <h3 id="siteAdminOpenLoansTitle">ניהול השאלות פתוחות</h3>
                     <div class="site-admin-bulk-toolbar">
@@ -343,7 +364,10 @@
                     <p id="siteAdminOpenLoansMessage" class="message" role="status"></p>
                     <div id="siteAdminOpenLoans" class="site-admin-user-list"></div>
                 </section>
+                </div>
+                <div class="site-admin-panel" data-admin-panel="items" hidden>
                 <h3>פריטים</h3><div class="site-admin-bulk-toolbar"><label><input type="checkbox" id="siteAdminSelectAllItems"> בחירת כל הפריטים</label><span id="siteAdminItemsSelectedCount">0 נבחרו</span><button id="siteAdminDeleteItems" class="secondary" type="button" disabled>מחיקת פריטים נבחרים</button></div><div id="siteAdminItems" class="items-grid"></div>
+                </div>
             </section>
         </section>
         <section id="aboutPage" class="info-page auth-card wide-card" hidden>
@@ -414,7 +438,7 @@
             <button id="gmachGuideSend" type="submit">שליחה</button>
         </form>
     </dialog>
-    <script src="app.js?v=login-tracking-init-fix-20261119"></script>
+    <script src="app.js?v=admin-categories-20261119"></script>
     <script src="gmach-guide.js?v=4"></script>
 </body>
 </html>
