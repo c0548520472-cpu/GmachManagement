@@ -45,6 +45,13 @@ namespace GmachManagement.API.Controllers
 
             if (token == null)
             {
+                if (await _users.RequiresReRegistrationApprovalAsync(request.Email, cancellationToken))
+                    return StatusCode(403, new
+                    {
+                        message = "החשבון שלך נמחק על ידי מנהל האתר. כדי להשתמש באתר שוב, יש להירשם מחדש לאחר קבלת אישור מנהל האתר.",
+                        requiresApproval = true,
+                        accountDeleted = true
+                    });
                 return Unauthorized(new
                 {
                     message = "כתובת האימייל או הסיסמה שגויים"
