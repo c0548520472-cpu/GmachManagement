@@ -3,6 +3,7 @@ using GmachManagement.Core.Entities;
 using GmachManagement.Core.Interfaces;
 namespace GmachManagement.Service.Services;
 public sealed class GmachService {
+ public Task<string?> GetOwnerEmailForItemAsync(int itemId,CancellationToken ct)=>repo.GetOwnerEmailForItemAsync(itemId,ct);
  private readonly IGmachRepository repo;
  public GmachService(IGmachRepository repo)=>this.repo=repo;
  public Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct,int? applicantId = null)=>repo.AddBorrowRequestAsync(itemId,name,phone,email,ct,applicantId);
