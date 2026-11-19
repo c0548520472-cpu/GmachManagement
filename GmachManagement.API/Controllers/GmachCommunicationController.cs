@@ -123,6 +123,31 @@ public sealed class GmachCommunicationController(
         return NoContent();
     }
 
+    public sealed record EditChatMessage([Required, StringLength(1000, MinimumLength = 1)] string Text);
+
+    [HttpPut("{gmachId:int}/messages/{messageId:int}")]
+    public async Task<IActionResult> EditMessage(int gmachId, int messageId, [FromQuery] int? customerId,
+        EditChatMessage input, CancellationToken ct)
+    {
+        if (ActorId <= 0) return Unauthorized();
+        if (gmachId <= 0 || messageId <= 0 || customerId is <= 0) return BadRequest();
+        if (customerId.HasValue && !User.IsInRole("GmachAdmin")) return Forbid();
+        var text = input.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(text)) return BadRequest(new { message = "יש להזין תוכן להודעה." });
+        return await service.EditOwnMessageAsync(gmachId, customerId, ActorId, messageId, text, ct)
+            ? NoContent() : NotFound();
+    }
+
+    [HttpDelete("{gmachId:int}/messages/{messageId:int}")]
+    public async Task<IActionResult> DeleteMessage(int gmachId, int messageId, [FromQuery] int? customerId, CancellationToken ct)
+    {
+        if (ActorId <= 0) return Unauthorized();
+        if (gmachId <= 0 || messageId <= 0 || customerId is <= 0) return BadRequest();
+        if (customerId.HasValue && !User.IsInRole("GmachAdmin")) return Forbid();
+        return await service.DeleteOwnMessageAsync(gmachId, customerId, ActorId, messageId, ct)
+            ? NoContent() : NotFound();
+    }
+
     private static ChatAttachment? ParseAttachment(NewChatMessage input)
     {
         if (string.IsNullOrWhiteSpace(input.AttachmentName) || string.IsNullOrEmpty(input.AttachmentBase64))
