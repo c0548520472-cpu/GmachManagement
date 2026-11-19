@@ -160,10 +160,89 @@ async function requestFromServer(path, options = {}) {
     return result;
 }
 
-document.getElementById("forgotPasswordBtn").addEventListener("click",()=>{
- const notice=document.getElementById("forgotPasswordNotice");
- notice.hidden=false;
+document.getElementById("forgotPasswordBtn").addEventListener("click", async () => {
+    const email = document.getElementById("email").value.trim();
+    if (!email) {
+        showMessage(authMessage, "יש להזין תחילה את כתובת האימייל בשדה ההתחברות.", "error");
+        document.getElementById("email").focus();
+        return;
+    }
+    const button = document.getElementById("forgotPasswordBtn");
+    button.disabled = true;
+    showMessage(authMessage, "שולח קישור לאיפוס סיסמה...");
+    try {
+        const result = await apiRequest("/Auth/forgot-password", {
+            method: "POST", body: JSON.stringify({ email })
+        });
+        showMessage(authMessage, result.message, "success");
+    } catch (error) {
+        showMessage(authMessage, error.message, "error");
+    } finally {
+        button.disabled = false;
+    }
 });
+
+function showResetPasswordForm() {
+    const params = new URLSearchParams(window.location.search);
+    const resetEmail = params.get("resetEmail");
+    const resetToken = params.get("resetToken");
+    if (!resetEmail || !resetToken) return;
+    showLogin();
+    const section = document.getElementById("authSection");
+    const form = document.createElement("form");
+    form.className = "auth-form";
+    const heading = document.createElement("h3");
+    heading.textContent = "קביעת סיסמה חדשה";
+    const label = document.createElement("label");
+    label.textContent = "סיסמה חדשה (לפחות 8 תווים)";
+    const password = document.createElement("input");
+    password.type = "password";
+    password.required = true;
+    password.minLength = 8;
+    password.maxLength = 128;
+    password.autocomplete = "new-password";
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "primary full-width";
+    submit.textContent = "שמירת סיסמה חדשה";
+    const status = document.createElement("p");
+    status.className = "message";
+    status.setAttribute("role", "status");
+    label.append(password);
+    form.append(heading, label, submit, status);
+    section.append(form);
+    authForm.hidden = true;
+    section.querySelector(".tabs").hidden = true;
+    document.getElementById("forgotPasswordBtn").hidden = true;
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+        submit.disabled = true;
+        status.textContent = "מעדכן סיסמה...";
+        try {
+            const result = await apiRequest("/Auth/reset-password", {
+                method: "POST",
+                body: JSON.stringify({ email: resetEmail, token: resetToken, newPassword: password.value })
+            });
+            status.textContent = result.message;
+            password.value = "";
+            window.history.replaceState({}, "", window.location.pathname);
+            submit.hidden = true;
+            const back = document.createElement("button");
+            back.type = "button";
+            back.className = "secondary";
+            back.textContent = "מעבר להתחברות";
+            back.addEventListener("click", () => {
+                form.remove();
+                switchAuthMode("login");
+            });
+            form.append(back);
+        } catch (error) {
+            status.textContent = error.message;
+            submit.disabled = false;
+        }
+    });
+}
+
 
 // התחברות
 authForm.addEventListener("submit", async (event) => {
@@ -1274,3 +1353,5 @@ document.getElementById("siteAdminBulkDelete").addEventListener("click",async()=
     await loadSiteAdmin(true);
     showMessage(siteAdminMessage,"נמחקו "+deleted+" משתמשים."+(failures.length?" לא נמחקו: "+failures.join("; "):""),failures.length?"error":"success");
 });
+
+showResetPasswordForm();
