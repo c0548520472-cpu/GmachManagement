@@ -217,8 +217,26 @@ namespace GmachManagement.API.Controllers
         [AllowAnonymous,HttpPost("request-re-registration")]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
         public async Task<IActionResult> RequestReRegistration([FromBody] ReRegistrationRequest request,CancellationToken ct){
-            await _authService.RequestReRegistrationAsync(request.Email,ct);
-            return Ok(new {message="אם החשבון הוסר בעבר, הבקשה נשמרה ותועבר למנהל האתר."});
+            var saved = await _authService.RequestReRegistrationAsync(request.Email,ct);
+            if (saved)
+            {
+                var adminEmail = HttpContext.RequestServices.GetRequiredService<IConfiguration>()["SiteAdmin:BootstrapEmail"];
+                if (!string.IsNullOrWhiteSpace(adminEmail))
+                {
+                    try
+                    {
+                        await _email.SendAsync(adminEmail, "בקשה לאישור הרשמה מחדש באתר ניהול הגמ״ח",
+                            "<div dir='rtl'><p>התקבלה בקשה לאישור הרשמה מחדש עבור החשבון: " +
+                            HtmlEncoder.Default.Encode(request.Email.Trim()) +
+                            "</p><p><a href='https://gmachmanagement-client.pages.dev/?page=siteAdmin'>כניסה לניהול האתר</a></p></div>", ct);
+                    }
+                    catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException)
+                    {
+                        _logger.LogWarning(ex, "Re-registration approval email notification failed");
+                    }
+                }
+            }
+            return Ok(new {message="אם החשבון הוסר בעבר, בקשת האישור נשמרה. מנהל האתר יוכל לטפל בה."});
         }
         public sealed class ProfileUpdateRequest {
             [System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.StringLength(150)] public string Name {get;set;}="";
