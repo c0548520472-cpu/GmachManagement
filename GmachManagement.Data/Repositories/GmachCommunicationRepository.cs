@@ -6,6 +6,13 @@ namespace GmachManagement.Data.Repositories;
 
 public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommunicationRepository
 {
+    public async Task<int?> GetRecipientIdAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
+    {
+        if (customerId is int customer) return customer;
+        return await db.Gmachs.Where(g => g.Id == gmachId && g.OwnerId != actorId)
+            .Select(g => (int?)g.OwnerId).SingleOrDefaultAsync(ct);
+    }
+
     public Task<List<ChatUnreadNotice>> GetUnreadChatsAsync(int userId, CancellationToken ct)
         => db.Database.SqlQuery<ChatUnreadNotice>($"""
             SELECT m."GmachId", CAST(m."CustomerId" AS integer) AS "CustomerId",
