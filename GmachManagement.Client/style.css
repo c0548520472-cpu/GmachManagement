@@ -1153,3 +1153,11 @@ dialog.gmach-guide {
 #gmachGuideLauncher[hidden]{display:none!important}
 #gmachChatInbox .owner-chat-thread-select{display:block;width:100%;max-width:100%;min-height:44px;margin:.45rem 0 1rem;padding:.65rem;border:1px solid #b9d9d6;border-radius:10px;background:#fff;color:#173e41;direction:rtl}
 #gmachChatInbox label[for="ownerChatThreadSelect"]{display:block;font-weight:700}
+
+/* Owner chat: one launcher, compact message actions */
+#floatingGmachChat[hidden]{display:none!important}
+#ownerChatInbox.owner-chat-shortcut{white-space:nowrap}
+.chat-message-actions{display:inline-flex;gap:.2rem;margin-inline-start:.4rem;vertical-align:middle;align-items:center}
+#gmachChat .chat-message-action{display:inline-grid;place-items:center;width:1.7rem;min-width:1.7rem;height:1.7rem;min-height:0;padding:0;border:1px solid #c8dfdf;border-radius:.45rem;background:#ffffffdd;color:#18525a;font-size:.9rem;line-height:1;cursor:pointer}
+#gmachChat .chat-message-action:hover{background:#e8f5f4}
+#gmachChat .chat-message-delete:hover{background:#fff0ee;color:#a32929}
