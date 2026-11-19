@@ -406,26 +406,8 @@ registrationForm.addEventListener("submit", async (event) => {
             showMessage(authMessage, "יש להזין שם גמ״ח ועיר לפני בחירת הסיווג.", "error");
             return;
         }
-        const proposed = gmachTopic({name:gmachName});
-        const selected = document.getElementById("gmachCategoryConfirm");
-        if (selected) {
-            selected.value = proposed.title;
-            document.getElementById("gmachCategorySuggestion").textContent =
-                "זיהינו את הגמ״ח שלך כ: " + proposed.icon + " " + proposed.title + ". האם הסיווג מתאים? אפשר לשנות אותו לפני אישור ההרשמה.";
-            document.getElementById("gmachCategoryDialog").showModal();
-            confirmedGmachType = await new Promise(resolve => {
-                const dialog = document.getElementById("gmachCategoryDialog");
-                const finish = event => {
-                    dialog.removeEventListener("close", finish);
-                    resolve(dialog.returnValue === "confirm" ? selected.value : null);
-                };
-                dialog.addEventListener("close", finish);
-            });
-            if (!confirmedGmachType) return;
-        } else {
-            if (!confirm("הסיווג המוצע לגמ״ח: " + proposed.title + ". האם לאשר?")) return;
-            confirmedGmachType = proposed.title;
-        }
+        confirmedGmachType = await confirmGmachClassification(gmachName);
+        if (!confirmedGmachType) return;
     }
     showMessage(authMessage, "מבצע הרשמה...");
 
@@ -1214,6 +1196,7 @@ async function loadProfile(){
   document.getElementById("profileEmail").value=p.email||"";
   document.getElementById("profileIsOwner").checked=!!p.isGmachOwner;
   document.getElementById("profileGmachName").value=p.gmachName||"";
+  document.getElementById("profileGmachName").dataset.originalName=p.gmachName||"";
   document.getElementById("profileGmachType").value=p.gmachType||"";
   document.getElementById("profileCity").value=normalizeCity(p.city);
   document.getElementById("profileGmachFields").hidden=!p.isGmachOwner;
@@ -1236,6 +1219,15 @@ document.getElementById("profileForm").addEventListener("submit",async e=>{
  city:owner?normalizeCity(document.getElementById("profileCity").value.trim()):null,
  currentPassword:document.getElementById("profileCurrentPassword").value,
  newPassword:document.getElementById("profileNewPassword").value||null};
+ if (owner && payload.gmachName) {
+  const currentName = document.getElementById("profileGmachName").dataset.originalName || "";
+  if (!currentName || currentName !== payload.gmachName) {
+   const category = await confirmGmachClassification(payload.gmachName);
+   if (!category) return;
+   payload.gmachType = category;
+   document.getElementById("profileGmachType").value = category;
+  }
+ }
  try{
   const result=await apiRequest("/Auth/profile",{method:"PUT",body:JSON.stringify(payload)});
   if(!result.accessToken)throw new Error("נדרש להתחבר מחדש.");
@@ -1297,6 +1289,36 @@ async function loadMyLoans() {
         }
     } catch (error) { showMessage(message,error.message,"error"); }
 }
+
+async function confirmGmachClassification(name, description = "") {
+    const proposed = gmachTopic({name, description});
+    const dialog = document.getElementById("gmachCategoryDialog");
+    const selected = document.getElementById("gmachCategoryConfirm");
+    if (!dialog || !selected || typeof dialog.showModal !== "function") {
+        return confirm("הסיווג המוצע: " + proposed.title + ". האם לאשר?") ? proposed.title : null;
+    }
+    selected.value = proposed.title;
+    document.getElementById("gmachCategorySuggestion").textContent =
+        "הגמ״ח שלך זוהה כ: " + proposed.icon + " " + proposed.title + ". האם הסיווג מתאים? ניתן לבחור סיווג אחר.";
+    dialog.returnValue = "";
+    dialog.showModal();
+    return await new Promise(resolve => {
+        dialog.addEventListener("close", () => resolve(dialog.returnValue === "confirm" ? selected.value : null), {once:true});
+    });
+}
+function updateRegistrationCategoryPreview() {
+    const preview = document.getElementById("gmachCategoryPreview");
+    if (!preview) return;
+    const name = document.getElementById("gmachName").value.trim();
+    const owner = document.getElementById("registerOwner").checked;
+    preview.hidden = !owner || !name;
+    if (owner && name) {
+        const topic = gmachTopic({name});
+        preview.textContent = "סיווג מוצע: " + topic.icon + " " + topic.title + " — תתבקש לאשר או לשנות לפני ההרשמה.";
+    }
+}
+document.getElementById("gmachName")?.addEventListener("input", updateRegistrationCategoryPreview);
+document.getElementById("registerOwner")?.addEventListener("change", updateRegistrationCategoryPreview);
 
 // Gmach directory and owner onboarding
 const ownerCheckbox=document.getElementById("registerOwner");
