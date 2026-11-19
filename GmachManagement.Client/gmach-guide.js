@@ -83,7 +83,13 @@
             const title = document.createElement("strong");
             title.textContent = [group.name, normalizeCity(group.city)].filter(Boolean).join(" · ");
             const detail = document.createElement("small");
-            detail.textContent = item ? item.name + " · עותקים זמינים: " + item.availableCopies : "פתיחת דף הגמ״ח";
+            detail.textContent = item
+                ? item.name + (item.availableCopies > 0
+                    ? " · עותקים זמינים: " + item.availableCopies
+                    : " · כרגע מושאל" + (item.expectedReturnDate
+                        ? " · צפי החזרה: " + new Date(item.expectedReturnDate).toLocaleDateString("he-IL") + " (משוער)"
+                        : " · אין תאריך חזרה מאומת"))
+                : "פתיחת דף הגמ״ח";
             button.append(title, detail);
             button.addEventListener("click", () => {
                 dialog.close();
@@ -235,18 +241,20 @@
                 const details = await apiRequest("/gmachs/" + encodeURIComponent(group.id));
                 const item = details.items.find(item => {
                     const description = searchable(item.name + " " + (item.description || "")).split(" ");
-                    return item.isActive && item.availableCopies > 0 && words.every(word => (description.includes(word) || description.includes("ה" + word)));
+                    return item.isActive && words.every(word => (description.includes(word) || description.includes("ה" + word)));
                 });
                 return { group, item };
             }));
             if (currentRequest !== requestNumber) return;
             const matches = checks.filter(check => check.status === "fulfilled" && check.value.item)
-                .map(check => check.value);
+                .map(check => check.value)
+                .sort((a,b) => Number(b.item.availableCopies > 0) - Number(a.item.availableCopies > 0));
             if (matches.length) {
+                const availableCount = matches.filter(match => match.item.availableCopies > 0).length;
                 lastMatches = matches;
                 message((wantMore ? "הרחבתי את החיפוש לכל הארץ. " : "") +
-                    (matches.length === 1 ? "מצאתי אפשרות שמתאימה" : "מצאתי כמה אפשרויות שמתאימות") +
-                    (city ? " ב" + city : "") + ". לחצו על אחת מהן לפרטים.");
+                    (availableCount ? (availableCount === 1 ? "מצאתי אפשרות זמינה" : "מצאתי כמה אפשרויות זמינות") : "מצאתי את הפריט, אבל כרגע הוא מושאל") +
+                    (city ? " ב" + city : "") + ". לחצו על אחת מהן לפרטים. תאריך החזרה מוצג רק אם קיים מידע מאומת באתר.");
                 showNextMatches();
             } else if (namedGroups.length) {
                 message("מצאתי גמ״חים שהשם שלהם מתאים לחיפוש.");
