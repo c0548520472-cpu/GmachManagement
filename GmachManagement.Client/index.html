@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=management-chat-select-20261119">
+    <link rel="stylesheet" href="style.css?v=chat-message-actions-20261119">
 </head>
 <body>
     <header class="header">
@@ -198,7 +198,7 @@
             <section id="adminSection" class="auth-card wide-card" hidden style="margin-top:24px">
                 <h2>ניהול גמ"ח</h2>
                 <nav class="owner-admin-tabs" aria-label="קטגוריות ניהול הגמ״ח"><button type="button" data-owner-tab="items" class="owner-admin-tab active" aria-selected="true">פריטים פעילים</button><button type="button" data-owner-tab="requests" class="owner-admin-tab" aria-selected="false">בקשות השאלה</button><button type="button" data-owner-tab="loans" class="owner-admin-tab" aria-selected="false">השאלות פעילות</button><button type="button" data-owner-tab="add" class="owner-admin-tab" aria-selected="false">הוספה וייבוא</button><button type="button" data-owner-tab="removed" class="owner-admin-tab" aria-selected="false">פריטים שהוסרו</button></nav>
-                <div id="ownerGmachInfo"></div><form id="claimGmachForm" hidden><h3>שיוך גמ״ח לחשבון קיים</h3><label for="claimGmachName">שם הגמ״ח</label><input id="claimGmachName" maxlength="150" required><label for="claimGmachCity">עיר</label><input id="claimGmachCity" maxlength="100" required><button type="submit" class="primary">יצירת הגמ״ח שלי</button></form><div id="ownerManagement" hidden><button id="ownerChatInbox" class="secondary owner-chat-shortcut" type="button" aria-label="פתיחת צ׳אט ההודעות בחלונית צדדית">💬 הודעות צ׳אט</button><div class="owner-admin-panel" data-owner-panel="add" hidden><form id="excelImportForm" enctype="multipart/form-data"><label for="excelFile">ייבוא פריטים מ־Excel (עמודה A: שם פריט, עמודה B: תיאור, עמודה C: כמות הפריט בגמ״ח)</label><input id="excelFile" type="file" accept=".xlsx" required><button class="primary" type="submit">ייבוא Excel</button></form>
+                <div id="ownerGmachInfo"></div><form id="claimGmachForm" hidden><h3>שיוך גמ״ח לחשבון קיים</h3><label for="claimGmachName">שם הגמ״ח</label><input id="claimGmachName" maxlength="150" required><label for="claimGmachCity">עיר</label><input id="claimGmachCity" maxlength="100" required><button type="submit" class="primary">יצירת הגמ״ח שלי</button></form><div id="ownerManagement" hidden><button id="ownerChatInbox" class="secondary owner-chat-shortcut" type="button" aria-label="ניהול הודעות בצ׳אט">💬 ניהול הודעות בצ׳אט</button><div class="owner-admin-panel" data-owner-panel="add" hidden><form id="excelImportForm" enctype="multipart/form-data"><label for="excelFile">ייבוא פריטים מ־Excel (עמודה A: שם פריט, עמודה B: תיאור, עמודה C: כמות הפריט בגמ״ח)</label><input id="excelFile" type="file" accept=".xlsx" required><button class="primary" type="submit">ייבוא Excel</button></form>
                 <form id="adminItemForm">
                     <label for="adminItemName">שם פריט</label><input id="adminItemName" required maxlength="150">
                     <label for="adminItemDescription">תיאור</label><input id="adminItemDescription">
@@ -439,7 +439,7 @@
             <button id="gmachGuideSend" type="submit">שליחה</button>
         </form>
     </dialog>
-    <script src="app.js?v=management-chat-select-20261119"></script>
+    <script src="app.js?v=chat-message-actions-20261119"></script>
     <script src="gmach-guide.js?v=borrowed-items-20261119"></script>
 </body>
 </html>
