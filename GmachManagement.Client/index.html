@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=owner-chat-inbox-20261119">
+    <link rel="stylesheet" href="style.css?v=admin-approval-inbox-20261119">
 </head>
 <body>
     <header class="header">
@@ -308,6 +308,13 @@
                     <button class="primary" type="submit">הוספת מנהל אתר</button>
                 </form>
                 <p id="siteAdminMessage" class="message" role="status"></p>
+                <section class="site-admin-approvals" aria-labelledby="siteAdminApprovalsTitle">
+                    <h3 id="siteAdminApprovalsTitle">בקשות לאישור הרשמה מחדש <span id="siteAdminApprovalCount" class="site-admin-approval-count" hidden></span></h3>
+                    <p class="muted">משתמשים שחשבונם נמחק וממתינים לאישור מנהל האתר. לאחר האישור המשתמש יוכל להירשם מחדש.</p>
+                    <button type="button" id="siteAdminRefreshApprovals" class="secondary">רענון בקשות</button>
+                    <p id="siteAdminApprovalsMessage" class="message" role="status" aria-live="polite"></p>
+                    <div id="siteAdminApprovals" class="site-admin-user-list"></div>
+                </section>
                 <h3>כל המשתמשים הרשומים</h3>
 <label for="siteAdminUserSearch">חיפוש משתמש לפי שם או אימייל</label>
 <input id="siteAdminUserSearch" type="search" placeholder="חיפוש משתמש..." autocomplete="off">
@@ -394,7 +401,7 @@
             <button id="gmachGuideSend" type="submit">שליחה</button>
         </form>
     </dialog>
-    <script src="app.js?v=re-registration-request-20261119"></script>
+    <script src="app.js?v=admin-approval-inbox-20261119"></script>
     <script src="gmach-guide.js?v=4"></script>
 </body>
 </html>
