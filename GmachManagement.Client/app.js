@@ -399,8 +399,35 @@ registrationForm.addEventListener("submit", async (event) => {
         );
     } catch (error) {
         showMessage(authMessage, error.message, "error");
+        if (/הוסר בעבר|נמחק על ידי מנהל|אישור מנהל/.test(error.message)) {
+            showReRegistrationRequest(email);
+        }
     }
 });
+
+function showReRegistrationRequest(email) {
+    document.getElementById("reRegistrationRequestButton")?.remove();
+    const button = document.createElement("button");
+    button.id = "reRegistrationRequestButton";
+    button.type = "button";
+    button.className = "secondary";
+    button.textContent = "שליחת בקשה לאישור הרשמה מחדש";
+    button.addEventListener("click", async () => {
+        button.disabled = true;
+        showMessage(authMessage, "שולח בקשה למנהל האתר…");
+        try {
+            const response = await apiRequest("/Auth/request-re-registration", {
+                method: "POST", body: JSON.stringify({email})
+            });
+            showMessage(authMessage, response.message || "הבקשה נשמרה.", "success");
+            button.remove();
+        } catch (error) {
+            showMessage(authMessage, error.message, "error");
+            button.disabled = false;
+        }
+    });
+    authMessage.insertAdjacentElement("afterend", button);
+}
 
 authForm.addEventListener("submit", async (event) => {
     event.preventDefault();
