@@ -18,6 +18,15 @@ public sealed partial class SiteAdminRepository(AppDbContext db) : ISiteAdminRep
   if(row==null)return "בקשת ההרשמה לא נמצאה.";
   row.Approved=true;row.Requested=false;await db.SaveChangesAsync(ct);return null;
  }
+ public async Task<string?> RejectReRegistrationAsync(string email,CancellationToken ct){
+  var normalized=Normalize(email);
+  var row=await db.DeletedAccounts.FirstOrDefaultAsync(x=>x.Email==normalized&&x.Requested&&!x.Approved,ct);
+  if(row==null)return "בקשת ההרשמה לא נמצאה.";
+  row.Approved=false;
+  row.Requested=false;
+  await db.SaveChangesAsync(ct);
+  return null;
+ }
  public Task<List<User>> UsersAsync(CancellationToken ct)=>db.Users.AsNoTracking().OrderBy(u=>u.Id).ToListAsync(ct);
  public Task<List<Gmach>> GmachsAsync(CancellationToken ct)=>db.Gmachs.AsNoTracking().OrderBy(g=>g.Id).ToListAsync(ct);
  public Task<List<Item>> ItemsAsync(CancellationToken ct)=>db.Items.AsNoTracking().OrderBy(i=>i.Id).ToListAsync(ct);
