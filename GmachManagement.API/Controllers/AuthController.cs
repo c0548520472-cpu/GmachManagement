@@ -1,6 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using GmachManagement.Core.DTOs;
+using GmachManagement.API.Services;
+using GmachManagement.Service.Security;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Encodings.Web;
 using GmachManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +19,18 @@ namespace GmachManagement.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IUserRepository _users;
+        private readonly PasswordService _passwords;
+        private readonly ResendEmailService _email;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, IUserRepository users, PasswordService passwords, ResendEmailService email, ILogger<AuthController> logger)
         {
             _authService = authService;
+            _users = users;
+            _passwords = passwords;
+            _email = email;
+            _logger = logger;
         }
 
         [AllowAnonymous]
@@ -80,6 +93,62 @@ namespace GmachManagement.API.Controllers
             {
                 message = "ההרשמה בוצעה בהצלחה."
             });
+        }
+
+
+        public sealed record ForgotPasswordRequest([System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.EmailAddress] string Email);
+        public sealed record ResetPasswordRequest([System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.EmailAddress] string Email,
+            [System.ComponentModel.DataAnnotations.Required] string Token,
+            [System.ComponentModel.DataAnnotations.Required] string NewPassword);
+
+        [AllowAnonymous, HttpPost("forgot-password")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
+        {
+            const string message = "אם קיים חשבון עם כתובת המייל הזו, תישלח אליו הודעה עם קישור לאיפוס הסיסמה.";
+            var email = request.Email.Trim().ToLowerInvariant();
+            var user = await _users.GetByEmailAsync(email, ct);
+            if (user == null) return Ok(new { message });
+
+            var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            var expires = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds();
+            var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+            await _users.SetRecoveryCodeHashAsync(user.Id, $"{expires}:{tokenHash}", ct);
+            var url = $"https://gmachmanagement-client.pages.dev/?resetEmail={Uri.EscapeDataString(email)}&resetToken={Uri.EscapeDataString(token)}";
+            try
+            {
+                await _email.SendAsync(email, "איפוס סיסמה - ניהול הגמ״ח",
+                    $"<div dir='rtl'><p>התקבלה בקשה לאיפוס הסיסמה שלך.</p><p><a href='{HtmlEncoder.Default.Encode(url)}'>לחצי כאן לקביעת סיסמה חדשה</a></p><p>הקישור בתוקף למשך 30 דקות. אם לא ביקשת איפוס, אפשר להתעלם מההודעה.</p></div>", ct);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException)
+            {
+                _logger.LogError(ex, "Failed to send password reset email");
+            }
+            return Ok(new { message });
+        }
+
+        [AllowAnonymous, HttpPost("reset-password")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
+        {
+            if (request.NewPassword.Length is < 8 or > 128)
+                return BadRequest(new { message = "הסיסמה החדשה חייבת להכיל 8 עד 128 תווים." });
+            if (request.Token.Length != 64 || !request.Token.All(Uri.IsHexDigit))
+                return BadRequest(new { message = "קישור האיפוס אינו תקין או שפג תוקפו." });
+            var email = request.Email.Trim().ToLowerInvariant();
+            var user = await _users.GetByEmailAsync(email, ct);
+            if (user?.RecoveryCodeHash == null)
+                return BadRequest(new { message = "קישור האיפוס אינו תקין או שפג תוקפו." });
+            var parts = user.RecoveryCodeHash.Split(':', 2);
+            if (parts.Length != 2 || !long.TryParse(parts[0], out var expires) || expires < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                return BadRequest(new { message = "קישור האיפוס אינו תקין או שפג תוקפו." });
+            var suppliedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.Token)));
+            if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(parts[1]), Encoding.ASCII.GetBytes(suppliedHash)))
+                return BadRequest(new { message = "קישור האיפוס אינו תקין או שפג תוקפו." });
+            var newHash = _passwords.HashPassword(user, request.NewPassword);
+            if (!await _users.ConsumeRecoveryCodeAsync(email, user.RecoveryCodeHash, newHash, ct))
+                return BadRequest(new { message = "קישור האיפוס כבר נוצל. יש לבקש קישור חדש." });
+            return Ok(new { message = "הסיסמה עודכנה. אפשר להתחבר כעת." });
         }
 
         public sealed record ReRegistrationRequest([System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.EmailAddress] string Email);
