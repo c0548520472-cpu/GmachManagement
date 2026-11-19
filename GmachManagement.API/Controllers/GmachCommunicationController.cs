@@ -118,8 +118,8 @@ public sealed class GmachCommunicationController(
         var saved = await service.AddMessageAsync(gmachId, customerId, ActorId, message, input.ItemId, attachment, ct);
         if (!saved.Saved) return NotFound();
         cache.Remove(TypingKey(gmachId, customerId ?? ActorId, customerId.HasValue));
-        if (saved.OwnerEmail is { } email)
-            await NotifyOwnerAsync(email);
+        if (saved.NotificationEmail is { } recipient)
+            await NotifyChatRecipientAsync(recipient, saved.ToCustomer);
         return NoContent();
     }
 
@@ -145,12 +145,12 @@ public sealed class GmachCommunicationController(
         return valid ? new ChatAttachment(name, content) : null;
     }
 
-    private async Task NotifyOwnerAsync(string ownerEmail)
+    private async Task NotifyChatRecipientAsync(string recipientEmail, bool toCustomer)
     {
         try
         {
-            await email.SendAsync(ownerEmail, "הודעה חדשה בצ׳אט הגמ״ח",
-                "<div dir='rtl'><p>ממתינה לך הודעה חדשה בצ׳אט.</p><p><a href='https://gmachmanagement-client.pages.dev/?page=owner'>כניסה לניהול הגמ״ח</a></p></div>",
+            await email.SendAsync(recipientEmail, toCustomer ? "מנהל הגמ״ח השיב לך בצ׳אט" : "הודעה חדשה בצ׳אט הגמ״ח",
+                toCustomer ? "<div dir='rtl'><p>קיבלת תשובה חדשה ממנהל הגמ״ח.</p><p><a href='https://gmachmanagement-client.pages.dev/'>לצפייה בהודעה באתר</a></p></div>" : "<div dir='rtl'><p>ממתינה לך הודעה חדשה בצ׳אט.</p><p><a href='https://gmachmanagement-client.pages.dev/?page=owner'>כניסה לניהול הגמ״ח</a></p></div>",
                 HttpContext.RequestAborted);
         }
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException)
