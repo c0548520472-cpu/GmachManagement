@@ -1512,6 +1512,12 @@ async function loadSiteActivityReport() {
     }
 }
 document.getElementById("activityRefreshBtn").addEventListener("click", loadSiteActivityReport);
+const analyticsOptOut = document.getElementById("analyticsOptOut");
+analyticsOptOut.checked = localStorage.getItem("gmachAnalyticsOptOut") === "true";
+analyticsOptOut.addEventListener("change", () => {
+    localStorage.setItem("gmachAnalyticsOptOut", analyticsOptOut.checked ? "true" : "false");
+});
+
 async function loadSiteAdminApprovals() {
     const list = document.getElementById("siteAdminApprovals");
     const message = document.getElementById("siteAdminApprovalsMessage");
