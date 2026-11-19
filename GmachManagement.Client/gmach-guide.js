@@ -20,6 +20,52 @@
         ["מכונת שטיפה בלחץ", /מכונות שטיפה בלחץ|גרניק|מכונת לחץ מים/gu],
         ["מד לחץ דם", /מדי לחץ דם|מכשיר למדידת לחץ דם|מכשיר לבדיקת לחץ דם/gu]
     ];
+    // Category vocabulary and conversational intent are derived only from the site's catalog.
+    const topics = [
+        {name:"ציוד רפואי ובריאות", words:["רפואי","רפואה","בריאות","שיקום","ניידות","הליכה","חולה","חולים","כיסא גלגלים","הליכון","קביים","מכשור רפואי"]},
+        {name:"תינוקות וילדים", words:["תינוק","תינוקת","תינוקות","ילד","ילדים","לידה","עגלה","עריסה","צעצוע","משחק"]},
+        {name:"אירועים ושמחות", words:["אירוע","אירועים","שמחה","שמחות","חתונה","שבת חתן","בר מצווה","מסיבה","כיסאות","שולחנות","כלים לאירוע"]},
+        {name:"כלי עבודה ותחזוקה", words:["עבודה","שיפוץ","תיקון","לתקן","קידוח","לקדוח","מקדחה","כלים","סולם","מברגה","תחזוקה"]},
+        {name:"ספרים ולימוד", words:["ספר","ספרים","לימוד","ללמוד","גמרא","סידור","מחזור","תורני"]},
+        {name:"ציוד לבית ולמשפחה", words:["לבית","בית","מטבח","בישול","חשמל","מזרן","ריהוט","ניקיון"]},
+        {name:"תחבורה ונסיעות", words:["נסיעה","נסיעות","טיול","טיולים","רכב","אופניים","מזוודה","תחבורה"]},
+        {name:"ביגוד ואביזרים", words:["בגד","בגדים","ביגוד","לבוש","נעליים","חליפה","תחפושת"]}
+    ];
+    const contextAliases = [
+        ["כיסא גלגלים", /לא יכול ללכת|קשה לי ללכת|מתקשה ללכת|צריך להתנייד|כסא לנכה/gu],
+        ["מקדחה", /לעשות חור בקיר|לקדוח בקיר|צריך לקדוח|חורים בקיר/gu],
+        ["סולם", /להגיע למקום גבוה|להגיע לתקרה|להחליף מנורה גבוהה/gu],
+        ["מקרן", /להקרין סרט|להציג מצגת על קיר|להקרין מצגת/gu],
+        ["עגלה", /לטייל עם התינוק|להסיע תינוק|להסיע את התינוק/gu]
+    ];
+    function normalizeWords(value) {
+        return searchable(contextAliases.reduce((s,[name,pattern]) => s.replace(pattern,name), String(value || "")));
+    }
+    function matchesTerm(haystack, query) {
+        const text = " " + normalizeWords(haystack) + " ";
+        const q = normalizeWords(query);
+        if (!q) return false;
+        if (text.includes(" " + q + " ")) return true;
+        const words = q.split(" ").filter(w => w.length > 1);
+        return words.length > 0 && words.every(word => text.includes(" " + word) || text.includes(" " + word.slice(0,Math.max(2,word.length-1))));
+    }
+    function relevantTopic(query) {
+        const q=normalizeWords(query);
+        return topics.find(t=>matchesTerm(t.name,q) || t.words.some(word=>matchesTerm(q,word) || matchesTerm(word,q)));
+    }
+    function scoreMatch(group,item,query,topic) {
+        const name=normalizeWords(item?.name || "");
+        const desc=normalizeWords(item?.description || "");
+        const groupName=normalizeWords(group.name);
+        const category=normalizeWords(group.type || "");
+        let score=0;
+        if(matchesTerm(name,query))score+=12;
+        if(matchesTerm(desc,query))score+=5;
+        if(matchesTerm(groupName,query))score+=4;
+        if(topic && (category===normalizeWords(topic.name) || matchesTerm(groupName,topic.name) || matchesTerm(desc,topic.name)))score+=6;
+        if(item?.availableCopies>0)score+=3;
+        return score;
+    }
     let product = "";
     let city = "";
     let requestNumber = 0;
@@ -197,13 +243,13 @@
                 return;
             }
 
-            const nextProduct = productTerms(searchable(terms));
+            const nextProduct = productTerms(normalizeWords(terms));
             if (nextProduct) product = nextProduct;
             if (!product) {
                 message(city ? "יש לי את העיר. איזה פריט תרצו לשאול?" : "מה תרצו לשאול? אפשר גם לכתוב שם של גמ״ח.");
                 return;
             }
-            if (!city && !everywhere && !directory.some(group => searchable(group.name) === searchable(product))) {
+            if (!city && !everywhere && !relevantTopic(product) && !directory.some(group => searchable(group.name) === searchable(product))) {
                 awaitingCity = true;
                 lastMatches = [];
                 shownMatches = 0;
@@ -215,9 +261,10 @@
             shownMatches = 0;
 
             const matchingCity = group => !city || clean(group.city) === city;
-            const term = searchable(product);
-            const namedGroups = directory.filter(group => matchingCity(group) && searchable(group.name).includes(term));
-            const variants = [...new Set([product, term, term.replaceAll("כסא", "כיסא")])];
+            const term = normalizeWords(product);
+            const topic = relevantTopic(product);
+            const namedGroups = directory.filter(group => matchingCity(group) && (matchesTerm(group.name,term) || (topic && normalizeWords(group.type)===normalizeWords(topic.name))));
+            const variants = [...new Set([product, term, term.replaceAll("כסא", "כיסא"), ...(topic ? [topic.name, ...topic.words.slice(0,5)] : [])])];
             // A singular query may miss a catalog name written with another spelling or plural.
             const concept = aliases.find(([name]) => includesPhrase(term, name));
             if (concept) {
@@ -234,21 +281,21 @@
                     word.length > longest.length ? word : longest);
                 candidates = (await findGroups(longestWord)).filter(matchingCity);
             }
-            const groups = new Map(candidates.map(group => [group.id, group]));
+            const groups = new Map([...candidates, ...directory.filter(group => matchingCity(group) && (matchesTerm(group.name,product) || (topic && normalizeWords(group.type)===normalizeWords(topic.name))))].map(group => [group.id, group]));
             if (currentRequest !== requestNumber) return;
 
             const checks = await Promise.allSettled([...groups.values()].slice(0, 12).map(async group => {
                 const details = await apiRequest("/gmachs/" + encodeURIComponent(group.id));
-                const item = details.items.find(item => {
-                    const description = searchable(item.name + " " + (item.description || "")).split(" ");
-                    return item.isActive && words.every(word => (description.includes(word) || description.includes("ה" + word)));
-                });
+                const items = (details.items || []).filter(item => item.isActive !== false);
+                const ranked = items.map(item => ({item, score:scoreMatch(group,item,product,topic)})).sort((a,b)=>b.score-a.score);
+                const best = ranked[0];
+                const item = best && best.score >= (topic ? 6 : 5) ? best.item : null;
                 return { group, item };
             }));
             if (currentRequest !== requestNumber) return;
             const matches = checks.filter(check => check.status === "fulfilled" && check.value.item)
                 .map(check => check.value)
-                .sort((a,b) => Number(b.item.availableCopies > 0) - Number(a.item.availableCopies > 0));
+                .sort((a,b) => scoreMatch(b.group,b.item,product,topic) - scoreMatch(a.group,a.item,product,topic));
             if (matches.length) {
                 const availableCount = matches.filter(match => match.item.availableCopies > 0).length;
                 lastMatches = matches;
