@@ -3,10 +3,12 @@ namespace GmachManagement.Core.Interfaces;
 public sealed record GmachChatMessage(int Id, int SenderId, string Text, DateTime SentAt, DateTime? ReadByOwnerAt, DateTime? ReadByCustomerAt, string? AttachmentName);
 public sealed record ChatAttachment(string Name, byte[] Content);
 public sealed record GmachChatThread(int GmachId, int CustomerId, string CustomerName, int UnreadCount, DateTime LastMessageAt, string LastMessagePreview);
+public sealed record ChatUnreadNotice(int GmachId, int? CustomerId, string GmachName, int UnreadCount);
 public sealed record BorrowApproval(int Id, string ItemName, string GmachName, DateTime ApprovedAt, bool Seen);
 
 public interface IGmachCommunicationRepository
 {
+    Task<List<ChatUnreadNotice>> GetUnreadChatsAsync(int userId, CancellationToken ct);
     Task<List<BorrowApproval>> GetApprovalsAsync(int userId, CancellationToken ct);
     Task MarkApprovalSeenAsync(int userId, int requestId, CancellationToken ct);
     Task<List<GmachChatThread>> GetOwnerInboxAsync(int ownerId, CancellationToken ct);
