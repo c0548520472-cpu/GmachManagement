@@ -1105,3 +1105,12 @@ dialog.gmach-guide {
 .owner-chat-meta{font-size:.79rem;color:#5a7780}
 .owner-chat-thread-unread{border-right:5px solid #079b95;background:#e8f8f5}
 .owner-chat-thread-unread .owner-chat-meta{font-weight:700;color:#006e69}
+
+/* Site administrator: pending re-registration approvals */
+.site-admin-approvals{margin:1.5rem 0;padding:1.25rem;border:1px solid #b9dcdb;border-radius:16px;background:#f5fbfa}
+.site-admin-approvals h3{margin-top:0}
+.site-admin-approval-count{display:inline-block;padding:.15rem .6rem;border-radius:999px;background:#d7f0eb;color:#066e68;font-size:.75em}
+.site-admin-approval-count[hidden]{display:none}
+.site-admin-approval-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;padding:1rem;margin:.7rem 0;border:1px solid #cde5e2;border-radius:12px;background:#fff}
+.site-admin-approval-row>div{display:flex;flex-direction:column;gap:.35rem;overflow-wrap:anywhere}
+.site-admin-approval-row button{width:auto;max-width:100%}
