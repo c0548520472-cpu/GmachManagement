@@ -4,6 +4,9 @@ namespace GmachManagement.Service.Services;
 
 public sealed class GmachCommunicationService(IGmachCommunicationRepository repository)
 {
+    public Task<int?> GetRecipientIdAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
+        => repository.GetRecipientIdAsync(gmachId, customerId, actorId, ct);
+
     public Task<List<ChatUnreadNotice>> GetUnreadChatsAsync(int userId, CancellationToken ct)
         => repository.GetUnreadChatsAsync(userId, ct);
 
