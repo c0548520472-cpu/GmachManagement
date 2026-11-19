@@ -25,7 +25,10 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
 
     public Task<List<GmachChatThread>> GetOwnerInboxAsync(int ownerId, CancellationToken ct)
         => db.Database.SqlQuery<GmachChatThread>($"""
-            SELECT m."GmachId", m."CustomerId", u."Name" AS "CustomerName"
+            SELECT m."GmachId", m."CustomerId", u."Name" AS "CustomerName",
+              CAST(COUNT(*) FILTER (WHERE m."SenderId" = m."CustomerId" AND m."ReadByOwnerAt" IS NULL) AS integer) AS "UnreadCount",
+              MAX(m."SentAt") AS "LastMessageAt",
+              (SELECT LEFT(lastmsg."Text", 140) FROM "GmachChatMessages" lastmsg WHERE lastmsg."GmachId" = m."GmachId" AND lastmsg."CustomerId" = m."CustomerId" ORDER BY lastmsg."Id" DESC LIMIT 1) AS "LastMessagePreview"
             FROM "GmachChatMessages" m
             JOIN "Gmachs" g ON g."Id" = m."GmachId"
             JOIN "Users" u ON u."Id" = m."CustomerId"
@@ -86,12 +89,12 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
               AND (g."OwnerId" = {actorId} OR m."CustomerId" = {actorId})
             """).SingleOrDefaultAsync(ct);
 
-    public async Task<(bool Saved, string? OwnerEmail)> AddMessageAsync(
+    public async Task<(bool Saved, string? NotificationEmail, bool ToCustomer)> AddMessageAsync(
         int gmachId, int? customerId, int actorId, string message, int? itemId, ChatAttachment? attachment, CancellationToken ct)
     {
         var owner = await FindOwnerAsync(gmachId, ct);
         if (owner == null || (customerId.HasValue ? owner.Id != actorId : owner.Id == actorId))
-            return (false, null);
+            return (false, null, false);
 
         var customer = customerId ?? actorId;
         if (customerId.HasValue && !await db.Database.SqlQuery<int>($"""
@@ -124,7 +127,7 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
                 VALUES ({gmachId}, {customer}, {actorId}, {message}, {now}, {attachment.Name}, {attachment.Content})
                 """, ct);
         }
-        return (true, customerId.HasValue ? null : owner.Email);
+        return (true, customerId.HasValue ? await db.Users.Where(u=>u.Id==customer).Select(u=>u.Email).SingleOrDefaultAsync(ct) : owner.Email, customerId.HasValue);
     }
 
     private Task<OwnerContact?> FindOwnerAsync(int gmachId, CancellationToken ct)
