@@ -4,6 +4,15 @@ namespace GmachManagement.Service.Services;
 
 public sealed class GmachCommunicationService(IGmachCommunicationRepository repository)
 {
+    public Task ScheduleOnlineChatReminderAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
+        => repository.ScheduleOnlineChatReminderAsync(gmachId, customerId, actorId, ct);
+
+    public Task<List<ChatEmailReminder>> ClaimDueChatRemindersAsync(CancellationToken ct)
+        => repository.ClaimDueChatRemindersAsync(ct);
+
+    public Task ReleaseChatReminderAsync(long messageId, CancellationToken ct)
+        => repository.ReleaseChatReminderAsync(messageId, ct);
+
     public Task<int?> GetRecipientIdAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
         => repository.GetRecipientIdAsync(gmachId, customerId, actorId, ct);
 
