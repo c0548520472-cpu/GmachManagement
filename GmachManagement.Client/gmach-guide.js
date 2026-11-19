@@ -304,17 +304,9 @@
                 message(city ? "יש לי את העיר. איזה פריט תרצו לשאול?" : "מה תרצו לשאול? אפשר גם לכתוב שם של גמ״ח.");
                 return;
             }
-            if (!city && !everywhere && !requestedTopic && !relevantTopic(product) && !directory.some(group => matchesTerm(group.name,product))) {
-                awaitingCity = true;
-                lastMatches = [];
-                shownMatches = 0;
-                message("באיזו עיר לחפש ״" + product + "״? אם לא משנה איפה, כתבו ״כל הארץ״.");
-                return;
-            }
             awaitingCity = false;
             lastMatches = [];
             shownMatches = 0;
-
             const matchingCity = group => !city || clean(group.city) === city;
             const term = normalizeWords(product);
             const topic = requestedTopic || relevantTopic(product);
@@ -323,45 +315,51 @@
                 const topicGroups = directory.filter(group => matchingCity(group) && matchesCategory(group,topic));
                 if (topicGroups.length) {
                     lastMatches = topicGroups.map(group => ({group}));
-                    shownMatches = 0;
-                    awaitingCity = false;
-                    message("מצאתי " + topicGroups.length + " גמ״חים בקטגוריה ״" + topic.name + "״. הנה האפשרויות שמופיעות באתר:");
+                    message("מצאתי " + topicGroups.length + " גמ״חים בקטגוריה ״" + topic.name + "״. הנה הגמ״חים שמופיעים באתר:");
                     showNextMatches();
                     return;
                 }
             }
-            const variants = [...new Set([product, term, term.replaceAll("כסא", "כיסא")])];
-            // A singular query may miss a catalog name written with another spelling or plural.
-            const concept = aliases.find(([name]) => includesPhrase(term, name));
-            if (concept) {
-                const [name] = concept;
-                const firstWord = name.split(" ")[0];
-                variants.push(name, firstWord.replace(/(?:ת|ה|ן)$/, ""));
-            }
-            const findGroups = query => apiRequest("/gmachs?" + new URLSearchParams({ query }));
-            const lists = await Promise.all([...new Set(variants)].map(findGroups));
-            let candidates = lists.flat().filter(matchingCity);
-            const words = term.split(" ");
-            if (!candidates.length && words.length > 1) {
-                const longestWord = variants.flatMap(variant => variant.split(" ")).reduce((longest, word) =>
-                    word.length > longest.length ? word : longest);
-                candidates = (await findGroups(longestWord)).filter(matchingCity);
-            }
-            const groups = new Map([...candidates, ...directory.filter(group => matchingCity(group) && matchesTerm(group.name,product))].map(group => [group.id, group]));
+            // Search each meaningful product separately, rather than searching for
+            // the entire sentence (e.g. "ספסלים וכסאות") as a single product.
+            const stop = new Set(["אני","רוצה","צריך","צריכה","מחפש","מחפשת","לי","את","של","עם","לאירוע","לאירועים","באזור","למצוא","חפש","אפשר","גמח","גמחים"]);
+            const productTermsList = term.split(/\s+|[,،]/u)
+                .map(word => word.replace(/^[והבכלמש]+(?=.{3})/u,""))
+                .filter(word => word.length >= 3 && !stop.has(word));
+            const variants = [...new Set([term, ...productTermsList,
+                ...productTermsList.map(word => word.replace("כסא","כיסא")),
+                ...productTermsList.map(word => word.replace("כיסא","כסא"))])].filter(Boolean);
+            const findGroups = query => apiRequest("/gmachs?" + new URLSearchParams({query}));
+            const lists = await Promise.allSettled(variants.slice(0,8).map(findGroups));
+            const candidates = lists.filter(result => result.status === "fulfilled").flatMap(result => result.value).filter(matchingCity);
+            const groups = new Map([...candidates,...directory.filter(group => matchingCity(group) &&
+                (matchesTerm(group.name,term) || productTermsList.some(word => matchesTerm(group.name,word))))].map(group => [group.id,group]));
             if (currentRequest !== requestNumber) return;
-
+            const queryTokens = productTermsList.length ? productTermsList : [term];
+            const relevantItemScore = (group,item) => {
+                const name = normalizeWords(item.name || "");
+                const description = normalizeWords(item.description || "");
+                let score = 0;
+                for (const word of queryTokens) {
+                    const root = word.replace(/ים$|ות$/u,"");
+                    if (root.length < 2) continue;
+                    if (name.includes(root)) score += 10;
+                    else if (description.includes(root)) score += 4;
+                }
+                return score;
+            };
             const checks = await Promise.allSettled([...groups.values()].slice(0, 12).map(async group => {
                 const details = await apiRequest("/gmachs/" + encodeURIComponent(group.id));
                 const items = (details.items || []).filter(item => item.isActive !== false);
-                const ranked = items.map(item => ({item, score:scoreMatch(group,item,product,topic)})).sort((a,b)=>b.score-a.score);
+                const ranked = items.map(item => ({item, score:relevantItemScore(group,item)})).sort((a,b)=>b.score-a.score);
                 const best = ranked[0];
-                const item = best && best.score >= (topic ? 6 : 5) ? best.item : null;
+                const item = best && best.score >= 4 ? best.item : null;
                 return { group, item };
             }));
             if (currentRequest !== requestNumber) return;
             const matches = checks.filter(check => check.status === "fulfilled" && check.value.item)
                 .map(check => check.value)
-                .sort((a,b) => scoreMatch(b.group,b.item,product,topic) - scoreMatch(a.group,a.item,product,topic));
+                .sort((a,b) => relevantItemScore(b.group,b.item) - relevantItemScore(a.group,a.item));
             if (matches.length) {
                 const availableCount = matches.filter(match => match.item.availableCopies > 0).length;
                 lastMatches = matches;
