@@ -64,9 +64,9 @@
 
                 <div><label><input id="registerOwner" type="checkbox"> אני בעל גמ״ח</label><div id="ownerFields" hidden><label for="gmachName">שם הגמ״ח</label><input id="gmachName" maxlength="150"><label for="gmachCity">עיר</label><input id="gmachCity" maxlength="100"></div></div>
                 <label for="registrationEmail">כתובת אימייל</label>
-                <input id="registrationEmail" name="registration-email" type="email" required autocomplete="section-registration email">
+                <input id="registrationEmail" name="username" type="email" required autocomplete="section-registration username">
                 <label for="registrationPassword">סיסמה חדשה</label>
-                <div class="password-field"><input id="registrationPassword" name="new-password" type="password" required autocomplete="section-registration new-password" aria-describedby="registerPasswordHint"><label class="password-toggle"><input id="registrationShowPassword" type="checkbox"> הצג סיסמה</label></div>
+                <div class="password-field"><input id="registrationPassword" name="new-password" type="password" required minlength="8" maxlength="128" autocomplete="section-registration new-password" aria-describedby="registerPasswordHint"><label class="password-toggle"><input id="registrationShowPassword" type="checkbox"> הצג סיסמה</label></div>
                 <p id="registerPasswordHint" class="muted">הסיסמה חייבת לכלול לפחות 8 תווים, ובהם אות וספרה.</p>
                 <button type="submit" class="primary full-width" id="registrationSubmit">הרשמה</button>
             </form>
