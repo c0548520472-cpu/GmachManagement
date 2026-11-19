@@ -28,7 +28,7 @@ public sealed class GmachCommunicationService(IGmachCommunicationRepository repo
     public Task<ChatAttachment?> GetAttachmentAsync(int gmachId, int messageId, int actorId, CancellationToken ct)
         => repository.GetAttachmentAsync(gmachId, messageId, actorId, ct);
 
-    public Task<(bool Saved, string? OwnerEmail)> AddMessageAsync(
+    public Task<(bool Saved, string? NotificationEmail, bool ToCustomer)> AddMessageAsync(
         int gmachId, int? customerId, int actorId, string message, int? itemId, ChatAttachment? attachment, CancellationToken ct)
         => repository.AddMessageAsync(gmachId, customerId, actorId, message.Trim(), itemId, attachment, ct);
 }
