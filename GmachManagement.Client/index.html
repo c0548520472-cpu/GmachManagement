@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=approval-decision-email-20261119">
+    <link rel="stylesheet" href="style.css?v=activity-tracking-20261119">
 </head>
 <body>
     <header class="header">
@@ -315,7 +315,18 @@
                     <p id="siteAdminApprovalsMessage" class="message" role="status" aria-live="polite"></p>
                     <div id="siteAdminApprovals" class="site-admin-user-list"></div>
                 </section>
-                <h3>כל המשתמשים הרשומים</h3>
+                <section class="site-admin-activity" aria-labelledby="siteAdminActivityTitle">
+<h3 id="siteAdminActivityTitle">דוח פעילות מפורט באתר</h3>
+<p class="muted">פעילות שנאספה מאז הפעלת המעקב. משתמשים מחוברים מזוהים לפי החשבון, ואורחים מוצגים לפי מזהה ביקור זמני.</p>
+<div class="site-admin-activity-filters">
+<label>מספר משתמש <input id="activityUserFilter" type="number" min="1" placeholder="הכול"></label>
+<label>סוג פעילות <select id="activityTypeFilter"><option value="">כל הפעולות</option><option value="page_view">צפייה בעמוד</option><option value="search">חיפוש</option><option value="gmach_view">צפייה בגמ"ח</option><option value="item_view">צפייה בפריט</option><option value="borrow_click">לחיצה להשאלה</option><option value="login_success">התחברות</option><option value="registration_success">הרשמה</option></select></label>
+<button id="activityRefreshBtn" type="button" class="secondary">רענון הדוח</button>
+</div>
+<p id="activityReportStatus" class="message" role="status"></p>
+<div id="activityReportList" class="site-admin-activity-list"></div>
+</section>
+<h3>כל המשתמשים הרשומים</h3>
 <label for="siteAdminUserSearch">חיפוש משתמש לפי שם או אימייל</label>
 <input id="siteAdminUserSearch" type="search" placeholder="חיפוש משתמש..." autocomplete="off">
 <p id="siteAdminUserCount" class="muted" aria-live="polite"></p>
@@ -343,7 +354,8 @@
             <div class="info-page-heading"><span class="info-eyebrow">שקיפות ואמון</span><h2>מדיניות פרטיות</h2><p>עודכנה לאחרונה: 16 בנובמבר 2026</p></div>
             <div class="info-prose">
                 <p>מסמך זה מסביר באופן כללי כיצד מידע עשוי להיאסף ולהיות מעובד בעת שימוש באתר ניהול הגמ״ח. יש להשלים ולאמת אותו מול הגדרות התפעול, ספקי השירות והדין החל לפני הסתמכות עליו כמסמך משפטי מחייב.</p>
-                <h3>איזה מידע נמסר?</h3><p>בעת הרשמה או עדכון פרופיל ייתכן שייאספו שם, כתובת דוא״ל ופרטי חשבון. בעת בקשת השאלה ניתן למסור שם וטלפון או דוא״ל. בעלי גמ״חים עשויים למסור פרטי גמ״ח, פריטים, בקשות ונתוני השאלה.</p>
+                <h3>מדידת שימוש ופעילות באתר</h3><p>לצורכי תפעול, אבטחה ושיפור השירות, האתר עשוי לשמור את העמודים שנצפו, מונחי חיפוש, פריטים וגמ"חים שנפתחו ופעולות כגון בקשת השאלה. פעילות של משתמש מחובר משויכת לחשבונו ומוצגת למנהלי האתר. פעילות של אורח נשמרת תחת מזהה ביקור זמני. לא נרשמים סיסמאות, תוכן הודעות בצ'אט או פרטים שהוזנו בטפסי קשר. הנתונים נשמרים בשרת האתר, וניתן לפנות למנהל האתר בבקשות הנוגעות למידע אישי.</p>
+<h3>איזה מידע נמסר?</h3><p>בעת הרשמה או עדכון פרופיל ייתכן שייאספו שם, כתובת דוא״ל ופרטי חשבון. בעת בקשת השאלה ניתן למסור שם וטלפון או דוא״ל. בעלי גמ״חים עשויים למסור פרטי גמ״ח, פריטים, בקשות ונתוני השאלה.</p>
                 <h3>מטרות השימוש</h3><p>המידע משמש לניהול חשבונות והרשאות, להצגת גמ״חים ופריטים, להעברת בקשות לבעלי גמ״חים, לניהול השאלות, לתפעול האתר, לאבטחה ולמענה לפניות.</p>
                 <h3>למי המידע נחשף?</h3><p>פרטים שהמשתמש בוחר לפרסם עשויים להיות גלויים למבקרים. פרטי קשר בבקשת השאלה נמסרים לבעל הגמ״ח הרלוונטי לצורך טיפול בבקשה. מנהלי האתר וספקי תשתית ואחסון עשויים לגשת למידע במידה הדרושה לתפעול האתר.</p>
                 <h3>אחסון ואבטחה</h3><p>האתר עושה שימוש בשירותי אירוח ותשתית חיצוניים. ננקטים אמצעי הגנה טכנולוגיים בהתאם למימוש המערכת, אך אין אפשרות להבטיח אבטחה מוחלטת. מומלץ לא למסור פרטים רגישים שאינם נדרשים לשירות.</p>
@@ -401,7 +413,7 @@
             <button id="gmachGuideSend" type="submit">שליחה</button>
         </form>
     </dialog>
-    <script src="app.js?v=approval-decision-email-20261119"></script>
+    <script src="app.js?v=activity-tracking-20261119"></script>
     <script src="gmach-guide.js?v=4"></script>
 </body>
 </html>
