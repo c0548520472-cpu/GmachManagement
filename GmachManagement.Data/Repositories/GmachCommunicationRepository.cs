@@ -79,6 +79,32 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
             """, ct);
     }
 
+    public async Task<bool> EditOwnMessageAsync(int gmachId, int? customerId, int actorId, int messageId, string text, CancellationToken ct)
+    {
+        if (!await CanAccessChatAsync(gmachId, customerId, actorId, ct)) return false;
+        var customer = customerId ?? actorId;
+        var changed = await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "GmachChatMessages"
+            SET "Text" = {text}
+            WHERE "Id" = {messageId} AND "GmachId" = {gmachId}
+              AND "CustomerId" = {customer} AND "SenderId" = {actorId}
+              AND "Text" <> {text}
+            """, ct);
+        return changed > 0;
+    }
+
+    public async Task<bool> DeleteOwnMessageAsync(int gmachId, int? customerId, int actorId, int messageId, CancellationToken ct)
+    {
+        if (!await CanAccessChatAsync(gmachId, customerId, actorId, ct)) return false;
+        var customer = customerId ?? actorId;
+        var changed = await db.Database.ExecuteSqlInterpolatedAsync($"""
+            DELETE FROM "GmachChatMessages"
+            WHERE "Id" = {messageId} AND "GmachId" = {gmachId}
+              AND "CustomerId" = {customer} AND "SenderId" = {actorId}
+            """, ct);
+        return changed > 0;
+    }
+
     public Task<ChatAttachment?> GetAttachmentAsync(int gmachId, int messageId, int actorId, CancellationToken ct)
         => db.Database.SqlQuery<ChatAttachment>($"""
             SELECT m."AttachmentName" AS "Name", m."AttachmentContent" AS "Content"
