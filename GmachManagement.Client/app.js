@@ -1478,26 +1478,33 @@ async function loadSiteAdminApprovals() {
             date.className = "muted";
             date.textContent = request.deletedAtUtc ? "החשבון נמחק בתאריך: " + new Date(request.deletedAtUtc).toLocaleString("he-IL") : "ממתין לאישור";
             details.append(email, date);
-            const approve = document.createElement("button");
-            approve.type = "button";
-            approve.className = "primary";
-            approve.textContent = "אישור הרשמה מחדש";
-            approve.addEventListener("click", async () => {
-                if (!confirm("לאשר הרשמה מחדש עבור " + request.email + "?")) return;
-                approve.disabled = true;
-                try {
-                    await apiRequest("/site-admin/re-registration-requests/approve", {
-                        method: "POST",
-                        body: JSON.stringify({ email: request.email })
-                    });
-                    showMessage(message, "האישור נשמר. המשתמש יכול להירשם מחדש.", "success");
-                    await loadSiteAdminApprovals();
-                } catch (error) {
-                    showMessage(message, error.message, "error");
-                    approve.disabled = false;
-                }
-            });
-            card.append(details, approve);
+            const actions = document.createElement("div");
+            actions.className = "site-admin-approval-actions";
+            for (const decision of [
+                {type:"approve", label:"אישור הרשמה מחדש", verb:"לאשר", css:"primary"},
+                {type:"reject", label:"דחיית הבקשה", verb:"לדחות", css:"secondary"}
+            ]) {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = decision.css;
+                button.textContent = decision.label;
+                button.addEventListener("click", async () => {
+                    if (!confirm(decision.verb + " את הבקשה של " + request.email + "?")) return;
+                    for (const b of actions.querySelectorAll("button")) b.disabled = true;
+                    try {
+                        const result = await apiRequest("/site-admin/re-registration-requests/" + decision.type, {
+                            method: "POST", body: JSON.stringify({ email: request.email })
+                        });
+                        await loadSiteAdminApprovals();
+                        showMessage(message, result.message || "ההחלטה נשמרה.", result.emailSent ? "success" : "error");
+                    } catch (error) {
+                        showMessage(message, error.message, "error");
+                        for (const b of actions.querySelectorAll("button")) b.disabled = false;
+                    }
+                });
+                actions.append(button);
+            }
+            card.append(details, actions);
             list.append(card);
         }
     } catch (error) {
