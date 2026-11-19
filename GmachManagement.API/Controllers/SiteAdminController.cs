@@ -1,5 +1,7 @@
 using GmachManagement.Core.DTOs;
 using GmachManagement.Service.Services;
+using GmachManagement.API.Services;
+using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
@@ -10,7 +12,7 @@ namespace GmachManagement.API.Controllers;
 [ApiController]
 [Route("api/site-admin")]
 [Authorize(Roles="SiteAdmin")]
-public sealed class SiteAdminController(SiteAdminService service,IConfiguration config) : ControllerBase {
+public sealed class SiteAdminController(SiteAdminService service,IConfiguration config,ResendEmailService emailService,ILogger<SiteAdminController> logger) : ControllerBase {
  private string? Bootstrap => config["SiteAdmin:BootstrapEmail"];
  private async Task<bool> Allowed(CancellationToken ct)=>
   int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var id) &&
@@ -25,7 +27,34 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
  [HttpGet("re-registration-requests")]
  public async Task<IActionResult> ReRegistrationRequests(CancellationToken ct){if(!await Allowed(ct))return Forbid();return Ok((await service.PendingReRegistrationsAsync(ct)).Select(x=>new {x.Email,x.DeletedAtUtc}));}
  [HttpPost("re-registration-requests/approve")]
- public async Task<IActionResult> ApproveReRegistration(EmailInput input,CancellationToken ct){if(!await Allowed(ct))return Forbid();return Result(await service.ApproveReRegistrationAsync(input.Email,ct));}
+ public async Task<IActionResult> ApproveReRegistration(EmailInput input,CancellationToken ct){
+  if(!await Allowed(ct))return Forbid();
+  var error=await service.ApproveReRegistrationAsync(input.Email,ct);
+  if(error!=null)return BadRequest(new {message=error});
+  var notified=await NotifyReRegistrationDecisionAsync(input.Email,true,ct);
+  return Ok(new {message=notified?"ההרשמה מחדש אושרה ונשלחה הודעה למשתמש.":"ההרשמה מחדש אושרה, אך שליחת המייל נכשלה.",emailSent=notified});
+ }
+ [HttpPost("re-registration-requests/reject")]
+ public async Task<IActionResult> RejectReRegistration(EmailInput input,CancellationToken ct){
+  if(!await Allowed(ct))return Forbid();
+  var error=await service.RejectReRegistrationAsync(input.Email,ct);
+  if(error!=null)return BadRequest(new {message=error});
+  var notified=await NotifyReRegistrationDecisionAsync(input.Email,false,ct);
+  return Ok(new {message=notified?"הבקשה נדחתה ונשלחה הודעה למשתמש.":"הבקשה נדחתה, אך שליחת המייל נכשלה.",emailSent=notified});
+ }
+ private async Task<bool> NotifyReRegistrationDecisionAsync(string recipient,bool approved,CancellationToken ct){
+  var subject=approved?"בקשתך להרשמה מחדש אושרה – ניהול הגמ״ח":"עדכון לגבי בקשת ההרשמה מחדש – ניהול הגמ״ח";
+  var html=approved
+   ? "<div dir='rtl'><h2>בקשתך אושרה</h2><p>מנהל האתר אישר לך להירשם מחדש לאתר ניהול הגמ״ח.</p><p>כעת אפשר לבצע הרשמה חדשה עם כתובת האימייל שלך.</p><p><a href='https://gmachmanagement-client.pages.dev/?page=login'>מעבר לאתר</a></p></div>"
+   : "<div dir='rtl'><h2>עדכון לגבי בקשתך</h2><p>מנהל האתר דחה את בקשתך להרשמה מחדש לאתר ניהול הגמ״ח.</p><p>בשלב זה לא ניתן להירשם מחדש עם החשבון הזה.</p></div>";
+  try{
+   await emailService.SendAsync(recipient.Trim(),subject,html,ct);
+   return true;
+  }catch(Exception ex) when(ex is not OperationCanceledException || !ct.IsCancellationRequested){
+   logger.LogWarning(ex,"Re-registration decision email failed");
+   return false;
+  }
+ }
  [HttpGet("users")]
  public async Task<IActionResult> Users(CancellationToken ct){
   if(!await Allowed(ct))return Forbid();
