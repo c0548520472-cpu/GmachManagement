@@ -28,6 +28,7 @@ namespace GmachManagement.Data.Context
         public DbSet<Item> Items { get; set; }
         public DbSet<ItemCopy> ItemCopies { get; set; }
         public DbSet<Loan> Loans { get; set; }
+        public DbSet<EmailReminderDelivery> EmailReminderDeliveries { get; set; }
         public DbSet<ManagedLoan> ManagedLoans { get; set; }
         public DbSet<BorrowRequest> BorrowRequests { get; set; }
         public DbSet<PersonalTransaction> PersonalTransactions { get; set; }
@@ -98,6 +99,7 @@ namespace GmachManagement.Data.Context
                 .HasOne(l => l.ItemCopy)
                 .WithMany(c => c.Loans)
                 .HasForeignKey(l => l.ItemCopyId);
+            modelBuilder.Entity<EmailReminderDelivery>(e => { e.Property(x=>x.Kind).HasMaxLength(20).IsRequired(); e.HasIndex(x=>new {x.Kind,x.ReferenceId,x.ReminderDay}).IsUnique(); });
             modelBuilder.Entity<ManagedLoan>(entity => { entity.HasKey(x=>x.Id); entity.Property(x=>x.BorrowerName).HasMaxLength(150).IsRequired(); entity.Property(x=>x.BorrowerPhone).HasMaxLength(30); entity.Property(x=>x.BorrowerEmail).HasMaxLength(254); entity.HasIndex(x=>x.GmachId); entity.HasIndex(x=>x.ItemCopyId); });
             modelBuilder.Entity<BorrowRequest>(e => { e.Property(x=>x.ApplicantName).HasMaxLength(150).IsRequired(); e.Property(x=>x.Phone).HasMaxLength(30); e.Property(x=>x.Email).HasMaxLength(254); e.HasOne(x=>x.Item).WithMany().HasForeignKey(x=>x.ItemId).OnDelete(DeleteBehavior.Restrict); e.HasIndex(x=>x.ItemId); });
             SeedData.Seed(modelBuilder);
