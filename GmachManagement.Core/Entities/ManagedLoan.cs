@@ -7,5 +7,6 @@ public class ManagedLoan {
  public string? BorrowerPhone {get;set;}
  public string? BorrowerEmail {get;set;}
  public DateTime BorrowedAt {get;set;}
+ public DateTime? ExpectedReturnDate {get;set;}
  public DateTime? ReturnedAt {get;set;}
 }
