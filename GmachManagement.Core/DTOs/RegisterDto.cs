@@ -20,6 +20,7 @@ public class RegisterDto : IValidatableObject
     public bool IsGmachOwner { get; set; }
     [StringLength(150)] public string? GmachName { get; set; }
     [StringLength(100)] public string? City { get; set; }
+    [StringLength(100)] public string? GmachType { get; set; }
 
     [Required]
     [MinLength(8, ErrorMessage = "הסיסמה חייבת לכלול לפחות 8 תווים.")]
