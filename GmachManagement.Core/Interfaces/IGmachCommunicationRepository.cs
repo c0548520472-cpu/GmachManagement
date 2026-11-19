@@ -14,6 +14,8 @@ public interface IGmachCommunicationRepository
     Task<bool> CanAccessChatAsync(int gmachId, int? customerId, int actorId, CancellationToken ct);
     Task MarkChatReadByCustomerAsync(int gmachId, int customerId, int throughId, CancellationToken ct);
     Task MarkChatReadByOwnerAsync(int gmachId, int customerId, int ownerId, int throughId, CancellationToken ct);
+    Task<bool> EditOwnMessageAsync(int gmachId, int? customerId, int actorId, int messageId, string text, CancellationToken ct);
+    Task<bool> DeleteOwnMessageAsync(int gmachId, int? customerId, int actorId, int messageId, CancellationToken ct);
     Task<ChatAttachment?> GetAttachmentAsync(int gmachId, int messageId, int actorId, CancellationToken ct);
     Task<(bool Saved, string? NotificationEmail, bool ToCustomer)> AddMessageAsync(
         int gmachId, int? customerId, int actorId, string message, int? itemId, ChatAttachment? attachment, CancellationToken ct);
