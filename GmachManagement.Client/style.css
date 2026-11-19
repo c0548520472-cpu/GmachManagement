@@ -1204,3 +1204,26 @@ dialog.gmach-guide {
 }
 #gmachChatInbox .gmach-chat-directory-search{flex:0 0 auto;margin:.15rem 0 .4rem}
 #gmachChatInbox .gmach-chat-directory-empty{margin:.4rem 0}
+
+/* Compact edit/delete controls beside own chat messages, for customers and owners. */
+#gmachChat .chat-message-row{position:relative;align-items:center;gap:.3rem}
+#gmachChat .chat-message-row-mine .chat-message-actions{
+ display:inline-flex;flex:0 0 auto;align-items:center;gap:2px;
+ margin:0;padding:0;background:transparent;border:0;
+}
+#gmachChat .chat-message-row-mine .chat-message-action{
+ display:inline-flex!important;align-items:center;justify-content:center;
+ flex:0 0 22px;width:22px!important;min-width:22px!important;
+ max-width:22px;height:22px!important;min-height:22px!important;
+ padding:0!important;margin:0!important;line-height:1!important;
+ border:1px solid transparent!important;border-radius:6px!important;
+ background:transparent!important;color:#567b80!important;
+ box-shadow:none!important;opacity:.75;cursor:pointer;
+}
+#gmachChat .chat-message-row-mine .chat-message-action svg{width:13px;height:13px;display:block;pointer-events:none}
+#gmachChat .chat-message-row-mine .chat-message-action:hover,
+#gmachChat .chat-message-row-mine .chat-message-action:focus-visible{
+ opacity:1;background:#e5f2f1!important;border-color:#c5e0dd!important;
+}
+#gmachChat .chat-message-row-mine .chat-message-delete:hover{color:#a43b3b!important;background:#fff0ef!important}
+#gmachChat .chat-message-row-mine .chat-message{max-width:min(100%,calc(100% - 50px))}
