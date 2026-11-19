@@ -12,6 +12,8 @@ public sealed class ResendEmailService(HttpClient client, IConfiguration config)
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("Resend API key is not configured.");
         var from = config["Resend:FromEmail"] ?? "no-reply@gmach-manageonline.online";
+        var senderName = config["Resend:FromName"] ?? "מרכז ההשאלות";
+        if (!from.Contains('<') || !from.Contains('>')) from = $"{senderName} <{from.Trim()}>";
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         request.Content = JsonContent.Create(new { from, to = new[] { to }, subject, html });
