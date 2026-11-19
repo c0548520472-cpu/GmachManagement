@@ -115,7 +115,11 @@ namespace GmachManagement.API.Controllers
             if (string.IsNullOrWhiteSpace(clientId))
                 return StatusCode(503, new { message = "התחברות Google עדיין לא הוגדרה בשרת." });
             var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
-            Microsoft.Extensions.Caching.Memory.CacheExtensions.Set(cache, "google-nonce:" + nonce, true, TimeSpan.FromMinutes(5));
+            using (var entry = cache.CreateEntry("google-nonce:" + nonce))
+            {
+                entry.Value = true;
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            }
             Response.Headers.CacheControl = "no-store";
             return Ok(new { clientId, nonce });
         }
