@@ -6,6 +6,68 @@ namespace GmachManagement.Data.Repositories;
 
 public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommunicationRepository
 {
+    private async Task EnsureChatRemindersAsync(CancellationToken ct)
+        => await db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "GmachChatEmailReminders" (
+                "MessageId" integer PRIMARY KEY REFERENCES "GmachChatMessages"("Id") ON DELETE CASCADE,
+                "RecipientId" integer NOT NULL,
+                "DueAt" timestamp with time zone NOT NULL,
+                "ClaimedAt" timestamp with time zone NULL,
+                "SentAt" timestamp with time zone NULL
+            )
+            """, ct);
+
+    public async Task ScheduleOnlineChatReminderAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
+    {
+        await EnsureChatRemindersAsync(ct);
+        var recipientId = await GetRecipientIdAsync(gmachId, customerId, actorId, ct);
+        if (recipientId is not int recipient) return;
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "GmachChatEmailReminders" ("MessageId", "RecipientId", "DueAt")
+            SELECT m."Id", {recipient}, m."SentAt" + INTERVAL '3 hours'
+            FROM "GmachChatMessages" m
+            WHERE m."GmachId" = {gmachId} AND m."CustomerId" = {customerId ?? actorId}
+              AND m."SenderId" = {actorId}
+            ORDER BY m."Id" DESC LIMIT 1
+            ON CONFLICT ("MessageId") DO NOTHING
+            """, ct);
+    }
+
+    public async Task<List<ChatEmailReminder>> ClaimDueChatRemindersAsync(CancellationToken ct)
+    {
+        await EnsureChatRemindersAsync(ct);
+        return await db.Database.SqlQuery<ChatEmailReminder>($"""
+            WITH due AS (
+                SELECT r."MessageId"
+                FROM "GmachChatEmailReminders" r
+                JOIN "GmachChatMessages" m ON m."Id" = r."MessageId"
+                JOIN "Gmachs" g ON g."Id" = m."GmachId"
+                WHERE r."DueAt" <= NOW() AND r."SentAt" IS NULL
+                  AND (r."ClaimedAt" IS NULL OR r."ClaimedAt" < NOW() - INTERVAL '10 minutes')
+                  AND ((r."RecipientId" = g."OwnerId" AND m."ReadByOwnerAt" IS NULL)
+                    OR (r."RecipientId" = m."CustomerId" AND m."ReadByCustomerAt" IS NULL))
+                ORDER BY r."DueAt" LIMIT 30 FOR UPDATE OF r SKIP LOCKED
+            ), claimed AS (
+                UPDATE "GmachChatEmailReminders" r SET "ClaimedAt" = NOW(), "SentAt" = NOW()
+                WHERE r."MessageId" IN (SELECT "MessageId" FROM due)
+                RETURNING r."MessageId", r."RecipientId"
+            )
+            SELECT CAST(c."MessageId" AS bigint) AS "MessageId", u."Email" AS "Email",
+                   (g."OwnerId" <> c."RecipientId") AS "ToCustomer"
+            FROM claimed c
+            JOIN "Users" u ON u."Id" = c."RecipientId"
+            JOIN "GmachChatMessages" m ON m."Id" = c."MessageId"
+            JOIN "Gmachs" g ON g."Id" = m."GmachId"
+            WHERE u."Email" IS NOT NULL AND u."Email" <> ''
+            """).ToListAsync(ct);
+    }
+
+    public Task ReleaseChatReminderAsync(long messageId, CancellationToken ct)
+        => db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "GmachChatEmailReminders" SET "SentAt" = NULL, "ClaimedAt" = NULL
+            WHERE "MessageId" = {messageId}
+            """, ct);
+
     public async Task<int?> GetRecipientIdAsync(int gmachId, int? customerId, int actorId, CancellationToken ct)
     {
         if (customerId is int customer) return customer;
