@@ -36,6 +36,12 @@ namespace GmachManagement.API
             _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions {
                 PermitLimit = 12, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
             }));
+    options.AddPolicy("site-activity", context =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions {
+                PermitLimit = 90, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+            }));
     options.RejectionStatusCode = 429;
 });
 builder.Services.AddMemoryCache();
