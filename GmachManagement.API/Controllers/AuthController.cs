@@ -109,19 +109,28 @@ namespace GmachManagement.API.Controllers
             [System.ComponentModel.DataAnnotations.Required] string Nonce);
 
         [AllowAnonymous, HttpGet("google/config")]
-        public IActionResult GoogleConfig([FromServices] IConfiguration configuration, [FromServices] Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+        public IActionResult GoogleConfig([FromServices] IConfiguration configuration,
+            [FromServices] Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
-            var clientId = configuration["Google:ClientId"];
-            if (string.IsNullOrWhiteSpace(clientId))
-                return StatusCode(503, new { message = "התחברות Google עדיין לא הוגדרה בשרת." });
-            var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
-            using (var entry = cache.CreateEntry("google-nonce:" + nonce))
-            {
-                entry.Value = true;
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
-            }
             Response.Headers.CacheControl = "no-store";
-            return Ok(new { clientId, nonce });
+            var clientId = configuration["Google:ClientId"]?.Trim();
+            if (string.IsNullOrWhiteSpace(clientId))
+                return StatusCode(503, new { message = "התחברות באמצעות Google טרם הוגדרה. יש להוסיף Google__ClientId ב־Render." });
+            try
+            {
+                var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
+                using (var entry = cache.CreateEntry("google-nonce:" + nonce))
+                {
+                    entry.Value = true;
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                }
+                return Ok(new { clientId, nonce });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Google sign-in configuration failed");
+                return StatusCode(503, new { message = "התחברות Google אינה זמינה כרגע. נסו שוב מאוחר יותר." });
+            }
         }
 
         [AllowAnonymous, HttpPost("google")]
