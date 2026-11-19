@@ -116,7 +116,7 @@
         input.value = "";
         log.replaceChildren();
         setBusy(false);
-        message("היי! מה מחפשים היום? אפשר לכתוב לי כמו שמדברים, למשל ״אני צריכה הליכון באזור ירושלים״.");
+        message("היי! מה מחפשים היום? אפשר לחפש פריט, נושא או גמ״ח לפי שם. למשל ״אני צריכה הליכון באזור ירושלים״ או ״חפש גמ״ח חסדי אברהם״.");
     }
 
     function showResults(results) {
@@ -243,13 +243,38 @@
                 return;
             }
 
+            // A direct gmach-name request takes priority over product/category discovery.
+            const requestedName = normalizeWords(terms)
+                .replace(/^(?:תמצא(?:י)? לי|תראה(?:י)? לי|חפש(?:י)? לי|אני מחפש(?:ת)?|אני רוצה|איפה נמצא|איפה יש|יש לכם|יש|פרטים על|מידע על|מחפש(?:ת)? את|מחפש(?:ת)? גמח בשם|גמח בשם|גמח של|גמח|הגמח של|הגמח|שם הגמח)\s+/u, "")
+                .replace(/^(?:שנקרא|בשם|של)\s+/u, "").trim();
+            const groupNameMatches = directory.filter(group => {
+                const groupName = normalizeWords(group.name).replace(/^גמח\s+/u, "");
+                const queryName = requestedName.replace(/^גמח\s+/u, "");
+                return queryName.length >= 2 && (groupName.includes(queryName) ||
+                    (queryName.length >= 4 && matchesTerm(groupName, queryName)));
+            }).sort((a,b) => {
+                const nameA = normalizeWords(a.name), nameB = normalizeWords(b.name);
+                return Number(nameB === requestedName) - Number(nameA === requestedName);
+            });
+            const explicitlyNamed = /(?:גמח|הגמח|בשם|שנקרא|פרטים על|מידע על)/u.test(normalizeWords(question));
+            if (groupNameMatches.length && (explicitlyNamed || groupNameMatches.some(group => normalizeWords(group.name) === requestedName))) {
+                const filtered = groupNameMatches.filter(group => !city || clean(group.city) === city);
+                const results = filtered.length ? filtered : groupNameMatches;
+                product = requestedName;
+                awaitingCity = false;
+                lastMatches = results.map(group => ({group}));
+                shownMatches = 0;
+                message("מצאתי " + results.length + " גמ״חים שמתאימים לשם שביקשת. לחצו על גמ״ח כדי לפתוח את העמוד שלו.");
+                showNextMatches();
+                return;
+            }
             const nextProduct = productTerms(normalizeWords(terms));
             if (nextProduct) product = nextProduct;
             if (!product) {
                 message(city ? "יש לי את העיר. איזה פריט תרצו לשאול?" : "מה תרצו לשאול? אפשר גם לכתוב שם של גמ״ח.");
                 return;
             }
-            if (!city && !everywhere && !relevantTopic(product) && !directory.some(group => searchable(group.name) === searchable(product))) {
+            if (!city && !everywhere && !relevantTopic(product) && !directory.some(group => matchesTerm(group.name,product))) {
                 awaitingCity = true;
                 lastMatches = [];
                 shownMatches = 0;
