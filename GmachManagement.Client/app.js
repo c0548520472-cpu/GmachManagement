@@ -592,6 +592,7 @@ function renderItems(items) {
 
 
         borrowButton.addEventListener("click", () => {
+            recordSiteActivity("borrow_click", String(item.name || item.id || "").slice(0,120));
             openBorrowDialog(item);
         });
 
@@ -610,6 +611,7 @@ function renderItems(items) {
 // חיפוש ודפדוף
 document.getElementById("searchBtn").addEventListener(
     "click", () => {
+        recordSiteActivity("search", document.getElementById("searchInput").value.trim().slice(0,120));
         currentPage = 1;
         loadItems();
     }
@@ -1086,6 +1088,7 @@ document.getElementById("adminItemForm").addEventListener("submit",async event =
 
 // Separate public catalog, login, personal account and owner management views.
 function showPage(page, push = true) {
+    recordSiteActivity("page_view", String(page).slice(0,80));
     if ((page === "account" || page === "owner" || page === "profile" || page === "siteAdmin") && !token) page = "login";
     if (page === "siteAdmin" && !isSiteAdminToken()) page = "home";
     if (page === "owner" && !isAdminToken()) page = "account";
@@ -1142,6 +1145,7 @@ function showPage(page, push = true) {
     if (page === "siteAdmin") {
         loadSiteAdmin();
         loadSiteAdminApprovals();
+        loadSiteActivityReport();
         loadSiteAdminOpenLoans();
     }
     window.scrollTo({top:0,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
@@ -1452,6 +1456,58 @@ async function adminPerform(path,options,success) {
         await loadSiteAdmin(true);
     } catch(error) { showMessage(siteAdminMessage,error.message,"error"); }
 }
+const siteActivitySession = (() => {
+    let id = sessionStorage.getItem("gmachActivitySession");
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
+        id = crypto.randomUUID();
+        sessionStorage.setItem("gmachActivitySession", id);
+    }
+    return id;
+})();
+function recordSiteActivity(eventType, detail = "") {
+    if (localStorage.getItem("gmachAnalyticsOptOut") === "true") return;
+    const body = JSON.stringify({sessionId: siteActivitySession, eventType, detail: String(detail).slice(0, 180)});
+    const headers = {"Content-Type": "application/json"};
+    if (token) headers.Authorization = "Bearer " + token;
+    fetch(API_BASE + "/site-activity", {method: "POST", headers, body, keepalive: true})
+        .catch(() => {});
+}
+async function loadSiteActivityReport() {
+    const list = document.getElementById("activityReportList");
+    const status = document.getElementById("activityReportStatus");
+    if (!isSiteAdminToken() || !list) return;
+    showMessage(status, "טוען פעילות...");
+    const userId = document.getElementById("activityUserFilter").value;
+    const eventType = document.getElementById("activityTypeFilter").value;
+    const params = new URLSearchParams({limit:"150"});
+    if (userId) params.set("userId", userId);
+    if (eventType) params.set("eventType", eventType);
+    try {
+        const entries = await apiRequest("/site-activity?" + params);
+        list.replaceChildren();
+        if (!entries.length) {
+            showMessage(status, "אין פעולות מתועדות עבור הסינון שנבחר.");
+            return;
+        }
+        showMessage(status, entries.length + " פעולות אחרונות", "success");
+        for (const entry of entries) {
+            const row = document.createElement("article");
+            row.className = "site-admin-activity-row";
+            const who = document.createElement("strong");
+            who.textContent = entry.userId ? (entry.userName || "משתמש") + " · " + (entry.userEmail || "מס׳ " + entry.userId) : "אורח · ביקור " + entry.sessionId.slice(0, 8);
+            const what = document.createElement("span");
+            const types = {page_view:"עמוד",search:"חיפוש",gmach_view:"גמ״ח",item_view:"פריט",borrow_click:"בקשת השאלה",login_success:"התחברות",registration_success:"הרשמה"};
+            what.textContent = (types[entry.eventType] || entry.eventType) + (entry.detail ? " · " + entry.detail : "");
+            const when = document.createElement("small");
+            when.textContent = new Date(entry.occurredAtUtc).toLocaleString("he-IL");
+            row.append(who, what, when);
+            list.append(row);
+        }
+    } catch(error) {
+        showMessage(status, "לא ניתן לטעון את הדוח: " + error.message, "error");
+    }
+}
+document.getElementById("activityRefreshBtn").addEventListener("click", loadSiteActivityReport);
 async function loadSiteAdminApprovals() {
     const list = document.getElementById("siteAdminApprovals");
     const message = document.getElementById("siteAdminApprovalsMessage");
