@@ -8,6 +8,7 @@ public sealed record BorrowApproval(int Id, string ItemName, string GmachName, D
 
 public interface IGmachCommunicationRepository
 {
+    Task<int?> GetRecipientIdAsync(int gmachId, int? customerId, int actorId, CancellationToken ct);
     Task<List<ChatUnreadNotice>> GetUnreadChatsAsync(int userId, CancellationToken ct);
     Task<List<BorrowApproval>> GetApprovalsAsync(int userId, CancellationToken ct);
     Task MarkApprovalSeenAsync(int userId, int requestId, CancellationToken ct);
