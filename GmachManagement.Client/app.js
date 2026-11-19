@@ -1734,12 +1734,23 @@ async function showOwnerChatInbox() {
         const threads = await apiRequest("/gmach-communication/inbox");
         if (activeChat !== inbox || token !== inbox.token) return;
         showMessage(status, threads.length ? "" : "אין שיחות עדיין.");
+        list.classList.add("owner-chat-thread-list");
+        threads.sort((a,b)=>(b.unreadCount>0)-(a.unreadCount>0) || new Date(b.lastMessageAt)-new Date(a.lastMessageAt));
         for (const thread of threads) {
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "secondary";
+            button.className = "owner-chat-thread" + (thread.unreadCount > 0 ? " owner-chat-thread-unread" : "");
             const sender = `${thread.customerName} · משתמש מס׳ ${thread.customerId}`;
-            button.textContent = sender;
+            const heading = document.createElement("strong");
+            heading.textContent = thread.customerName;
+            const preview = document.createElement("span");
+            preview.className = "owner-chat-preview";
+            preview.textContent = thread.lastMessagePreview || "שיחה עם המשתמש";
+            const meta = document.createElement("span");
+            meta.className = "owner-chat-meta";
+            const date = thread.lastMessageAt ? new Date(thread.lastMessageAt).toLocaleString("he-IL", {dateStyle:"short",timeStyle:"short"}) : "";
+            meta.textContent = thread.unreadCount > 0 ? `ממתין לתגובתך · ${thread.unreadCount} הודעות חדשות · ${date}` : `ממתין לתגובת הלקוח · ${date}`;
+            button.append(heading, preview, meta);
             button.addEventListener("click", () => {
                 showChatPanel(`פנייה מאת ${sender}`);
                 const back = document.createElement("button");
