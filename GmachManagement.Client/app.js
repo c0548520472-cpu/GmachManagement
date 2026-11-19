@@ -2012,52 +2012,91 @@ function openCustomerChat(gmach, freeText = false) {
     startChat(chat);
 }
 
+function renderOwnerChatThreads(threads, selected = null) {
+    const list = document.getElementById("gmachChatInbox");
+    list.replaceChildren();
+    list.classList.add("owner-chat-thread-list");
+    const heading = document.createElement("div");
+    heading.className = "owner-chat-inbox-heading";
+    heading.textContent = "שיחות לפי לקוח";
+    const count = document.createElement("span");
+    count.className = "owner-chat-count";
+    count.textContent = threads.length + " שיחות";
+    heading.append(count);
+    list.append(heading);
+    const search = document.createElement("input");
+    search.type = "search";
+    search.className = "owner-chat-search";
+    search.placeholder = "חיפוש לקוח או גמ״ח…";
+    search.setAttribute("aria-label", "חיפוש שיחות לפי שם לקוח או גמ״ח");
+    list.append(search);
+    const items = document.createElement("div");
+    items.className = "owner-chat-thread-items";
+    list.append(items);
+    const empty = document.createElement("p");
+    empty.className = "owner-chat-empty";
+    empty.textContent = "לא נמצאו שיחות מתאימות.";
+    empty.hidden = true;
+    list.append(empty);
+    const entries = [];
+    for (const thread of threads) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "owner-chat-thread";
+        const key = thread.gmachId + ":" + thread.customerId;
+        if (selected === key) {
+            button.classList.add("owner-chat-thread-selected");
+            button.setAttribute("aria-current", "true");
+        }
+        if (thread.unreadCount > 0) button.classList.add("owner-chat-thread-unread");
+        const name = document.createElement("strong");
+        name.textContent = thread.customerName || "משתמש " + thread.customerId;
+        const preview = document.createElement("span");
+        preview.className = "owner-chat-preview";
+        preview.textContent = thread.lastMessagePreview || "שיחה ללא טקסט";
+        const meta = document.createElement("span");
+        meta.className = "owner-chat-meta";
+        const date = thread.lastMessageAt ? new Date(thread.lastMessageAt).toLocaleString("he-IL", {dateStyle:"short", timeStyle:"short"}) : "";
+        meta.textContent = (thread.unreadCount ? thread.unreadCount + " הודעות חדשות · " : "") + date;
+        button.append(name, preview, meta);
+        button.addEventListener("click", () => openOwnerChatThread(thread, threads));
+        items.append(button);
+        entries.push({thread, button});
+    }
+    const filter = () => {
+        const query = search.value.trim().toLocaleLowerCase("he");
+        let visible = 0;
+        for (const {thread,button} of entries) {
+            const matches = !query || String(thread.customerName || "").toLocaleLowerCase("he").includes(query)
+                || String(thread.customerId).includes(query);
+            button.hidden = !matches;
+            if (matches) visible++;
+        }
+        empty.hidden = visible !== 0;
+    };
+    search.addEventListener("input", filter);
+}
+
+function openOwnerChatThread(thread, threads) {
+    showChatPanel("שיחה עם " + (thread.customerName || "משתמש " + thread.customerId));
+    renderOwnerChatThreads(threads, thread.gmachId + ":" + thread.customerId);
+    startChat({gmachId:thread.gmachId, customerId:thread.customerId, token});
+}
+
 async function showOwnerChatInbox() {
     clearInterval(chatTimer);
     const inbox = {token};
     activeChat = inbox;
-    showChatPanel("הודעות צ׳אט");
-    const list = document.getElementById("gmachChatInbox");
+    showChatPanel("ניהול שיחות עם לקוחות");
     const status = document.getElementById("gmachChatStatus");
     showMessage(status, "טוען שיחות…", "loading");
     try {
         const threads = await apiRequest("/gmach-communication/inbox");
         if (activeChat !== inbox || token !== inbox.token) return;
-        showMessage(status, threads.length ? "" : "אין שיחות עדיין.");
-        list.classList.add("owner-chat-thread-list");
-        threads.sort((a,b)=>(b.unreadCount>0)-(a.unreadCount>0) || new Date(b.lastMessageAt)-new Date(a.lastMessageAt));
-        if (!threads.length) return;
-        const label = document.createElement("label");
-        label.textContent = "בחירת שיחה";
-        label.htmlFor = "ownerChatThreadSelect";
-        const select = document.createElement("select");
-        select.id = "ownerChatThreadSelect";
-        select.className = "owner-chat-thread-select";
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "בחרו לקוח לצפייה בשיחה…";
-        select.append(placeholder);
-        for (const [index, thread] of threads.entries()) {
-            const option = document.createElement("option");
-            option.value = String(index);
-            const date = thread.lastMessageAt ? new Date(thread.lastMessageAt).toLocaleString("he-IL", {dateStyle:"short", timeStyle:"short"}) : "";
-            option.textContent = `${thread.unreadCount ? "● " : ""}${thread.customerName} · ${date}${thread.unreadCount ? " · הודעות חדשות: " + thread.unreadCount : ""}`;
-            select.append(option);
-        }
-        select.addEventListener("change", () => {
-            const thread = threads[Number(select.value)];
-            if (!select.value || !thread) return;
-            const sender = `${thread.customerName} · משתמש מס׳ ${thread.customerId}`;
-            showChatPanel(`פנייה מאת ${sender}`);
-            const back = document.createElement("button");
-            back.type = "button";
-            back.className = "secondary";
-            back.textContent = "חזרה לרשימת השיחות";
-            back.addEventListener("click", showOwnerChatInbox);
-            document.getElementById("gmachChatInbox").append(back);
-            startChat({...thread, token});
-        });
-        list.append(label, select);
+        threads.sort((a,b) => (b.unreadCount>0)-(a.unreadCount>0)
+            || new Date(b.lastMessageAt)-new Date(a.lastMessageAt));
+        renderOwnerChatThreads(threads);
+        showMessage(status, threads.length ? "בחרו שיחה כדי לענות ללקוח." : "אין שיחות עדיין.");
     } catch (error) {
         if (activeChat === inbox) showMessage(status, error.message, "error");
     }
@@ -2085,12 +2124,14 @@ async function checkChatNotifications() {
         if (document.getElementById("gmachChat").open) return;
         showChatPanel(notice.customerId ? "הודעה חדשה מלקוח" : "הודעה חדשה מ־" + notice.gmachName);
         if (notice.customerId) {
-            const back = document.createElement("button");
-            back.type = "button";
-            back.className = "secondary";
-            back.textContent = "לכל השיחות";
-            back.addEventListener("click", showOwnerChatInbox);
-            document.getElementById("gmachChatInbox").append(back);
+            const threads = await apiRequest("/gmach-communication/inbox");
+            threads.sort((a,b) => (b.unreadCount>0)-(a.unreadCount>0)
+                || new Date(b.lastMessageAt)-new Date(a.lastMessageAt));
+            const selected = threads.find(thread => thread.gmachId === notice.gmachId && thread.customerId === notice.customerId);
+            if (selected) {
+                openOwnerChatThread(selected, threads);
+                return;
+            }
         }
         startChat({gmachId:notice.gmachId, customerId:notice.customerId || undefined, token});
     } catch (error) {
