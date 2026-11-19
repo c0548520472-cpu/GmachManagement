@@ -389,6 +389,7 @@ registrationForm.addEventListener("submit", async (event) => {
             body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), city: normalizeCity(document.getElementById("gmachCity").value.trim()) })
         });
 
+        recordSiteActivity("registration_success");
         switchAuthMode("login");
 
 
@@ -448,6 +449,7 @@ authForm.addEventListener("submit", async (event) => {
 
         token = result.accessToken;
         sessionStorage.setItem("gmachToken", token);
+        recordSiteActivity("login_success");
         signedInName = "";
         profileNameToken = null;
         showMessage(authMessage, "");
