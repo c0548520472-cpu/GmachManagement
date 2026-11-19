@@ -166,6 +166,7 @@ builder.Services.AddControllers();
 
             builder.Services.AddScoped<IItemService, ItemService>();
             builder.Services.AddScoped<GmachCommunicationService>();
+            builder.Services.AddHostedService<UnreadChatReminderWorker>();
             builder.Services.AddHttpClient("GmachChatEmail", client => client.Timeout = TimeSpan.FromSeconds(8));
             builder.Services.AddHttpClient<ResendEmailService>(client => client.Timeout = TimeSpan.FromSeconds(12));
 
