@@ -1,6 +1,7 @@
 
 using GmachManagement.API.Controllers;
 using GmachManagement.API.Middlewares;
+using GmachManagement.API.Services;
 using GmachManagement.Core.Interfaces;
 using GmachManagement.Service;
 using GmachManagement.Service.Services;
@@ -160,6 +161,7 @@ builder.Services.AddControllers();
             builder.Services.AddScoped<IItemService, ItemService>();
             builder.Services.AddScoped<GmachCommunicationService>();
             builder.Services.AddHttpClient("GmachChatEmail", client => client.Timeout = TimeSpan.FromSeconds(8));
+            builder.Services.AddHttpClient<ResendEmailService>(client => client.Timeout = TimeSpan.FromSeconds(12));
 
 
             var app = builder.Build();
