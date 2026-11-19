@@ -1114,3 +1114,6 @@ dialog.gmach-guide {
 .site-admin-approval-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;padding:1rem;margin:.7rem 0;border:1px solid #cde5e2;border-radius:12px;background:#fff}
 .site-admin-approval-row>div{display:flex;flex-direction:column;gap:.35rem;overflow-wrap:anywhere}
 .site-admin-approval-row button{width:auto;max-width:100%}
+
+.site-admin-approval-actions{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+.site-admin-approval-actions button{width:auto;min-width:125px}
