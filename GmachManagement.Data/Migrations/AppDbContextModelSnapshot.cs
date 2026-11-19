@@ -213,6 +213,19 @@ namespace GmachManagement.Data.Migrations
                     b.ToTable("Loans");
                 });
 
+            modelBuilder.Entity("GmachManagement.Core.Entities.EmailReminderDelivery", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Kind").IsRequired().HasMaxLength(20).HasColumnType("nvarchar(20)");
+                    b.Property<int>("ReferenceId").HasColumnType("int");
+                    b.Property<DateTime>("ReminderDay").HasColumnType("datetime2");
+                    b.Property<DateTime>("SentAt").HasColumnType("datetime2");
+                    b.HasKey("Id");
+                    b.HasIndex("Kind", "ReferenceId", "ReminderDay").IsUnique();
+                    b.ToTable("EmailReminderDeliveries");
+                });
+
             modelBuilder.Entity("GmachManagement.Core.Entities.ManagedLoan", b =>
                 {
                     b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
@@ -223,6 +236,7 @@ namespace GmachManagement.Data.Migrations
                     b.Property<string>("BorrowerPhone").HasMaxLength(30).HasColumnType("nvarchar(30)");
                     b.Property<string>("BorrowerEmail").HasMaxLength(254).HasColumnType("nvarchar(254)");
                     b.Property<DateTime>("BorrowedAt").HasColumnType("datetime2");
+                    b.Property<DateTime?>("ExpectedReturnDate").HasColumnType("datetime2");
                     b.Property<DateTime?>("ReturnedAt").HasColumnType("datetime2");
                     b.HasKey("Id");
                     b.HasIndex("GmachId");
