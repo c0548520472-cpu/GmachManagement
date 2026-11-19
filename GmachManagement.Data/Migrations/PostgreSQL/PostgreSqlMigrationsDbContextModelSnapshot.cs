@@ -228,6 +228,19 @@ namespace GmachManagement.Data.Migrations.PostgreSQL
                     b.ToTable("Loans");
                 });
 
+            modelBuilder.Entity("GmachManagement.Core.Entities.EmailReminderDelivery", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("integer");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<string>("Kind").IsRequired().HasMaxLength(20).HasColumnType("character varying(20)");
+                    b.Property<int>("ReferenceId").HasColumnType("integer");
+                    b.Property<DateTime>("ReminderDay").HasColumnType("timestamp with time zone");
+                    b.Property<DateTime>("SentAt").HasColumnType("timestamp with time zone");
+                    b.HasKey("Id");
+                    b.HasIndex("Kind", "ReferenceId", "ReminderDay").IsUnique();
+                    b.ToTable("EmailReminderDeliveries");
+                });
+
             modelBuilder.Entity("GmachManagement.Core.Entities.ManagedLoan", b =>
                 {
                     b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("integer");
@@ -238,6 +251,7 @@ namespace GmachManagement.Data.Migrations.PostgreSQL
                     b.Property<string>("BorrowerPhone").HasMaxLength(30).HasColumnType("character varying(30)");
                     b.Property<string>("BorrowerEmail").HasMaxLength(254).HasColumnType("character varying(254)");
                     b.Property<DateTime>("BorrowedAt").HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("ExpectedReturnDate").HasColumnType("timestamp with time zone");
                     b.Property<DateTime?>("ReturnedAt").HasColumnType("timestamp with time zone");
                     b.HasKey("Id");
                     b.HasIndex("GmachId");
