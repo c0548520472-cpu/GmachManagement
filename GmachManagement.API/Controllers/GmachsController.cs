@@ -26,7 +26,7 @@ public sealed class GmachsController : ControllerBase {
    var gmachs = string.IsNullOrEmpty(term)
     ? await service.SearchAsync(city, search, itemSearch, ct)
     : await service.SearchDirectoryAsync(string.IsNullOrEmpty(cityTerm) ? term : cityTerm, term, ct);
-   return gmachs.Select(g => new {g.Id,g.Name,g.City,g.Description}).ToList();
+   return gmachs.Select(g => new {g.Id,g.Name,g.City,g.Description,g.Type}).ToList();
   });
   return Ok(result);
  }
