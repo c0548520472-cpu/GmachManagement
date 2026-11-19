@@ -1519,6 +1519,23 @@ analyticsOptOut.addEventListener("change", () => {
     localStorage.setItem("gmachAnalyticsOptOut", analyticsOptOut.checked ? "true" : "false");
 });
 
+function switchSiteAdminCategory(category) {
+    const tabs = document.querySelectorAll("#siteAdminPage [data-admin-tab]");
+    const panels = document.querySelectorAll("#siteAdminPage [data-admin-panel]");
+    if (![...tabs].some(tab => tab.dataset.adminTab === category)) return;
+    for (const tab of tabs) {
+        const active = tab.dataset.adminTab === category;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", String(active));
+    }
+    for (const panel of panels) panel.hidden = panel.dataset.adminPanel !== category;
+    sessionStorage.setItem("gmachAdminCategory", category);
+}
+document.querySelectorAll("#siteAdminPage [data-admin-tab]").forEach(tab => {
+    tab.addEventListener("click", () => switchSiteAdminCategory(tab.dataset.adminTab));
+});
+switchSiteAdminCategory(sessionStorage.getItem("gmachAdminCategory") || "approvals");
+
 async function loadSiteAdminApprovals() {
     const list = document.getElementById("siteAdminApprovals");
     const message = document.getElementById("siteAdminApprovalsMessage");
