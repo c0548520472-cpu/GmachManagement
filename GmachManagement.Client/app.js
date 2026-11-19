@@ -1268,6 +1268,7 @@ async function findGmachs() {
  const sequence = ++gmachSearchSequence;
  const list = document.getElementById("gmachList");
  const term = document.getElementById("unifiedGmachSearch").value.trim();
+ if (term) recordSiteActivity("search", term.slice(0,120));
  const snapshot = term ? null : readDirectorySnapshot();
  const status = createDataLoader(snapshot ? "מעדכן את רשימת הגמ״חים…" : "טוען גמ״חים…");
  if (snapshot) {
@@ -1289,6 +1290,7 @@ async function findGmachs() {
  }
 }
 function showGmach(id){
+ recordSiteActivity("gmach_view", String(id));
  const url=new URL(location.href);url.searchParams.delete("page");url.searchParams.set("gmach",id);history.pushState({page:"gmach"},"",url);
  showPage("gmach",false);
 }
@@ -1309,7 +1311,7 @@ async function renderGmach(id){
  const name=document.createElement("h3");name.textContent=item.name;
  const info=document.createElement("p");info.textContent=(item.description||"")+" | עותקים זמינים: "+item.availableCopies;
  const button=document.createElement("button");button.textContent="השאלה";button.disabled=!item.isActive||item.availableCopies<1;
- button.addEventListener("click",()=>openBorrowDialog(item));
+ button.addEventListener("click",()=>{recordSiteActivity("item_view", String(item.name||item.id||"").slice(0,120));recordSiteActivity("borrow_click",String(item.id||""));openBorrowDialog(item);});
  card.append(name,info,button);grid.append(card);}
  section.append(grid);
  container.replaceChildren(section);
