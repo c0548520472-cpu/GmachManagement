@@ -68,13 +68,19 @@
     }
     function matchesCategory(group, topic) {
         if (!topic) return false;
+        // A category match must come from the owner's confirmed classification,
+        // not from generic words inside unrelated gmach names.
         const category = normalizeWords(group.type || group.category || "");
-        if (category === normalizeWords(topic.name)) return true;
-        const name = normalizeWords(group.name + " " + (group.description || ""));
-        return [topic.name, ...topic.words].some(word => {
-            const w = normalizeWords(word);
-            return w.length >= 3 && (name.includes(w) || w.split(" ").some(token => token.length >= 4 && name.includes(token)));
-        });
+        return category === normalizeWords(topic.name);
+    }
+    function isCategoryRequest(terms, topic) {
+        if (!topic) return false;
+        const query = normalizeWords(terms);
+        const explicit = /(?:קטגוריה|קטגוריות|נושא|נושאים|סוגי גמחים|גמחים ל|גמחים של)/u.test(query);
+        const categoryName = normalizeWords(topic.name);
+        const reversed = categoryName.split(" ").reverse().join(" ");
+        return explicit || query === categoryName || query === reversed ||
+            (query.split(" ").length <= 3 && matchesTerm(categoryName, query) && !/ספסל|כסא|כיסא|שולחן/u.test(query));
     }
     function scoreMatch(group,item,query,topic) {
         const name=normalizeWords(item?.name || "");
@@ -85,7 +91,7 @@
         if(matchesTerm(name,query))score+=12;
         if(matchesTerm(desc,query))score+=5;
         if(matchesTerm(groupName,query))score+=4;
-        if(topic && (category===normalizeWords(topic.name) || matchesTerm(groupName,topic.name) || matchesTerm(desc,topic.name)))score+=6;
+        if(topic && category===normalizeWords(topic.name))score+=2;
         if(item?.availableCopies>0)score+=3;
         return score;
     }
@@ -312,8 +318,8 @@
             const matchingCity = group => !city || clean(group.city) === city;
             const term = normalizeWords(product);
             const topic = requestedTopic || relevantTopic(product);
-            const namedGroups = directory.filter(group => matchingCity(group) && (matchesTerm(group.name,term) || matchesCategory(group,topic)));
-            if (topic) {
+            const namedGroups = directory.filter(group => matchingCity(group) && matchesTerm(group.name,term));
+            if (isCategoryRequest(terms, topic)) {
                 const topicGroups = directory.filter(group => matchingCity(group) && matchesCategory(group,topic));
                 if (topicGroups.length) {
                     lastMatches = topicGroups.map(group => ({group}));
@@ -324,7 +330,7 @@
                     return;
                 }
             }
-            const variants = [...new Set([product, term, term.replaceAll("כסא", "כיסא"), ...(topic ? [topic.name, ...topic.words.slice(0,5)] : [])])];
+            const variants = [...new Set([product, term, term.replaceAll("כסא", "כיסא")])];
             // A singular query may miss a catalog name written with another spelling or plural.
             const concept = aliases.find(([name]) => includesPhrase(term, name));
             if (concept) {
@@ -341,7 +347,7 @@
                     word.length > longest.length ? word : longest);
                 candidates = (await findGroups(longestWord)).filter(matchingCity);
             }
-            const groups = new Map([...candidates, ...directory.filter(group => matchingCity(group) && (matchesTerm(group.name,product) || matchesCategory(group,topic)))].map(group => [group.id, group]));
+            const groups = new Map([...candidates, ...directory.filter(group => matchingCity(group) && matchesTerm(group.name,product))].map(group => [group.id, group]));
             if (currentRequest !== requestNumber) return;
 
             const checks = await Promise.allSettled([...groups.values()].slice(0, 12).map(async group => {
