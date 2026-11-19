@@ -1141,6 +1141,7 @@ function showPage(page, push = true) {
     if (page === "login") mountGoogleButton("googleSignIn", authMessage);
     if (page === "siteAdmin") {
         loadSiteAdmin();
+        loadSiteAdminApprovals();
         loadSiteAdminOpenLoans();
     }
     window.scrollTo({top:0,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
@@ -1451,6 +1452,60 @@ async function adminPerform(path,options,success) {
         await loadSiteAdmin(true);
     } catch(error) { showMessage(siteAdminMessage,error.message,"error"); }
 }
+async function loadSiteAdminApprovals() {
+    const list = document.getElementById("siteAdminApprovals");
+    const message = document.getElementById("siteAdminApprovalsMessage");
+    const count = document.getElementById("siteAdminApprovalCount");
+    if (!isSiteAdminToken() || !list) return;
+    showMessage(message, "טוען בקשות לאישור...");
+    try {
+        const requests = await apiRequest("/site-admin/re-registration-requests");
+        list.replaceChildren();
+        count.hidden = !requests.length;
+        count.textContent = requests.length + " ממתינות";
+        if (!requests.length) {
+            showMessage(message, "אין כרגע בקשות הממתינות לאישור.", "success");
+            return;
+        }
+        showMessage(message, "");
+        for (const request of requests) {
+            const card = document.createElement("div");
+            card.className = "site-admin-approval-row";
+            const details = document.createElement("div");
+            const email = document.createElement("strong");
+            email.textContent = request.email;
+            const date = document.createElement("small");
+            date.className = "muted";
+            date.textContent = request.deletedAtUtc ? "החשבון נמחק בתאריך: " + new Date(request.deletedAtUtc).toLocaleString("he-IL") : "ממתין לאישור";
+            details.append(email, date);
+            const approve = document.createElement("button");
+            approve.type = "button";
+            approve.className = "primary";
+            approve.textContent = "אישור הרשמה מחדש";
+            approve.addEventListener("click", async () => {
+                if (!confirm("לאשר הרשמה מחדש עבור " + request.email + "?")) return;
+                approve.disabled = true;
+                try {
+                    await apiRequest("/site-admin/re-registration-requests/approve", {
+                        method: "POST",
+                        body: JSON.stringify({ email: request.email })
+                    });
+                    showMessage(message, "האישור נשמר. המשתמש יכול להירשם מחדש.", "success");
+                    await loadSiteAdminApprovals();
+                } catch (error) {
+                    showMessage(message, error.message, "error");
+                    approve.disabled = false;
+                }
+            });
+            card.append(details, approve);
+            list.append(card);
+        }
+    } catch (error) {
+        showMessage(message, "לא ניתן לטעון בקשות: " + error.message, "error");
+    }
+}
+document.getElementById("siteAdminRefreshApprovals").addEventListener("click", loadSiteAdminApprovals);
+
 async function loadSiteAdmin(keepMessage=false) {
     if(!isSiteAdminToken())return;
     if(!keepMessage)showMessage(siteAdminMessage,"טוען נתוני ניהול...", "loading");
