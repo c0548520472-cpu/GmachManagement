@@ -1137,3 +1137,14 @@ dialog.gmach-guide {
 #siteAdminPage .site-admin-panel[hidden]{display:none!important}
 #siteAdminPage .site-admin-panel{min-width:0}
 @media(max-width:600px){.site-admin-tabs{gap:.4rem;padding:.5rem}.site-admin-tabs .site-admin-tab{flex:1 1 42%;font-size:.9rem}}
+
+/* Owner management: categorized workspace and chat shortcut */
+.owner-admin-tabs{display:flex;flex-wrap:wrap;gap:.55rem;margin:1rem 0 1.25rem;padding:.7rem;background:#f2f8f9;border:1px solid #d8e9e9;border-radius:16px}
+.owner-admin-tabs .owner-admin-tab{flex:1 1 135px;width:auto;min-height:45px;padding:.6rem .8rem;border:1px solid #c9e1e3;border-radius:11px;background:white;color:#155965;font-weight:700;cursor:pointer}
+.owner-admin-tabs .owner-admin-tab.active{background:#087e86;color:white;border-color:#087e86}
+.owner-admin-tabs .owner-admin-tab:focus-visible{outline:3px solid #45b4ba;outline-offset:2px}
+#adminSection .owner-admin-panel[hidden]{display:none!important}
+#adminSection .owner-admin-panel{min-width:0}
+#ownerChatInbox.owner-chat-shortcut{position:fixed;right:1rem;bottom:5.5rem;z-index:110;width:auto;max-width:calc(100vw - 2rem);padding:.8rem 1rem;border-radius:999px;background:#125963;color:#fff;box-shadow:0 .5rem 1.5rem #123d4650}
+#ownerChatInbox.owner-chat-shortcut:hover{background:#087e86}
+@media(max-width:600px){.owner-admin-tabs{gap:.4rem;padding:.5rem}.owner-admin-tabs .owner-admin-tab{flex:1 1 42%;font-size:.9rem}#ownerChatInbox.owner-chat-shortcut{right:.7rem;bottom:5rem}}
