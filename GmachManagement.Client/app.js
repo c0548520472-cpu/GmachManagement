@@ -2172,6 +2172,8 @@ async function modifyOwnChatMessage(chat, messageId, method, payload = null) {
 function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachId, chat = null) {
     const row = document.createElement("div");
     row.className = mine ? "chat-message-row chat-message-row-mine" : "chat-message-row";
+    const content = document.createElement("div");
+    content.className = "chat-message-content";
     const bubble = document.createElement("div");
     bubble.className = mine ? "chat-message chat-message-mine" : "chat-message";
     const message = document.createElement("bdi");
@@ -2220,9 +2222,10 @@ function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachI
             await modifyOwnChatMessage(chat, messageId, "DELETE");
         });
         actions.append(remove);
-        row.append(actions);
+        content.append(actions);
     }
-    row.append(bubble);
+    content.prepend(bubble);
+    row.append(content);
     if (receipt) {
         const marks = document.createElement("span");
         marks.className = `chat-ticks chat-ticks-${receipt}`;
