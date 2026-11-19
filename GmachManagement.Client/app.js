@@ -2287,6 +2287,23 @@ async function openFloatingGmachChat() {
         if (activeChat !== chooser || token !== chooser.token) return;
         showMessage(status, gmachs.length ? "" : "אין גמ״חים זמינים.");
         const inbox = document.getElementById("gmachChatInbox");
+        const searchLabel = document.createElement("label");
+        searchLabel.htmlFor = "gmachChatDirectorySearch";
+        searchLabel.textContent = "חיפוש גמ״ח לפי שם או עיר";
+        const search = document.createElement("input");
+        search.id = "gmachChatDirectorySearch";
+        search.type = "search";
+        search.placeholder = "הקלידו שם גמ״ח או עיר…";
+        search.autocomplete = "off";
+        search.className = "gmach-chat-directory-search";
+        const results = document.createElement("div");
+        results.className = "gmach-chat-directory-results";
+        const empty = document.createElement("p");
+        empty.className = "gmach-chat-directory-empty";
+        empty.textContent = "לא נמצאו גמ״חים שמתאימים לחיפוש.";
+        empty.hidden = true;
+        inbox.append(searchLabel, search, results, empty);
+        const choices = [];
         for (const gmach of gmachs) {
             const choice = document.createElement("button");
             choice.type = "button";
@@ -2300,8 +2317,23 @@ async function openFloatingGmachChat() {
                 openChatOnGmachLoad = gmach.id;
                 showGmach(gmach.id);
             });
-            inbox.append(choice);
+            results.append(choice);
+            choices.push({gmach, choice});
         }
+        const filter = () => {
+            const query = search.value.trim().toLocaleLowerCase("he");
+            let visible = 0;
+            for (const {gmach, choice} of choices) {
+                const name = String(gmach.name || "").toLocaleLowerCase("he");
+                const city = normalizeCity(gmach.city).toLocaleLowerCase("he");
+                const matches = !query || name.includes(query) || city.includes(query);
+                choice.hidden = !matches;
+                if (matches) visible++;
+            }
+            empty.hidden = visible !== 0;
+        };
+        search.addEventListener("input", filter);
+        search.focus();
     } catch (error) {
         if (activeChat === chooser) showMessage(status, error.message, "error");
     }
