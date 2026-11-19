@@ -398,12 +398,41 @@ registrationForm.addEventListener("submit", async (event) => {
         document.getElementById("registrationPassword").focus();
         return;
     }
+    let confirmedGmachType = null;
+    if (document.getElementById("registerOwner").checked) {
+        const gmachName = document.getElementById("gmachName").value.trim();
+        const gmachCity = document.getElementById("gmachCity").value.trim();
+        if (!gmachName || !gmachCity) {
+            showMessage(authMessage, "יש להזין שם גמ״ח ועיר לפני בחירת הסיווג.", "error");
+            return;
+        }
+        const proposed = gmachTopic({name:gmachName});
+        const selected = document.getElementById("gmachCategoryConfirm");
+        if (selected) {
+            selected.value = proposed.title;
+            document.getElementById("gmachCategorySuggestion").textContent =
+                "זיהינו את הגמ״ח שלך כ: " + proposed.icon + " " + proposed.title + ". האם הסיווג מתאים? אפשר לשנות אותו לפני אישור ההרשמה.";
+            document.getElementById("gmachCategoryDialog").showModal();
+            confirmedGmachType = await new Promise(resolve => {
+                const dialog = document.getElementById("gmachCategoryDialog");
+                const finish = event => {
+                    dialog.removeEventListener("close", finish);
+                    resolve(dialog.returnValue === "confirm" ? selected.value : null);
+                };
+                dialog.addEventListener("close", finish);
+            });
+            if (!confirmedGmachType) return;
+        } else {
+            if (!confirm("הסיווג המוצע לגמ״ח: " + proposed.title + ". האם לאשר?")) return;
+            confirmedGmachType = proposed.title;
+        }
+    }
     showMessage(authMessage, "מבצע הרשמה...");
 
     try {
         await apiRequest("/Auth/register", {
             method: "POST",
-            body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), city: normalizeCity(document.getElementById("gmachCity").value.trim()) })
+            body: JSON.stringify({ name, email, password, isGmachOwner: document.getElementById("registerOwner").checked, gmachName: document.getElementById("gmachName").value.trim(), gmachType: confirmedGmachType, city: normalizeCity(document.getElementById("gmachCity").value.trim()) })
         });
 
         recordSiteActivity("registration_success");
@@ -1283,6 +1312,8 @@ const directoryTopics = [
  {title:"ביגוד ואביזרים", icon:"👕", words:["ביגוד","בגדים","לבוש","חליפות","נעליים","תחפושות","אביזרי לבוש"]}
 ];
 function gmachTopic(group) {
+ const selected = directoryTopics.find(topic => topic.title === group.type);
+ if (selected) return selected;
  const value = String([group.name,group.description].filter(Boolean).join(" ")).toLowerCase();
  return directoryTopics.find(topic => topic.words.some(word => value.includes(word))) || {title:"גמ״חים נוספים",icon:"🤝"};
 }
