@@ -1117,3 +1117,14 @@ dialog.gmach-guide {
 
 .site-admin-approval-actions{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
 .site-admin-approval-actions button{width:auto;min-width:125px}
+
+/* Detailed site activity report */
+.site-admin-activity{margin:1.5rem 0;padding:1.2rem;border:1px solid #c8e0e0;border-radius:16px;background:#f8fcfc}
+.site-admin-activity-filters{display:flex;align-items:end;flex-wrap:wrap;gap:.7rem;margin:1rem 0}
+.site-admin-activity-filters label{flex:1;min-width:145px}
+.site-admin-activity-filters input,.site-admin-activity-filters select{width:100%}
+.site-admin-activity-list{max-height:560px;overflow-y:auto;display:grid;gap:.55rem}
+.site-admin-activity-row{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;padding:.8rem 1rem;background:#fff;border:1px solid #e0ecec;border-radius:12px}
+.site-admin-activity-row strong{flex:1 1 190px;overflow-wrap:anywhere}
+.site-admin-activity-row span{flex:2 1 190px;overflow-wrap:anywhere}
+.site-admin-activity-row small{color:#58737a;white-space:nowrap}
