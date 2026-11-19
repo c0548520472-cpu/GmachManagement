@@ -6,6 +6,23 @@ namespace GmachManagement.Data.Repositories;
 
 public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommunicationRepository
 {
+    public Task<List<ChatUnreadNotice>> GetUnreadChatsAsync(int userId, CancellationToken ct)
+        => db.Database.SqlQuery<ChatUnreadNotice>($"""
+            SELECT m."GmachId", CAST(m."CustomerId" AS integer) AS "CustomerId",
+                g."Name" AS "GmachName", CAST(COUNT(*) AS integer) AS "UnreadCount"
+            FROM "GmachChatMessages" m
+            JOIN "Gmachs" g ON g."Id" = m."GmachId"
+            WHERE g."OwnerId" = {userId} AND m."SenderId" = m."CustomerId" AND m."ReadByOwnerAt" IS NULL
+            GROUP BY m."GmachId", m."CustomerId", g."Name"
+            UNION ALL
+            SELECT m."GmachId", CAST(NULL AS integer) AS "CustomerId",
+                g."Name" AS "GmachName", CAST(COUNT(*) AS integer) AS "UnreadCount"
+            FROM "GmachChatMessages" m
+            JOIN "Gmachs" g ON g."Id" = m."GmachId"
+            WHERE m."CustomerId" = {userId} AND m."SenderId" <> {userId} AND m."ReadByCustomerAt" IS NULL
+            GROUP BY m."GmachId", g."Name"
+            """).ToListAsync(ct);
+
     public Task<List<BorrowApproval>> GetApprovalsAsync(int userId, CancellationToken ct)
         => db.Database.SqlQuery<BorrowApproval>($"""
             SELECT r."Id", i."Name" AS "ItemName", g."Name" AS "GmachName", r."FulfilledAt" AS "ApprovedAt", a."Seen"
