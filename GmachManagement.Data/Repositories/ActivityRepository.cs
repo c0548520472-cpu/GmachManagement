@@ -12,8 +12,8 @@ public sealed class ActivityRepository(AppDbContext db) : IActivityRepository {
   var query=db.Database.SqlQuery<SiteActivityEntry>($@"SELECT e.""Id"",e.""UserId"",u.""Name"" AS ""UserName"",u.""Email"" AS ""UserEmail"",
  e.""SessionId"",e.""EventType"",e.""Detail"",e.""OccurredAtUtc""
  FROM ""SiteActivityEvents"" e LEFT JOIN ""Users"" u ON u.""Id""=e.""UserId""
- WHERE ({userId} IS NULL OR e.""UserId""={userId})
- AND ({eventType} IS NULL OR e.""EventType""={eventType})
+ WHERE (CAST({userId} AS integer) IS NULL OR e.""UserId""={userId})
+ AND (CAST({eventType} AS text) IS NULL OR e.""EventType""={eventType})
  ORDER BY e.""OccurredAtUtc"" DESC LIMIT {limit}");
   return query.ToListAsync(ct);
  }
