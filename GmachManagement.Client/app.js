@@ -945,6 +945,7 @@ async function editAdminItem(item) {
     try {
         await apiRequest("/items/"+item.id,{method:"PUT",body:JSON.stringify({name:name.trim(),description})});
         await refreshAdmin();await loadItems();
+        showPage("home");
     } catch(e){showMessage(document.getElementById("adminMessage"),e.message,"error");}
 }
 function askCopyQuantity() {
@@ -1235,7 +1236,7 @@ document.getElementById("profileForm").addEventListener("submit",async e=>{
   signedInName = String(payload.name || "").trim().slice(0, 60);
   profileNameToken = token;
   renderWelcomeName();
-  updateNavigation();await loadProfile();showMessage(msg,"הפרטים עודכנו בהצלחה.","success");
+  updateNavigation();await loadProfile();showPage("home");
  }catch(err){showMessage(msg,err.message,"error");}
 });
 function updateNavigation() {
@@ -1573,6 +1574,7 @@ async function adminPerform(path,options,success) {
         await apiRequest(path,options);
         showMessage(siteAdminMessage,success,"success");
         await loadSiteAdmin(true);
+        if (options?.method?.toUpperCase() === "PUT") showPage("home");
     } catch(error) { showMessage(siteAdminMessage,error.message,"error"); }
 }
 async function loadSiteActivityReport() {
