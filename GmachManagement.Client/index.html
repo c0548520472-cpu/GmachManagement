@@ -439,7 +439,18 @@
             <button id="gmachGuideSend" type="submit">שליחה</button>
         </form>
     </dialog>
-    <script src="app.js?v=activity-login-fix-20261119-b"></script>
+    <dialog id="gmachCategoryDialog" class="gmach-category-dialog" dir="rtl" aria-labelledby="gmachCategoryDialogTitle">
+        <form method="dialog">
+            <h2 id="gmachCategoryDialogTitle">אישור סיווג הגמ״ח</h2>
+            <p id="gmachCategorySuggestion"></p>
+            <label for="gmachCategoryConfirm">נושא הגמ״ח</label>
+            <select id="gmachCategoryConfirm">
+                <option>ציוד רפואי ובריאות</option><option>תינוקות וילדים</option><option>אירועים ושמחות</option><option>כלי עבודה ותחזוקה</option><option>ספרים ולימוד</option><option>ציוד לבית ולמשפחה</option><option>תחבורה ונסיעות</option><option>ביגוד ואביזרים</option><option>גמ״חים נוספים</option>
+            </select>
+            <div class="gmach-category-dialog-actions"><button type="submit" value="cancel" class="secondary">חזרה לתיקון</button><button type="submit" value="confirm" class="primary">אישור והמשך הרשמה</button></div>
+        </form>
+    </dialog>
+    <script src="app.js?v=gmach-category-confirm-20261119"></script>
     <script src="gmach-guide.js?v=borrowed-items-20261119"></script>
 </body>
 </html>
