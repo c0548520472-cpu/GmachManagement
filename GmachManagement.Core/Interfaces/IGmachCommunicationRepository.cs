@@ -2,7 +2,7 @@ namespace GmachManagement.Core.Interfaces;
 
 public sealed record GmachChatMessage(int Id, int SenderId, string Text, DateTime SentAt, DateTime? ReadByOwnerAt, DateTime? ReadByCustomerAt, string? AttachmentName);
 public sealed record ChatAttachment(string Name, byte[] Content);
-public sealed record GmachChatThread(int GmachId, int CustomerId, string CustomerName);
+public sealed record GmachChatThread(int GmachId, int CustomerId, string CustomerName, int UnreadCount, DateTime LastMessageAt, string LastMessagePreview);
 public sealed record BorrowApproval(int Id, string ItemName, string GmachName, DateTime ApprovedAt, bool Seen);
 
 public interface IGmachCommunicationRepository
@@ -15,6 +15,6 @@ public interface IGmachCommunicationRepository
     Task MarkChatReadByCustomerAsync(int gmachId, int customerId, int throughId, CancellationToken ct);
     Task MarkChatReadByOwnerAsync(int gmachId, int customerId, int ownerId, int throughId, CancellationToken ct);
     Task<ChatAttachment?> GetAttachmentAsync(int gmachId, int messageId, int actorId, CancellationToken ct);
-    Task<(bool Saved, string? OwnerEmail)> AddMessageAsync(
+    Task<(bool Saved, string? NotificationEmail, bool ToCustomer)> AddMessageAsync(
         int gmachId, int? customerId, int actorId, string message, int? itemId, ChatAttachment? attachment, CancellationToken ct);
 }
