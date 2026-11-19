@@ -1090,3 +1090,8 @@ dialog.gmach-guide {
 }
 .gmach-guide-form input, .gmach-guide-form button { margin: 0; min-width: 0; }
 .gmach-guide :focus-visible, .gmach-guide-launcher:focus-visible { outline: 2px solid #38a69f; outline-offset: 2px; }
+
+/* Keep the active authentication form clickable and hide inactive forms. */
+#authSection[hidden], #authSection form[hidden], #authSection .tabs[hidden] { display: none !important; }
+#authSection { position: relative; z-index: 1; }
+#authSection .tabs button, #authSection form button[type="submit"] { position: relative; pointer-events: auto; cursor: pointer; }
