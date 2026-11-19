@@ -19,6 +19,20 @@ public sealed class GmachCommunicationController(
 {
     private int ActorId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
 
+    private static string OnlineKey(int userId) => $"GmachChatOnline:{userId}";
+
+    [HttpPost("presence")]
+    public IActionResult SetPresence()
+    {
+        if (ActorId <= 0) return Unauthorized();
+        cache.Set(OnlineKey(ActorId), true, TimeSpan.FromSeconds(50));
+        return NoContent();
+    }
+
+    [HttpGet("unread")]
+    public async Task<IActionResult> Unread(CancellationToken ct)
+        => ActorId > 0 ? Ok(await service.GetUnreadChatsAsync(ActorId, ct)) : Unauthorized();
+
     [HttpGet("approvals")]
     public async Task<IActionResult> Approvals(CancellationToken ct)
         => ActorId > 0 ? Ok(await service.GetApprovalsAsync(ActorId, ct)) : Unauthorized();
@@ -118,7 +132,8 @@ public sealed class GmachCommunicationController(
         var saved = await service.AddMessageAsync(gmachId, customerId, ActorId, message, input.ItemId, attachment, ct);
         if (!saved.Saved) return NotFound();
         cache.Remove(TypingKey(gmachId, customerId ?? ActorId, customerId.HasValue));
-        if (saved.NotificationEmail is { } recipient)
+        var recipientId = await service.GetRecipientIdAsync(gmachId, customerId, ActorId, ct);
+        if (saved.NotificationEmail is { } recipient && recipientId is int id && !cache.TryGetValue(OnlineKey(id), out _))
             await NotifyChatRecipientAsync(recipient, saved.ToCustomer);
         return NoContent();
     }
