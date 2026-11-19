@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using GmachManagement.Core.Interfaces;
+using GmachManagement.API.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using GmachManagement.Service.Services;
@@ -12,9 +13,8 @@ namespace GmachManagement.API.Controllers;
 [ApiController, Authorize, Route("api/gmach-communication")]
 public sealed class GmachCommunicationController(
     GmachCommunicationService service,
-    IHttpClientFactory clients,
+    ResendEmailService email,
     IMemoryCache cache,
-    IConfiguration config,
     ILogger<GmachCommunicationController> logger) : ControllerBase
 {
     private int ActorId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
@@ -147,33 +147,15 @@ public sealed class GmachCommunicationController(
 
     private async Task NotifyOwnerAsync(string ownerEmail)
     {
-        var apiKey = config["Email:ResendApiKey"];
-        var sender = config["Email:From"];
-        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(sender))
-        {
-            logger.LogWarning("Chat email skipped because Email:ResendApiKey or Email:From is missing.");
-            return;
-        }
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
-        request.Content = System.Net.Http.Json.JsonContent.Create(new
-        {
-            from = sender,
-            to = new[] { ownerEmail },
-            subject = "הודעה חדשה בצ׳אט הגמ״ח",
-            text = "ממתינה לך הודעה חדשה בצ׳אט. לצפייה ולמענה יש להתחבר לניהול הגמ״ח: https://gmachmanagement-client.pages.dev/?page=owner"
-        });
-
         try
         {
-            using var response = await clients.CreateClient("GmachChatEmail").SendAsync(request);
-            if (!response.IsSuccessStatusCode)
-                logger.LogWarning("Chat email provider returned HTTP {StatusCode}.", (int)response.StatusCode);
+            await email.SendAsync(ownerEmail, "הודעה חדשה בצ׳אט הגמ״ח",
+                "<div dir='rtl'><p>ממתינה לך הודעה חדשה בצ׳אט.</p><p><a href='https://gmachmanagement-client.pages.dev/?page=owner'>כניסה לניהול הגמ״ח</a></p></div>",
+                HttpContext.RequestAborted);
         }
-        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException)
         {
-            logger.LogWarning(ex, "Chat email delivery failed.");
+            logger.LogWarning(ex, "Chat notification email delivery failed");
         }
     }
 }
