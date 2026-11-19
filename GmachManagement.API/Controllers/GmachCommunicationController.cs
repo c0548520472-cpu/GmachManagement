@@ -133,8 +133,13 @@ public sealed class GmachCommunicationController(
         if (!saved.Saved) return NotFound();
         cache.Remove(TypingKey(gmachId, customerId ?? ActorId, customerId.HasValue));
         var recipientId = await service.GetRecipientIdAsync(gmachId, customerId, ActorId, ct);
-        if (saved.NotificationEmail is { } recipient && recipientId is int id && !cache.TryGetValue(OnlineKey(id), out _))
-            await NotifyChatRecipientAsync(recipient, saved.ToCustomer);
+        if (saved.NotificationEmail is { } recipient && recipientId is int id)
+        {
+            if (cache.TryGetValue(OnlineKey(id), out _))
+                await service.ScheduleOnlineChatReminderAsync(gmachId, customerId, ActorId, ct);
+            else
+                await NotifyChatRecipientAsync(recipient, saved.ToCustomer);
+        }
         return NoContent();
     }
 
