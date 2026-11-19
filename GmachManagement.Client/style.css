@@ -1170,3 +1170,9 @@ dialog.gmach-guide {
 .gmach-topic-count{font-size:.78rem;font-weight:600;background:#e6f5f3;color:#27666c;border-radius:999px;padding:.25rem .7rem}
 .gmach-topic-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:1rem}
 .gmach-topic-cards .item-card{min-width:0}
+
+.gmach-category-dialog{width:min(94vw,460px);max-height:90vh;border:1px solid #c6e3e2;border-radius:18px;padding:1.5rem;background:white;box-shadow:0 20px 70px #123b4055}
+.gmach-category-dialog::backdrop{background:#082e3890}
+.gmach-category-dialog select{width:100%;min-height:44px;margin:.5rem 0 1rem;padding:.65rem;border:1px solid #a8cece;border-radius:9px}
+.gmach-category-dialog-actions{display:flex;flex-wrap:wrap;gap:.6rem}
+.gmach-category-dialog-actions button{flex:1 1 140px}
