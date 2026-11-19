@@ -13,6 +13,23 @@ const borrowMessage = document.getElementById("borrowMessage");
 const borrowDialog = document.getElementById("borrowDialog");
 
 let token = sessionStorage.getItem("gmachToken");
+const siteActivitySession = (() => {
+    let id = sessionStorage.getItem("gmachActivitySession");
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
+        id = crypto.randomUUID();
+        sessionStorage.setItem("gmachActivitySession", id);
+    }
+    return id;
+})();
+function recordSiteActivity(eventType, detail = "") {
+    if (localStorage.getItem("gmachAnalyticsOptOut") === "true") return;
+    const body = JSON.stringify({sessionId: siteActivitySession, eventType, detail: String(detail).slice(0, 180)});
+    const headers = {"Content-Type": "application/json"};
+    if (token) headers.Authorization = "Bearer " + token;
+    fetch(API_BASE + "/site-activity", {method: "POST", headers, body, keepalive: true})
+        .catch(() => {});
+}
+
 let currentPage = 1;
 let currentItems = [];
 let selectedCopyId = null;
@@ -1459,22 +1476,6 @@ async function adminPerform(path,options,success) {
         showMessage(siteAdminMessage,success,"success");
         await loadSiteAdmin(true);
     } catch(error) { showMessage(siteAdminMessage,error.message,"error"); }
-}
-const siteActivitySession = (() => {
-    let id = sessionStorage.getItem("gmachActivitySession");
-    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
-        id = crypto.randomUUID();
-        sessionStorage.setItem("gmachActivitySession", id);
-    }
-    return id;
-})();
-function recordSiteActivity(eventType, detail = "") {
-    if (localStorage.getItem("gmachAnalyticsOptOut") === "true") return;
-    const body = JSON.stringify({sessionId: siteActivitySession, eventType, detail: String(detail).slice(0, 180)});
-    const headers = {"Content-Type": "application/json"};
-    if (token) headers.Authorization = "Bearer " + token;
-    fetch(API_BASE + "/site-activity", {method: "POST", headers, body, keepalive: true})
-        .catch(() => {});
 }
 async function loadSiteActivityReport() {
     const list = document.getElementById("activityReportList");
