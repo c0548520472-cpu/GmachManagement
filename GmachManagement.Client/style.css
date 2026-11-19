@@ -1183,3 +1183,24 @@ dialog.gmach-guide {
 #gmachChatInbox .gmach-chat-directory-results{display:flex;flex-direction:column;gap:.45rem;max-height:45vh;overflow-y:auto}
 #gmachChatInbox .gmach-chat-directory-results button{width:100%;text-align:right;flex-shrink:0}
 #gmachChatInbox .gmach-chat-directory-results button[hidden],#gmachChatInbox .gmach-chat-directory-empty[hidden]{display:none!important}
+
+/* Fix: directory chooser must not inherit the flex-wrapping chat choices layout. */
+#gmachChatInbox:has(.gmach-chat-directory-search){
+  display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;
+  gap:.5rem;min-height:0;width:100%;box-sizing:border-box;
+}
+#gmachChatInbox .gmach-chat-directory-results{
+  display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+  flex:0 1 auto;gap:.5rem;width:100%;min-width:0;max-height:min(300px,40dvh);
+  overflow-y:auto;overflow-x:hidden;padding:.15rem .25rem .15rem 0;
+  box-sizing:border-box;
+}
+#gmachChatInbox .gmach-chat-directory-results > button{
+  display:block;flex:0 0 auto;align-self:stretch;
+  width:100%;max-width:100%;height:auto;min-height:42px;
+  margin:0;padding:.65rem .85rem;line-height:1.4;
+  text-align:right;white-space:normal;box-sizing:border-box;
+  border-radius:.7rem;
+}
+#gmachChatInbox .gmach-chat-directory-search{flex:0 0 auto;margin:.15rem 0 .4rem}
+#gmachChatInbox .gmach-chat-directory-empty{margin:.4rem 0}
