@@ -1161,3 +1161,12 @@ dialog.gmach-guide {
 #gmachChat .chat-message-action{display:inline-grid;place-items:center;width:1.7rem;min-width:1.7rem;height:1.7rem;min-height:0;padding:0;border:1px solid #c8dfdf;border-radius:.45rem;background:#ffffffdd;color:#18525a;font-size:.9rem;line-height:1;cursor:pointer}
 #gmachChat .chat-message-action:hover{background:#e8f5f4}
 #gmachChat .chat-message-delete:hover{background:#fff0ee;color:#a32929}
+
+/* Home directory organized into subject sections */
+#gmachList{display:block}
+.gmach-topic-section{margin:1.3rem 0 1.8rem;min-width:0}
+.gmach-topic-section+.gmach-topic-section{border-top:1px solid #dce9e9;padding-top:1.3rem}
+.gmach-topic-title{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem;margin:0 0 .9rem;color:#135c65;font-size:1.2rem}
+.gmach-topic-count{font-size:.78rem;font-weight:600;background:#e6f5f3;color:#27666c;border-radius:999px;padding:.25rem .7rem}
+.gmach-topic-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:1rem}
+.gmach-topic-cards .item-card{min-width:0}
