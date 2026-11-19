@@ -855,7 +855,7 @@ const ownerBorrowDueDate=document.createElement("input");
 ownerBorrowDueDate.type="date";
 ownerBorrowDueDate.id="ownerBorrowDueDate";
 ownerBorrowDateLabel.append(ownerBorrowDueDate);
-document.getElementById("ownerBorrowForm").insertBefore(ownerBorrowDateLabel,document.getElementById("ownerBorrowForm").querySelector('button[type="submit"]'));
+document.getElementById("ownerBorrowForm").insertBefore(ownerBorrowDateLabel,document.getElementById("ownerBorrowForm").querySelector(".dialog-actions"));
 document.getElementById("ownerBorrowForm").addEventListener("submit",async event=>{
  event.preventDefault();
  const borrowerName=document.getElementById("ownerBorrowName").value.trim();
