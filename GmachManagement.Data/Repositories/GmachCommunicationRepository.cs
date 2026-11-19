@@ -101,13 +101,13 @@ public sealed class GmachCommunicationRepository(AppDbContext db) : IGmachCommun
             SELECT "Id" AS "Value" FROM "GmachChatMessages"
             WHERE "GmachId" = {gmachId} AND "CustomerId" = {customer}
             """).AnyAsync(ct))
-            return (false, null);
+            return (false, null, false);
 
         if (itemId is int id)
         {
             var name = await db.Items.Where(item => item.Id == id && item.GmachId == gmachId && item.IsActive)
                 .Select(item => item.Name).SingleOrDefaultAsync(ct);
-            if (name == null) return (false, null);
+            if (name == null) return (false, null, false);
             message = $"אני מתעניין בפריט {name}";
         }
 
