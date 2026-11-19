@@ -13,17 +13,17 @@ const borrowMessage = document.getElementById("borrowMessage");
 const borrowDialog = document.getElementById("borrowDialog");
 
 let token = sessionStorage.getItem("gmachToken");
-const siteActivitySession = (() => {
+function getSiteActivitySession() {
     let id = sessionStorage.getItem("gmachActivitySession");
     if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
         id = crypto.randomUUID();
         sessionStorage.setItem("gmachActivitySession", id);
     }
     return id;
-})();
+}
 function recordSiteActivity(eventType, detail = "") {
     if (localStorage.getItem("gmachAnalyticsOptOut") === "true") return;
-    const body = JSON.stringify({sessionId: siteActivitySession, eventType, detail: String(detail).slice(0, 180)});
+    const body = JSON.stringify({sessionId: getSiteActivitySession(), eventType, detail: String(detail).slice(0, 180)});
     const headers = {"Content-Type": "application/json"};
     if (token) headers.Authorization = "Bearer " + token;
     fetch(API_BASE + "/site-activity", {method: "POST", headers, body, keepalive: true})
