@@ -35,11 +35,18 @@ public sealed class PersonalReminderWorker : BackgroundService
         }
     }
 
+    private static string FormatSender(string sender)
+    {
+        if (sender.Contains('<') && sender.Contains('>')) return sender;
+        return $"מרכז ההשאלות <{sender.Trim()}>";
+    }
+
     private async Task SendDueAsync(HttpClient client, CancellationToken ct)
     {
         var apiKey = _config["Resend:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey)) return;
         var sender = _config["Resend:FromEmail"] ?? "no-reply@gmach-manageonline.online";
+        sender = FormatSender(sender);
         var today = DateTime.UtcNow.Date;
         if (_day != today) { _sentToday.Clear(); _day = today; }
         using var scope = _scopes.CreateScope();
