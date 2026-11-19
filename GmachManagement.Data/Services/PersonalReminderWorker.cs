@@ -41,6 +41,18 @@ public sealed class PersonalReminderWorker : BackgroundService
         return $"מרכז ההשאלות <{sender.Trim()}>";
     }
 
+    private string AddEmailSignature(string html)
+    {
+        var url = HtmlEncoder.Default.Encode(_config["Site:PublicUrl"] ?? "https://gmachmanagement-client.pages.dev/");
+        return html + $"""
+            <div dir="rtl" style="margin-top:24px;padding-top:16px;border-top:1px solid #d8e7e8;font-family:Arial,sans-serif;color:#24525a">
+              <strong>מרכז ההשאלות</strong><br>
+              מחברים בין אנשים, משאילים מכל הלב.<br>
+              <a href="{url}" style="color:#087e86">לכניסה לאתר מרכז ההשאלות</a>
+            </div>
+            """;
+    }
+
     private async Task SendDueAsync(HttpClient client, CancellationToken ct)
     {
         var apiKey = _config["Resend:ApiKey"];
@@ -69,7 +81,7 @@ public sealed class PersonalReminderWorker : BackgroundService
             {
                 using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-                request.Content = JsonContent.Create(new { from = sender, to = new[] { transaction.User.Email }, subject, html });
+                request.Content = JsonContent.Create(new { from = sender, to = new[] { transaction.User.Email }, subject, html = AddEmailSignature(html) });
                 using var response = await client.SendAsync(request, ct);
                 if (!response.IsSuccessStatusCode)
                     throw new HttpRequestException($"Resend returned HTTP {(int)response.StatusCode}");
@@ -96,7 +108,7 @@ public sealed class PersonalReminderWorker : BackgroundService
             {
                 using var request = new HttpRequestMessage(HttpMethod.Post,"https://api.resend.com/emails");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer",apiKey);
-                request.Content = JsonContent.Create(new { from=sender,to=new[]{loan.BorrowerEmail!},subject,html });
+                request.Content = JsonContent.Create(new { from=sender,to=new[]{loan.BorrowerEmail!},subject,html=AddEmailSignature(html) });
                 using var response = await client.SendAsync(request,ct);
                 if (!response.IsSuccessStatusCode)
                     throw new HttpRequestException($"Resend returned HTTP {(int)response.StatusCode}");
