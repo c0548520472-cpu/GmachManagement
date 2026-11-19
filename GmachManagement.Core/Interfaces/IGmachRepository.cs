@@ -15,7 +15,8 @@ public interface IGmachRepository {
  Task<Gmach> CreateAsync(Gmach gmach,CancellationToken ct);
  Task<int> ImportItemsAsync(int gmachId,IReadOnlyList<(string Name,string Description,int Quantity)> rows,CancellationToken ct);
  Task<Item> AddItemAsync(int gmachId,string name,string description,CancellationToken ct);
- Task<GmachManagement.Core.Entities.ManagedLoan?> MarkBorrowedAsync(int ownerId,int itemId,string name,string? phone,string? email,CancellationToken ct);
+ Task<GmachManagement.Core.Entities.ManagedLoan?> MarkBorrowedAsync(int ownerId,int itemId,string name,string? phone,string? email,CancellationToken ct,DateTime? expectedReturnDate=null);
+ Task<bool> SetManagedLoanDueDateAsync(int ownerId,int id,DateTime dueDate,CancellationToken ct);
  Task<bool> ReturnManagedLoanAsync(int ownerId,int id,CancellationToken ct);
  Task<List<GmachManagement.Core.Entities.ManagedLoan>> GetManagedLoansAsync(int ownerId,CancellationToken ct);
  Task<int> AddCopiesAsync(int itemId,int quantity,CancellationToken ct);
