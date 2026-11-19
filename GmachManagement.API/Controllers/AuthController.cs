@@ -96,6 +96,61 @@ namespace GmachManagement.API.Controllers
         }
 
 
+
+        public sealed record GoogleLoginRequest(
+            [System.ComponentModel.DataAnnotations.Required] string Credential,
+            [System.ComponentModel.DataAnnotations.Required] string Nonce);
+
+        [AllowAnonymous, HttpGet("google/config")]
+        public IActionResult GoogleConfig([FromServices] IConfiguration configuration, [FromServices] Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+        {
+            var clientId = configuration["Google:ClientId"];
+            if (string.IsNullOrWhiteSpace(clientId))
+                return StatusCode(503, new { message = "התחברות Google עדיין לא הוגדרה בשרת." });
+            var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
+            cache.Set("google-nonce:" + nonce, true, TimeSpan.FromMinutes(5));
+            Response.Headers.CacheControl = "no-store";
+            return Ok(new { clientId, nonce });
+        }
+
+        [AllowAnonymous, HttpPost("google")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request,
+            [FromServices] IConfiguration configuration,
+            [FromServices] Microsoft.Extensions.Caching.Memory.IMemoryCache cache,
+            CancellationToken ct)
+        {
+            var clientId = configuration["Google:ClientId"];
+            if (string.IsNullOrWhiteSpace(clientId)) return StatusCode(503, new { message = "התחברות Google אינה מוגדרת." });
+            if (!cache.TryGetValue("google-nonce:" + request.Nonce, out _))
+                return BadRequest(new { message = "תוקף בקשת ההתחברות פג. יש לנסות שוב." });
+            cache.Remove("google-nonce:" + request.Nonce);
+            Google.Apis.Auth.GoogleJsonWebSignature.Payload payload;
+            try
+            {
+                payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(
+                    request.Credential,
+                    new Google.Apis.Auth.GoogleJsonWebSignature.ValidationSettings
+                    { Audience = new[] { clientId } });
+            }
+            catch (Exception ex) when (ex is Google.Apis.Auth.InvalidJwtException or ArgumentException or HttpRequestException)
+            {
+                return Unauthorized(new { message = "אימות Google נכשל. נסו שוב." });
+            }
+            if (!string.Equals(payload.Nonce, request.Nonce, StringComparison.Ordinal) ||
+                payload.EmailVerified != true || string.IsNullOrWhiteSpace(payload.Email) ||
+                string.IsNullOrWhiteSpace(payload.Subject))
+                return Unauthorized(new { message = "פרטי האימות של Google אינם תקינים." });
+            var actorId = User.Identity?.IsAuthenticated == true &&
+                int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id)
+                ? (int?)id : null;
+            var result = await _authService.SignInWithGoogleAsync(
+                payload.Subject, payload.Email, payload.Name ?? "", actorId, ct);
+            return result.Error == null
+                ? Ok(new { accessToken = result.Token, tokenType = "Bearer" })
+                : Conflict(new { message = result.Error });
+        }
+
         public sealed record ForgotPasswordRequest([System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.EmailAddress] string Email);
         public sealed record ResetPasswordRequest([System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.EmailAddress] string Email,
             [System.ComponentModel.DataAnnotations.Required] string Token,
