@@ -8,7 +8,7 @@
     <title>ניהול הגמ"ח</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="preconnect" href="https://gmachmanagement-api.onrender.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=admin-categories-20261119">
+    <link rel="stylesheet" href="style.css?v=owner-categories-20261119">
 </head>
 <body>
     <header class="header">
@@ -197,24 +197,25 @@
             <div class="page-heading"><h2>אזור בעל הגמ״ח</h2><p class="muted">ניהול פריטים, השאלות וייבוא Excel</p></div>
             <section id="adminSection" class="auth-card wide-card" hidden style="margin-top:24px">
                 <h2>ניהול גמ"ח</h2>
-                <div id="ownerGmachInfo"></div><form id="claimGmachForm" hidden><h3>שיוך גמ״ח לחשבון קיים</h3><label for="claimGmachName">שם הגמ״ח</label><input id="claimGmachName" maxlength="150" required><label for="claimGmachCity">עיר</label><input id="claimGmachCity" maxlength="100" required><button type="submit" class="primary">יצירת הגמ״ח שלי</button></form><div id="ownerManagement" hidden><button id="ownerChatInbox" class="secondary" type="button">הודעות צ׳אט</button><form id="excelImportForm" enctype="multipart/form-data"><label for="excelFile">ייבוא פריטים מ־Excel (עמודה A: שם פריט, עמודה B: תיאור, עמודה C: כמות הפריט בגמ״ח)</label><input id="excelFile" type="file" accept=".xlsx" required><button class="primary" type="submit">ייבוא Excel</button></form>
+                <nav class="owner-admin-tabs" aria-label="קטגוריות ניהול הגמ״ח"><button type="button" data-owner-tab="items" class="owner-admin-tab active" aria-selected="true">פריטים פעילים</button><button type="button" data-owner-tab="requests" class="owner-admin-tab" aria-selected="false">בקשות השאלה</button><button type="button" data-owner-tab="loans" class="owner-admin-tab" aria-selected="false">השאלות פעילות</button><button type="button" data-owner-tab="add" class="owner-admin-tab" aria-selected="false">הוספה וייבוא</button><button type="button" data-owner-tab="removed" class="owner-admin-tab" aria-selected="false">פריטים שהוסרו</button></nav>
+                <div id="ownerGmachInfo"></div><form id="claimGmachForm" hidden><h3>שיוך גמ״ח לחשבון קיים</h3><label for="claimGmachName">שם הגמ״ח</label><input id="claimGmachName" maxlength="150" required><label for="claimGmachCity">עיר</label><input id="claimGmachCity" maxlength="100" required><button type="submit" class="primary">יצירת הגמ״ח שלי</button></form><div id="ownerManagement" hidden><button id="ownerChatInbox" class="secondary owner-chat-shortcut" type="button" aria-label="פתיחת צ׳אט ההודעות בחלונית צדדית">💬 הודעות צ׳אט</button><div class="owner-admin-panel" data-owner-panel="add" hidden><form id="excelImportForm" enctype="multipart/form-data"><label for="excelFile">ייבוא פריטים מ־Excel (עמודה A: שם פריט, עמודה B: תיאור, עמודה C: כמות הפריט בגמ״ח)</label><input id="excelFile" type="file" accept=".xlsx" required><button class="primary" type="submit">ייבוא Excel</button></form>
                 <form id="adminItemForm">
                     <label for="adminItemName">שם פריט</label><input id="adminItemName" required maxlength="150">
                     <label for="adminItemDescription">תיאור</label><input id="adminItemDescription">
                     <button class="primary" type="submit">הוספת פריט</button>
                 </form>
-                </div><p id="adminMessage" class="message" role="status"></p>
-                <h3>פריטים פעילים</h3>
+                </div></div><p id="adminMessage" class="message" role="status"></p>
+                <div class="owner-admin-panel" data-owner-panel="items"><h3>פריטים פעילים</h3>
                 <label for="adminItemSearch">חיפוש פריטים לפי שם או תיאור</label><input id="adminItemSearch" type="search" placeholder="הקלידי שם או תיאור פריט..." autocomplete="off">
                 <div id="bulkItemActions" class="auth-card" hidden><span id="selectedItemsCount"></span> <button id="bulkEditItems" type="button">עריכת פריטים נבחרים</button> <button id="bulkAddCopies" type="button">הוספת עותקים לנבחרים</button> <button id="bulkRemoveItems" type="button">הסרת פריטים נבחרים</button></div>
                 <div id="adminItems"></div>
-                <details id="removedItemsDetails"><summary>פריטים שהוסרו — לשחזור</summary><div id="removedAdminItems"></div></details>
-                <h3>בקשות השאלה ממתינות</h3><p id="borrowRequestsMessage" class="message" role="status"></p><div id="borrowRequestsList" class="items-grid"></div>
-                <h3>השאלות פעילות</h3>
+                </div><div class="owner-admin-panel" data-owner-panel="removed" hidden><details id="removedItemsDetails" open><summary>פריטים שהוסרו — לשחזור</summary><div id="removedAdminItems"></div></details></div>
+                <div class="owner-admin-panel" data-owner-panel="requests" hidden><h3>בקשות השאלה ממתינות</h3><p id="borrowRequestsMessage" class="message" role="status"></p><div id="borrowRequestsList" class="items-grid"></div>
+                </div><div class="owner-admin-panel" data-owner-panel="loans" hidden><h3>השאלות פעילות</h3>
                 <label for="managedLoansSort">מיון לפי מועד ההשאלה</label>
                 <select id="managedLoansSort"><option value="newest">מהחדש ביותר לישן ביותר</option><option value="oldest">מהישן ביותר לחדש ביותר</option></select>
                 <div id="managedLoans"></div>
-                <div id="adminLoans"></div>
+                <div id="adminLoans"></div></div>
             </section>
         </section>
 
@@ -438,7 +439,7 @@
             <button id="gmachGuideSend" type="submit">שליחה</button>
         </form>
     </dialog>
-    <script src="app.js?v=admin-categories-20261119"></script>
+    <script src="app.js?v=owner-categories-20261119"></script>
     <script src="gmach-guide.js?v=4"></script>
 </body>
 </html>
