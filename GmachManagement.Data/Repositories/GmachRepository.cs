@@ -5,6 +5,7 @@ using GmachManagement.Data.Context;
 using Microsoft.EntityFrameworkCore;
 namespace GmachManagement.Data.Repositories;
 public sealed class GmachRepository : IGmachRepository {
+ public Task<string?> GetOwnerEmailForItemAsync(int itemId,CancellationToken ct) => db.Items.AsNoTracking().Where(i=>i.Id==itemId && i.Gmach!=null).Select(i=>i.Gmach!.Owner.Email).FirstOrDefaultAsync(ct);
  private readonly AppDbContext db;
  public GmachRepository(AppDbContext db) => this.db=db;
  public async Task<BorrowRequest?> AddBorrowRequestAsync(int itemId,string name,string? phone,string? email,CancellationToken ct,int? applicantId = null) {
