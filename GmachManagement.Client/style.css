@@ -1148,3 +1148,8 @@ dialog.gmach-guide {
 #ownerChatInbox.owner-chat-shortcut{position:fixed;right:1rem;bottom:5.5rem;z-index:110;width:auto;max-width:calc(100vw - 2rem);padding:.8rem 1rem;border-radius:999px;background:#125963;color:#fff;box-shadow:0 .5rem 1.5rem #123d4650}
 #ownerChatInbox.owner-chat-shortcut:hover{background:#087e86}
 @media(max-width:600px){.owner-admin-tabs{gap:.4rem;padding:.5rem}.owner-admin-tabs .owner-admin-tab{flex:1 1 42%;font-size:.9rem}#ownerChatInbox.owner-chat-shortcut{right:.7rem;bottom:5rem}}
+
+/* Management pages: hide the public search assistant, keep chat selection compact */
+#gmachGuideLauncher[hidden]{display:none!important}
+#gmachChatInbox .owner-chat-thread-select{display:block;width:100%;max-width:100%;min-height:44px;margin:.45rem 0 1rem;padding:.65rem;border:1px solid #b9d9d6;border-radius:10px;background:#fff;color:#173e41;direction:rtl}
+#gmachChatInbox label[for="ownerChatThreadSelect"]{display:block;font-weight:700}
