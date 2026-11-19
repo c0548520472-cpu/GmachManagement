@@ -747,16 +747,25 @@ function openOwnerBorrow(item){
  ownerBorrowDialog.showModal();
 }
 document.getElementById("cancelOwnerBorrow").addEventListener("click",()=>ownerBorrowDialog.close());
+const ownerBorrowDateLabel=document.createElement("label");
+ownerBorrowDateLabel.textContent="מועד החזרה (אופציונלי): ";
+const ownerBorrowDueDate=document.createElement("input");
+ownerBorrowDueDate.type="date";
+ownerBorrowDueDate.id="ownerBorrowDueDate";
+ownerBorrowDateLabel.append(ownerBorrowDueDate);
+document.getElementById("ownerBorrowForm").insertBefore(ownerBorrowDateLabel,document.getElementById("ownerBorrowForm").querySelector('button[type="submit"]'));
 document.getElementById("ownerBorrowForm").addEventListener("submit",async event=>{
  event.preventDefault();
  const borrowerName=document.getElementById("ownerBorrowName").value.trim();
  const borrowerPhone=document.getElementById("ownerBorrowPhone").value.trim();
  const borrowerEmail=document.getElementById("ownerBorrowEmail").value.trim();
+ const dueDateInput=document.getElementById("ownerBorrowDueDate");
+ const dueDate=dueDateInput?.value ? new Date(dueDateInput.value+"T12:00:00").toISOString() : null;
  const message=document.getElementById("ownerBorrowMessage");
  if(!borrowerName){showMessage(message,"חובה למלא שם שואל.","error");return;}
  if(!borrowerPhone&&!borrowerEmail){showMessage(message,"חובה למלא לפחות טלפון או אימייל.","error");return;}
  try{
-  await apiRequest("/gmachs/mine/items/"+ownerBorrowItemId+"/borrow",{method:"POST",body:JSON.stringify({borrowerName,borrowerPhone:borrowerPhone||null,borrowerEmail:borrowerEmail||null})});
+  await apiRequest("/gmachs/mine/items/"+ownerBorrowItemId+"/borrow",{method:"POST",body:JSON.stringify({borrowerName,borrowerPhone:borrowerPhone||null,borrowerEmail:borrowerEmail||null,expectedReturnDate:dueDate})});
   ownerBorrowDialog.close();await refreshAdmin();await loadItems();
  }catch(error){showMessage(message,error.message,"error");}
 });
@@ -894,7 +903,15 @@ async function refreshAdmin() {
           borrowedDate.textContent="הושאל בתאריך: "+new Date(record.borrowedAt).toLocaleString("he-IL",{dateStyle:"short",timeStyle:"short"});
           const returned=document.createElement("button");returned.textContent="הוחזר";
           returned.onclick=async()=>{try{await apiRequest("/gmachs/mine/managed-loans/"+record.id+"/return",{method:"POST"});await refreshAdmin();await loadItems();}catch(e){showMessage(message,e.message,"error");}};
-          row.append(details,borrowedDate,returned);managedContainer.append(row);
+          const dueLabel=document.createElement("label");dueLabel.textContent="מועד החזרה: ";
+          const dueInput=document.createElement("input");dueInput.type="date";
+          dueInput.value=record.expectedReturnDate ? record.expectedReturnDate.slice(0,10) : "";
+          dueInput.onchange=async()=>{if(!dueInput.value)return;try{
+            await apiRequest("/gmachs/mine/managed-loans/"+record.id+"/due-date",{method:"PUT",body:JSON.stringify({expectedReturnDate:new Date(dueInput.value+"T12:00:00").toISOString()})});
+            await refreshAdmin();
+          }catch(e){showMessage(message,e.message,"error");}};
+          dueLabel.append(dueInput);
+          row.append(details,borrowedDate,dueLabel,returned);managedContainer.append(row);
         }
         for (const loan of activeLoans) {
             const row = document.createElement("article");
