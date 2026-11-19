@@ -1519,6 +1519,23 @@ analyticsOptOut.addEventListener("change", () => {
     localStorage.setItem("gmachAnalyticsOptOut", analyticsOptOut.checked ? "true" : "false");
 });
 
+function switchOwnerAdminCategory(category) {
+    const tabs = document.querySelectorAll("#adminSection [data-owner-tab]");
+    const panels = document.querySelectorAll("#adminSection [data-owner-panel]");
+    if (![...tabs].some(tab => tab.dataset.ownerTab === category)) return;
+    tabs.forEach(tab => {
+        const selected = tab.dataset.ownerTab === category;
+        tab.classList.toggle("active", selected);
+        tab.setAttribute("aria-selected", String(selected));
+    });
+    panels.forEach(panel => { panel.hidden = panel.dataset.ownerPanel !== category; });
+    sessionStorage.setItem("gmachOwnerCategory", category);
+}
+document.querySelectorAll("#adminSection [data-owner-tab]").forEach(tab => {
+    tab.addEventListener("click", () => switchOwnerAdminCategory(tab.dataset.ownerTab));
+});
+switchOwnerAdminCategory(sessionStorage.getItem("gmachOwnerCategory") || "items");
+
 function switchSiteAdminCategory(category) {
     const tabs = document.querySelectorAll("#siteAdminPage [data-admin-tab]");
     const panels = document.querySelectorAll("#siteAdminPage [data-admin-panel]");
