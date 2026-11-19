@@ -1272,19 +1272,58 @@ async function loadMyLoans() {
 // Gmach directory and owner onboarding
 const ownerCheckbox=document.getElementById("registerOwner");
 ownerCheckbox.addEventListener("change",()=>{document.getElementById("ownerFields").hidden=!ownerCheckbox.checked;});
+const directoryTopics = [
+ {title:"ציוד רפואי ובריאות", icon:"🩺", words:["רפוא","בריאות","כיסא גלגלים","כסא גלגלים","הליכון","קביים","עזרה ראשונה","תרופות","אורתופד"]},
+ {title:"תינוקות וילדים", icon:"🧸", words:["תינוק","ילדים","ילד","לידה","עגלות","עגלה","מוצצים","עריסה","משחקים","צעצוע"]},
+ {title:"אירועים ושמחות", icon:"🎉", words:["אירוע","שמחות","חתונ","בר מצוה","בר מצווה","שבת חתן","כסאות","כיסאות","שולחנות","כלים","קייטרינג"]},
+ {title:"כלי עבודה ותחזוקה", icon:"🛠️", words:["כלי עבודה","מקדח","שיפוץ","תחזוק","סולם","פטיש","מברג","עבודה"]},
+ {title:"ספרים ולימוד", icon:"📚", words:["ספר","לימוד","השאלת ספרים","תורני","גמרא","סידור","מחזור"]},
+ {title:"ציוד לבית ולמשפחה", icon:"🏠", words:["לבית","בית","מכשירי חשמל","מכשיר חשמלי","ריהוט","מזרן","מיטה","בישול","מטבח","ניקיון"]},
+ {title:"תחבורה ונסיעות", icon:"🚗", words:["רכב","נסיע","תחבורה","אופניים","מזווד","טיול","עגלת משא"]},
+ {title:"ביגוד ואביזרים", icon:"👕", words:["ביגוד","בגדים","לבוש","חליפות","נעליים","תחפושות","אביזרי לבוש"]}
+];
+function gmachTopic(group) {
+ const value = String([group.name,group.description].filter(Boolean).join(" ")).toLowerCase();
+ return directoryTopics.find(topic => topic.words.some(word => value.includes(word))) || {title:"גמ״חים נוספים",icon:"🤝"};
+}
 function renderGmachDirectory(list, groups) {
- const cards = document.createDocumentFragment();
+ const buckets = new Map();
  for (const group of groups) {
-  const card=document.createElement("article");card.className="item-card";
-  const heading=document.createElement("h3");heading.textContent=group.name;
-  const city=document.createElement("p");city.textContent=normalizeCity(group.city);
-  const button=document.createElement("button");button.className="primary";button.textContent="דף הגמ״ח";button.addEventListener("click",()=>showGmach(group.id));
-  card.append(heading,city,button);cards.append(card);
+  const topic = gmachTopic(group);
+  if (!buckets.has(topic.title)) buckets.set(topic.title, {topic,groups:[]});
+  buckets.get(topic.title).groups.push(group);
+ }
+ const fragment = document.createDocumentFragment();
+ const ordered = [...directoryTopics.map(topic => topic.title),"גמ״חים נוספים"];
+ for (const name of ordered) {
+  const bucket = buckets.get(name);
+  if (!bucket) continue;
+  const section = document.createElement("section");
+  section.className = "gmach-topic-section";
+  const heading = document.createElement("h3");
+  heading.className = "gmach-topic-title";
+  heading.textContent = bucket.topic.icon + " " + name;
+  const count = document.createElement("span");
+  count.className = "gmach-topic-count";
+  count.textContent = bucket.groups.length + " גמ״חים";
+  heading.append(count);
+  const cards = document.createElement("div");
+  cards.className = "items-grid gmach-topic-cards";
+  bucket.groups.sort((a,b) => a.name.localeCompare(b.name,"he"));
+  for (const group of bucket.groups) {
+   const card=document.createElement("article");card.className="item-card";
+   const title=document.createElement("h4");title.textContent=group.name;
+   const city=document.createElement("p");city.textContent=normalizeCity(group.city);
+   const button=document.createElement("button");button.type="button";button.className="primary";button.textContent="דף הגמ״ח";
+   button.addEventListener("click",()=>showGmach(group.id));
+   card.append(title,city,button);cards.append(card);
+  }
+  section.append(heading,cards);fragment.append(section);
  }
  if (!groups.length) {
-  const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";cards.append(empty);
+  const empty=document.createElement("p");empty.textContent="לא נמצאו גמ״חים.";fragment.append(empty);
  }
- list.replaceChildren(cards);
+ list.replaceChildren(fragment);
 }
 
 async function findGmachs() {
