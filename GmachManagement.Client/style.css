@@ -1227,3 +1227,22 @@ dialog.gmach-guide {
 }
 #gmachChat .chat-message-row-mine .chat-message-delete:hover{color:#a43b3b!important;background:#fff0ef!important}
 #gmachChat .chat-message-row-mine .chat-message{max-width:min(100%,calc(100% - 50px))}
+
+/* Owner add-items workspace: two clearly separated actions. */
+.owner-add-panel{max-width:1100px;margin-inline:auto}
+.owner-add-intro{text-align:right;margin:0 0 1.3rem}
+.owner-add-intro h3{font-size:1.4rem;margin:0 0 .35rem;color:#105e68}
+.owner-add-intro p{margin:0;color:#55757b}
+.owner-add-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
+.owner-add-card{background:#fff;border:1px solid #cbe2e5;border-radius:18px;padding:clamp(1rem,2vw,1.5rem);box-shadow:0 7px 22px #163c4610;min-width:0}
+.owner-add-card-heading{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:1rem}
+.owner-add-step{display:inline-grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:#e1f3f2;color:#087b83;font-weight:800}
+.owner-add-card h4{margin:0 0 .25rem;color:#135d66;font-size:1.1rem}
+.owner-add-card-heading p{margin:0;color:#617c81;font-size:.9rem}
+.owner-add-card form{display:flex;flex-direction:column;align-items:stretch;gap:.55rem}
+.owner-add-card form label{font-weight:700;text-align:right;margin:.2rem 0 0}
+.owner-add-card form input{width:100%;min-width:0;box-sizing:border-box;margin:0!important;padding:.75rem;border:1px solid #c4dfe2;border-radius:10px;background:#fff}
+.owner-add-card form input[type=file]{padding:.65rem;background:#f6fbfb}
+.owner-add-card form button{align-self:stretch;margin-top:.65rem;min-height:44px;border-radius:10px}
+.owner-import-hint{margin:.1rem 0 .6rem;padding:.85rem 1rem;background:#eff8f8;border-radius:10px;line-height:1.8;color:#345b61}
+@media(max-width:720px){.owner-add-grid{grid-template-columns:minmax(0,1fr)}}
