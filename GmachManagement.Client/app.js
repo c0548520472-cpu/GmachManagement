@@ -1123,6 +1123,8 @@ function showPage(page, push = true) {
     document.getElementById("openLoansSection").hidden = page !== "account";
     document.getElementById("ownerPage").hidden = page !== "owner";
     document.getElementById("siteAdminPage").hidden = page !== "siteAdmin";
+    const publicChatLauncher = document.getElementById("floatingGmachChat");
+    if (publicChatLauncher) publicChatLauncher.hidden = page === "owner";
     const guideLauncher = document.getElementById("gmachGuideLauncher");
     if (guideLauncher) guideLauncher.hidden = page === "owner" || page === "siteAdmin";
     const guideDialog = document.getElementById("gmachGuide");
@@ -1989,7 +1991,7 @@ async function refreshChat(chat) {
         const typing = document.getElementById("gmachChatTyping");
         typing.textContent = chat.customerId ? "הלקוח מקליד…" : "מנהל הגמ״ח מקליד…";
         typing.hidden = !response.counterpartTyping;
-        const signature = result.map(message => `${message.id}:${message.readByRecipient}`).join("|");
+        const signature = result.map(message => `${message.id}:${message.readByRecipient}:${message.text}`).join("|");
         if (chat.signature !== signature || chat.pendingBubble) {
             const shouldScroll = chat.newest !== result.at(-1)?.id || chat.pendingBubble;
             chat.signature = signature;
@@ -1998,7 +2000,7 @@ async function refreshChat(chat) {
             messages.replaceChildren(...result.map(message => createChatBubble(
                 message.text, message.mine,
                 message.mine ? (message.readByRecipient ? "read" : "sent") : null,
-                message.attachmentName, message.id, chat.gmachId
+                message.attachmentName, message.id, chat.gmachId, chat
             )));
             if (shouldScroll) messages.scrollTop = messages.scrollHeight;
         }
@@ -2019,7 +2021,25 @@ async function refreshChat(chat) {
     }
 }
 
-function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachId) {
+async function modifyOwnChatMessage(chat, messageId, method, payload = null) {
+    if (activeChat !== chat || chat.sending || !messageId) return;
+    const status = document.getElementById("gmachChatStatus");
+    chat.sending = true;
+    try {
+        const path = chatPath(chat, "messages/" + encodeURIComponent(messageId));
+        await apiRequest(path, {method, ...(payload ? {body: JSON.stringify(payload)} : {})});
+        if (activeChat !== chat) return;
+        chat.signature = null;
+        showMessage(status, method === "DELETE" ? "ההודעה נמחקה." : "ההודעה עודכנה.", "success");
+    } catch (error) {
+        if (activeChat === chat) showMessage(status, error.message, "error");
+    } finally {
+        chat.sending = false;
+        if (activeChat === chat) refreshChat(chat);
+    }
+}
+
+function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachId, chat = null) {
     const row = document.createElement("div");
     row.className = mine ? "chat-message-row chat-message-row-mine" : "chat-message-row";
     const bubble = document.createElement("div");
@@ -2037,6 +2057,40 @@ function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachI
             attachment.addEventListener("click", () => downloadChatAttachment(gmachId, messageId, attachmentName));
         }
         bubble.append(attachment);
+    }
+    if (mine && messageId && chat) {
+        const actions = document.createElement("span");
+        actions.className = "chat-message-actions";
+        if (text) {
+            const edit = document.createElement("button");
+            edit.type = "button";
+            edit.className = "chat-message-action";
+            edit.textContent = "✎";
+            edit.title = "עריכת הודעה";
+            edit.setAttribute("aria-label", "עריכת הודעה");
+            edit.addEventListener("click", async () => {
+                const next = prompt("עריכת הודעה", text);
+                if (next === null || next.trim() === text) return;
+                if (!next.trim() || next.trim().length > 1000) {
+                    showMessage(document.getElementById("gmachChatStatus"), "ההודעה חייבת להכיל 1–1000 תווים.", "error");
+                    return;
+                }
+                await modifyOwnChatMessage(chat, messageId, "PUT", {text: next.trim()});
+            });
+            actions.append(edit);
+        }
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "chat-message-action chat-message-delete";
+        remove.textContent = "🗑";
+        remove.title = "מחיקת הודעה";
+        remove.setAttribute("aria-label", "מחיקת הודעה");
+        remove.addEventListener("click", async () => {
+            if (!confirm("למחוק את ההודעה? המחיקה תתבצע גם אצל הצד השני.")) return;
+            await modifyOwnChatMessage(chat, messageId, "DELETE");
+        });
+        actions.append(remove);
+        bubble.append(actions);
     }
     row.append(bubble);
     if (receipt) {
