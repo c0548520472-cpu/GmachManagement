@@ -24,7 +24,7 @@
     const topics = [
         {name:"ציוד רפואי ובריאות", words:["רפואי","רפואה","בריאות","שיקום","ניידות","הליכה","חולה","חולים","כיסא גלגלים","הליכון","קביים","מכשור רפואי"]},
         {name:"תינוקות וילדים", words:["תינוק","תינוקת","תינוקות","ילד","ילדים","לידה","עגלה","עריסה","צעצוע","משחק"]},
-        {name:"אירועים ושמחות", words:["אירוע","אירועים","שמחה","שמחות","חתונה","שבת חתן","בר מצווה","מסיבה","כיסאות","שולחנות","כלים לאירוע"]},
+        {name:"אירועים ושמחות", words:["אירוע","אירועים","שמחה","שמחות","חתונה","שבת חתן","בר מצווה","מסיבה","כיסאות","כסאות","כסא","כיסא","ספסל","ספסלים","שולחן","שולחנות","כלים לאירוע"]},
         {name:"כלי עבודה ותחזוקה", words:["עבודה","שיפוץ","תיקון","לתקן","קידוח","לקדוח","מקדחה","כלים","סולם","מברגה","תחזוקה"]},
         {name:"ספרים ולימוד", words:["ספר","ספרים","לימוד","ללמוד","גמרא","סידור","מחזור","תורני"]},
         {name:"ציוד לבית ולמשפחה", words:["לבית","בית","מטבח","בישול","חשמל","מזרן","ריהוט","ניקיון"]},
@@ -50,8 +50,31 @@
         return words.length > 0 && words.every(word => text.includes(" " + word) || text.includes(" " + word.slice(0,Math.max(2,word.length-1))));
     }
     function relevantTopic(query) {
-        const q=normalizeWords(query);
-        return topics.find(t=>matchesTerm(t.name,q) || t.words.some(word=>matchesTerm(q,word) || matchesTerm(word,q)));
+        const q = normalizeWords(query);
+        const tokens = q.split(" ").filter(Boolean);
+        const normalizeToken = token => token.replace(/^[והבכלמש]+(?=.{3})/u,"").replace(/ים$|ות$/u,"");
+        const queryTokens = tokens.map(normalizeToken);
+        let best = null, bestScore = 0;
+        for (const topic of topics) {
+            let score = 0;
+            for (const word of [topic.name, ...topic.words]) {
+                const normalized = normalizeWords(word);
+                if (q.includes(normalized) || normalized.includes(q) && q.length >= 4) score += 4;
+                else if (normalized.split(" ").some(token => queryTokens.includes(normalizeToken(token)))) score += 2;
+            }
+            if (score > bestScore) { best = topic; bestScore = score; }
+        }
+        return bestScore >= 2 ? best : null;
+    }
+    function matchesCategory(group, topic) {
+        if (!topic) return false;
+        const category = normalizeWords(group.type || group.category || "");
+        if (category === normalizeWords(topic.name)) return true;
+        const name = normalizeWords(group.name + " " + (group.description || ""));
+        return [topic.name, ...topic.words].some(word => {
+            const w = normalizeWords(word);
+            return w.length >= 3 && (name.includes(w) || w.split(" ").some(token => token.length >= 4 && name.includes(token)));
+        });
     }
     function scoreMatch(group,item,query,topic) {
         const name=normalizeWords(item?.name || "");
@@ -116,7 +139,7 @@
         input.value = "";
         log.replaceChildren();
         setBusy(false);
-        message("היי! מה מחפשים היום? אפשר לחפש פריט, נושא או גמ״ח לפי שם. למשל ״אני צריכה הליכון באזור ירושלים״ או ״חפש גמ״ח חסדי אברהם״.");
+        message("היי! מה מחפשים היום? אפשר לחפש לפי שם גמ״ח, קטגוריה או פריט. למשל ״ספסלים וכיסאות לאירוע״ או ״גמ״חים לשמחות ואירועים״.");
     }
 
     function showResults(results) {
@@ -268,13 +291,14 @@
                 showNextMatches();
                 return;
             }
+            const requestedTopic = relevantTopic(terms);
             const nextProduct = productTerms(normalizeWords(terms));
             if (nextProduct) product = nextProduct;
             if (!product) {
                 message(city ? "יש לי את העיר. איזה פריט תרצו לשאול?" : "מה תרצו לשאול? אפשר גם לכתוב שם של גמ״ח.");
                 return;
             }
-            if (!city && !everywhere && !relevantTopic(product) && !directory.some(group => matchesTerm(group.name,product))) {
+            if (!city && !everywhere && !requestedTopic && !relevantTopic(product) && !directory.some(group => matchesTerm(group.name,product))) {
                 awaitingCity = true;
                 lastMatches = [];
                 shownMatches = 0;
@@ -287,8 +311,19 @@
 
             const matchingCity = group => !city || clean(group.city) === city;
             const term = normalizeWords(product);
-            const topic = relevantTopic(product);
-            const namedGroups = directory.filter(group => matchingCity(group) && (matchesTerm(group.name,term) || (topic && normalizeWords(group.type)===normalizeWords(topic.name))));
+            const topic = requestedTopic || relevantTopic(product);
+            const namedGroups = directory.filter(group => matchingCity(group) && (matchesTerm(group.name,term) || matchesCategory(group,topic)));
+            if (topic) {
+                const topicGroups = directory.filter(group => matchingCity(group) && matchesCategory(group,topic));
+                if (topicGroups.length) {
+                    lastMatches = topicGroups.map(group => ({group}));
+                    shownMatches = 0;
+                    awaitingCity = false;
+                    message("מצאתי " + topicGroups.length + " גמ״חים בקטגוריה ״" + topic.name + "״. הנה האפשרויות שמופיעות באתר:");
+                    showNextMatches();
+                    return;
+                }
+            }
             const variants = [...new Set([product, term, term.replaceAll("כסא", "כיסא"), ...(topic ? [topic.name, ...topic.words.slice(0,5)] : [])])];
             // A singular query may miss a catalog name written with another spelling or plural.
             const concept = aliases.find(([name]) => includesPhrase(term, name));
@@ -306,7 +341,7 @@
                     word.length > longest.length ? word : longest);
                 candidates = (await findGroups(longestWord)).filter(matchingCity);
             }
-            const groups = new Map([...candidates, ...directory.filter(group => matchingCity(group) && (matchesTerm(group.name,product) || (topic && normalizeWords(group.type)===normalizeWords(topic.name))))].map(group => [group.id, group]));
+            const groups = new Map([...candidates, ...directory.filter(group => matchingCity(group) && (matchesTerm(group.name,product) || matchesCategory(group,topic)))].map(group => [group.id, group]));
             if (currentRequest !== requestNumber) return;
 
             const checks = await Promise.allSettled([...groups.values()].slice(0, 12).map(async group => {
