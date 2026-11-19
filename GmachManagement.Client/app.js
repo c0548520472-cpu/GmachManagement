@@ -2061,6 +2061,44 @@ async function showOwnerChatInbox() {
     }
 }
 
+let chatPresenceBusy = false;
+let lastChatPopupKey = "";
+let chatPopupInitialized = false;
+async function checkChatNotifications() {
+    if (!token || document.hidden || chatPresenceBusy) return;
+    chatPresenceBusy = true;
+    try {
+        await apiRequest("/gmach-communication/presence", {method:"POST"});
+        const unread = await apiRequest("/gmach-communication/unread");
+        if (!token || document.hidden || !Array.isArray(unread)) return;
+        const notice = unread.find(item => item.unreadCount > 0);
+        if (!notice) { lastChatPopupKey = ""; chatPopupInitialized = true; return; }
+        const key = notice.gmachId + ":" + (notice.customerId || 0) + ":" + notice.unreadCount;
+        if (!chatPopupInitialized) {
+            chatPopupInitialized = true;
+            // Existing unread messages are shown on first connection as well.
+        }
+        if (lastChatPopupKey === key) return;
+        lastChatPopupKey = key;
+        if (document.getElementById("gmachChat").open) return;
+        showChatPanel(notice.customerId ? "הודעה חדשה מלקוח" : "הודעה חדשה מ־" + notice.gmachName);
+        if (notice.customerId) {
+            const back = document.createElement("button");
+            back.type = "button";
+            back.className = "secondary";
+            back.textContent = "לכל השיחות";
+            back.addEventListener("click", showOwnerChatInbox);
+            document.getElementById("gmachChatInbox").append(back);
+        }
+        startChat({gmachId:notice.gmachId, customerId:notice.customerId || undefined, token});
+    } catch (error) {
+        // A transient network error must not interrupt normal browsing.
+    } finally { chatPresenceBusy = false; }
+}
+setInterval(checkChatNotifications, 12000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkChatNotifications(); });
+setTimeout(checkChatNotifications, 1500);
+
 function startChat(chat) {
     clearInterval(chatTimer);
     activeChat = chat;
@@ -2157,7 +2195,7 @@ function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachI
             const edit = document.createElement("button");
             edit.type = "button";
             edit.className = "chat-message-action";
-            edit.textContent = "✎";
+            edit.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4z"/></svg>';
             edit.title = "עריכת הודעה";
             edit.setAttribute("aria-label", "עריכת הודעה");
             edit.addEventListener("click", async () => {
@@ -2174,7 +2212,7 @@ function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachI
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "chat-message-action chat-message-delete";
-        remove.textContent = "🗑";
+        remove.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 4v7m4-7v7"/></svg>';
         remove.title = "מחיקת הודעה";
         remove.setAttribute("aria-label", "מחיקת הודעה");
         remove.addEventListener("click", async () => {
@@ -2182,7 +2220,7 @@ function createChatBubble(text, mine, receipt, attachmentName, messageId, gmachI
             await modifyOwnChatMessage(chat, messageId, "DELETE");
         });
         actions.append(remove);
-        bubble.append(actions);
+        row.append(actions);
     }
     row.append(bubble);
     if (receipt) {
