@@ -1128,3 +1128,12 @@ dialog.gmach-guide {
 .site-admin-activity-row strong{flex:1 1 190px;overflow-wrap:anywhere}
 .site-admin-activity-row span{flex:2 1 190px;overflow-wrap:anywhere}
 .site-admin-activity-row small{color:#58737a;white-space:nowrap}
+
+/* Site administration category navigation */
+.site-admin-tabs{display:flex;flex-wrap:wrap;gap:.55rem;margin:0 0 1.4rem;padding:.75rem;background:#f2f8f9;border:1px solid #d8e9e9;border-radius:16px}
+.site-admin-tabs .site-admin-tab{width:auto;flex:1 1 125px;min-height:45px;padding:.6rem .85rem;background:#fff;border:1px solid #c9e1e3;border-radius:11px;color:#155965;font-weight:700;cursor:pointer}
+.site-admin-tabs .site-admin-tab.active{background:#087e86;border-color:#087e86;color:#fff}
+.site-admin-tabs .site-admin-tab:focus-visible{outline:3px solid #45b4ba;outline-offset:2px}
+#siteAdminPage .site-admin-panel[hidden]{display:none!important}
+#siteAdminPage .site-admin-panel{min-width:0}
+@media(max-width:600px){.site-admin-tabs{gap:.4rem;padding:.5rem}.site-admin-tabs .site-admin-tab{flex:1 1 42%;font-size:.9rem}}
