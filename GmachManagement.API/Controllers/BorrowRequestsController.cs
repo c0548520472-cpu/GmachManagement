@@ -36,7 +36,14 @@ public class BorrowRequestsController : ControllerBase {
   } catch(Exception ex) when(ex is HttpRequestException or InvalidOperationException or TaskCanceledException){
    logger.LogWarning(ex,"Borrow request saved but owner notification email failed");
   }
-  return StatusCode(201,new{message="הבקשה נשלחה בהצלחה! בעל הגמ״ח יצור איתך קשר."});
+  return CreatedAtAction(nameof(GetMineById),new{id=result.Id},new{message="הבקשה נשלחה בהצלחה! בעל הגמ״ח יצור איתך קשר."});
+ }
+ [HttpGet("mine/{id:int}"),Authorize(Roles="GmachAdmin")]
+ public async Task<IActionResult> GetMineById([FromRoute] int id,CancellationToken ct){
+  if(!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var ownerId))return Unauthorized();
+  var requests=await service.GetBorrowRequestsAsync(ownerId,ct);
+  var request=requests.FirstOrDefault(r=>r.Id==id);
+  return request==null?NotFound():Ok(new{request.Id,request.ItemId,ItemName=request.Item.Name,request.ApplicantName,request.Phone,request.Email,request.CreatedAt});
  }
  [HttpGet("mine"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> Mine(CancellationToken ct){
