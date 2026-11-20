@@ -38,6 +38,13 @@ namespace GmachManagement.API.Middlewares
                     });
                 }
 
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogWarning(ex, "Optimistic concurrency conflict");
+                context.Response.StatusCode = StatusCodes.Status409Conflict;
+                await context.Response.WriteAsJsonAsync(new { message = "The resource was modified by another request. Please retry." });
+            }
+
             catch (DbUpdateException ex)
                 when (ex.InnerException is SqlException sqlEx &&
                       (sqlEx.Number == 2601 || sqlEx.Number == 2627))
