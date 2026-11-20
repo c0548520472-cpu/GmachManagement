@@ -38,7 +38,7 @@
 ללא הגדרות SMTP, לא יישלחו הודעות. מניעת משלוח כפול מבוססת כרגע על זיכרון התהליך בלבד; הפעלה מחדש עלולה לגרום לשליחה חוזרת. יש לאמת משלוח בפועל לפני שימוש.
 
 ## סטטוס פריסה
-הפרויקט פועל בסביבת פיתוח מקומית. פריסה ציבורית בענן (PostgreSQL, API ו־Frontend) עדיין אינה מוגדרת או מאומתת. יש להתאים את ספק בסיס הנתונים, המיגרציות, CORS וכתובת ה־API לפני פריסה.
+קיימת פריסה ציבורית נפרדת של הלקוח ב־Cloudflare Pages ושל השרת ב־Render. ענף `submission` מיועד להגשה ולבדיקות ואינו ענף הפריסה החיה. אין להפעיל פקודות מיגרציה או ניקוי נתונים על מסד הנתונים החי במסגרת בדיקות ההגשה.
 
 ## דמו מומלץ
 הרשמה והתחברות; הצגת קטלוג וסינון; השאלת עותק; הדגמת HTTP 409 בשתי בקשות מתחרות; הוספת השאלה אישית; סימון החזרה; התחברות מנהל והוספת פריט/עותק, עדכון מועד החזרה.
@@ -67,3 +67,15 @@ dotnet ef database update --context AppDbContext --project GmachManagement.Data 
 ```
 
 The API now applies pending PostgreSQL migrations on startup. Confirm Render logs show a successful startup and verify the new tables before testing owner registration, gmach search or Excel import. The manual command above remains available for local use.
+
+
+## בדיקות הגשה בענף submission
+
+- GitHub Actions: `.github/workflows/submission-tests.yml` מבצע restore, build ו־xUnit tests עם .NET 10 בכל push לענף `submission`.
+- מקומית, ללא צורך במסד נתונים חי: `dotnet restore GmachManagement.slnx`, `dotnet build GmachManagement.slnx --no-restore`, `dotnet test GmachManagement.slnx --no-build`.
+- דוח כיסוי: `dotnet test GmachManagement.Tests/GmachManagement.Tests.csproj --collect:"XPlat Code Coverage"`.
+- בדיקת חבילות פגיעות: `dotnet list GmachManagement.slnx package --vulnerable --include-transitive`.
+- בדיקת פרסום השרת בלי לפרוס: `dotnet publish GmachManagement.API/GmachManagement.API.csproj -c Release -o ./artifacts/api-publish`.
+- בדיקת EF Core / migrations מול בסיס נתונים מקומי בלבד, ורק לאחר גיבוי. אין להריץ `database update` נגד Neon/Render.
+- בדיקת תחרות: `ConcurrencyTests.TwoContexts_UpdatingSameCopy_SecondUpdateFails` משתמשת בשני DbContext נפרדים וב־SQLite in-memory. היא מאמתת זיהוי גרסה ישנה; יש להשלים גם בדיקות אינטגרציה מול ספק בסיס הנתונים של סביבת ההגשה.
+- אין לכתוב סיסמאות, מפתחות JWT או פרטי SMTP ל־Git.
