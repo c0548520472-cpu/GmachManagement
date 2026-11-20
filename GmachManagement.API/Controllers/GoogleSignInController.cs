@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GmachManagement.API.Controllers;
 
 [ApiController]
-[Route("api/Auth/google")]
+[Route("api/auth/google/alternative")]
 public sealed class GoogleSignInController(
     IConfiguration configuration, IDataProtectionProvider protection, IAuthService auth) : ControllerBase
 {
