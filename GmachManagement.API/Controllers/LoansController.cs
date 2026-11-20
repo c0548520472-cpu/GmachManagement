@@ -27,8 +27,15 @@ namespace GmachManagement.API.Controllers
         public async Task<IActionResult> ChangeDueDate(int loanId, [FromBody] ChangeDueDateDto request, CancellationToken ct)
         {
             if (!await _gmachService.OwnsLoanAsync(CurrentOwnerId, loanId, ct)) return Forbid();
-            if (request.ExpectedReturnDate <= DateTime.UtcNow) return BadRequest();
-            return await _loanService.ChangeReturnDateAsync(loanId, request.ExpectedReturnDate, ct) ? NoContent() : NotFound();
+            try
+            {
+                return await _loanService.ChangeReturnDateAsync(loanId, request.ExpectedReturnDate, ct)
+                    ? NoContent() : NotFound();
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return BadRequest();
+            }
         }
 
         public sealed class ChangeDueDateDto
