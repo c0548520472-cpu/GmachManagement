@@ -46,6 +46,30 @@ public class LoanServiceTests
     }
 
     [Fact]
+    public async Task BorrowItemAsync_AvailableCopy_ReturnsLoan()
+    {
+        var dueDate = DateTime.UtcNow.AddDays(3);
+        var expected = new GmachManagement.Core.Entities.Loan
+        {
+            UserId = 1, ItemCopyId = 7, ExpectedReturnDate = dueDate
+        };
+        _repository.Setup(r => r.BorrowItemAsync(1, 7, dueDate, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+        var actual = await _service.BorrowItemAsync(1, 7, dueDate);
+        Assert.Same(expected, actual);
+    }
+
+    [Fact]
+    public async Task BorrowItemAsync_Conflict_PropagatesToApiMiddleware()
+    {
+        var dueDate = DateTime.UtcNow.AddDays(3);
+        _repository.Setup(r => r.BorrowItemAsync(1, 7, dueDate, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new GmachManagement.Core.Exceptions.ConcurrencyConflictException());
+        await Assert.ThrowsAsync<GmachManagement.Core.Exceptions.ConcurrencyConflictException>(
+            () => _service.BorrowItemAsync(1, 7, dueDate));
+    }
+
+    [Fact]
     public async Task BorrowItemAsync_WhenCopyIsUnavailable_ReturnsNull()
     {
         _repository.Setup(r => r.BorrowItemAsync(1, 7, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
