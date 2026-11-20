@@ -64,12 +64,8 @@ namespace GmachManagement.API.Controllers
         public async Task<ActionResult<List<LoanDto>>> GetActiveLoans(
             CancellationToken cancellationToken)
         {
-            var loans = await _loanService.GetActiveLoansAsync(
-                cancellationToken);
-
-            var mine = new List<GmachManagement.Core.Entities.Loan>();
-            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
-            return Ok(_mapper.Map<List<LoanDto>>(mine));
+            var loans = await _loanService.GetOwnerLoansAsync(CurrentOwnerId, true, false, cancellationToken);
+            return Ok(_mapper.Map<List<LoanDto>>(loans));
         }
 
         [HttpGet("overdue")]
@@ -77,12 +73,8 @@ namespace GmachManagement.API.Controllers
         public async Task<ActionResult<List<LoanDto>>> GetOverdueLoans(
             CancellationToken cancellationToken)
         {
-            var loans = await _loanService.GetOverdueLoansAsync(
-                cancellationToken);
-
-            var mine = new List<GmachManagement.Core.Entities.Loan>();
-            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
-            return Ok(_mapper.Map<List<LoanDto>>(mine));
+            var loans = await _loanService.GetOwnerLoansAsync(CurrentOwnerId, true, true, cancellationToken);
+            return Ok(_mapper.Map<List<LoanDto>>(loans));
         }
 
         [HttpGet("my/active")]
@@ -142,12 +134,8 @@ namespace GmachManagement.API.Controllers
         public async Task<ActionResult<List<LoanDto>>> GetAll(
             CancellationToken cancellationToken)
         {
-            var loans = await _loanService.GetAllLoansAsync(
-                cancellationToken);
-
-            var mine = new List<GmachManagement.Core.Entities.Loan>();
-            foreach(var loan in loans) if(await _gmachService.OwnsLoanAsync(CurrentOwnerId,loan.Id,cancellationToken)) mine.Add(loan);
-            var result = _mapper.Map<List<LoanDto>>(mine);
+            var loans = await _loanService.GetOwnerLoansAsync(CurrentOwnerId, false, false, cancellationToken);
+            var result = _mapper.Map<List<LoanDto>>(loans);
 
             return Ok(result);
         }
