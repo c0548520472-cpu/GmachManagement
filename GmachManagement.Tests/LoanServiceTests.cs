@@ -36,6 +36,16 @@ public class LoanServiceTests
     }
 
     [Fact]
+    public async Task GetOwnerLoansAsync_DelegatesSingleFilteredRepositoryQuery()
+    {
+        _repository.Setup(r => r.GetOwnerLoansAsync(12, true, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<GmachManagement.Core.Entities.Loan>());
+        var result = await _service.GetOwnerLoansAsync(12, true, true, CancellationToken.None);
+        Assert.Empty(result);
+        _repository.Verify(r => r.GetOwnerLoansAsync(12, true, true, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task BorrowItemAsync_WhenCopyIsUnavailable_ReturnsNull()
     {
         _repository.Setup(r => r.BorrowItemAsync(1, 7, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
