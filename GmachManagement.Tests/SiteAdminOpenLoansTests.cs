@@ -29,7 +29,7 @@ public class SiteAdminOpenLoansTests
             CREATE TABLE ManagedLoans (
                 Id INTEGER PRIMARY KEY, GmachId INTEGER NOT NULL, ItemCopyId INTEGER NOT NULL,
                 BorrowerName TEXT NOT NULL, BorrowerPhone TEXT, BorrowerEmail TEXT,
-                BorrowedAt TEXT NOT NULL, ReturnedAt TEXT);
+                BorrowedAt TEXT NOT NULL, ExpectedReturnDate TEXT, ReturnedAt TEXT);
             INSERT INTO Users VALUES (1, 'Borrower');
             INSERT INTO Items VALUES (1, 'Item');
             INSERT INTO ItemCopies (Id, ItemId, Status) VALUES (1, 1, 2), (2, 1, 2), (3, 1, 3);
@@ -38,7 +38,7 @@ public class SiteAdminOpenLoansTests
                 (2, 1, 2, '2026-11-02', '2026-12-01', NULL),
                 (3, 1, 1, '2026-10-01', '2026-10-02', '2026-10-02'),
                 (4, 1, 3, '2026-11-03', '2026-12-01', NULL);
-            INSERT INTO ManagedLoans VALUES
+            INSERT INTO ManagedLoans (Id, GmachId, ItemCopyId, BorrowerName, BorrowerPhone, BorrowerEmail, BorrowedAt, ReturnedAt) VALUES
                 (1, 1, 2, 'Managed borrower', NULL, NULL, '2026-11-04', NULL),
                 (2, 1, 1, 'Managed borrower', NULL, NULL, '2026-10-03', '2026-10-04');
             """);
