@@ -39,6 +39,10 @@ public class RegisterDto : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (IsGmachOwner && string.IsNullOrWhiteSpace(GmachName))
+            yield return new ValidationResult("יש להזין שם גמ״ח.", new[] { nameof(GmachName) });
+        if (IsGmachOwner && string.IsNullOrWhiteSpace(City))
+            yield return new ValidationResult("יש להזין עיר.", new[] { nameof(City) });
         if (CommonPasswords.Contains(Password) ||
             System.Text.RegularExpressions.Regex.IsMatch(Password, @"\A(.{1,4})\1+\z",
                 System.Text.RegularExpressions.RegexOptions.Singleline))
