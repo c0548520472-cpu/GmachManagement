@@ -123,6 +123,17 @@ public class ItemsController : ControllerBase
 
 
 
+    [Authorize]
+    [HttpGet("{id:int}/copies/{copyId:int}")]
+    public async Task<ActionResult<ItemCopyDto>> GetCopyById(int id, int copyId, CancellationToken ct)
+    {
+        var item = await _itemService.GetByIdAsync(id, ct);
+        if (item == null) return NotFound();
+        var copies = await _itemService.GetCopiesAsync(id, ct);
+        var copy = copies.FirstOrDefault(c => c.Id == copyId);
+        return copy == null ? NotFound() : Ok(ToCopyDto(copy));
+    }
+
     [HttpPost("{id:int}/copies")]
     [Authorize(Roles = "GmachAdmin")]
     public async Task<ActionResult<ItemCopyDto>> AddCopy(
@@ -136,7 +147,7 @@ public class ItemsController : ControllerBase
         if (copy == null)
             return NotFound();
 
-        return Created($"/api/items/{id}/copies", ToCopyDto(copy));
+        return CreatedAtAction(nameof(GetCopyById), new { id, copyId = copy.Id }, ToCopyDto(copy));
     }
 
 
