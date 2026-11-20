@@ -58,7 +58,7 @@ public class ItemsController : ControllerBase
     [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ItemDto>> GetById(
-        int id,
+        [FromRoute] int id,
         CancellationToken cancellationToken)
     {
         var item = await _itemService.GetByIdAsync(id, cancellationToken);
@@ -88,7 +88,7 @@ public class ItemsController : ControllerBase
     [HttpPut("{id:int}")]
     [Authorize(Roles = "GmachAdmin")]
     public async Task<IActionResult> Update(
-        int id,
+        [FromRoute] int id,
         [FromBody] CreateItemDto dto,
         CancellationToken cancellationToken)
     {
@@ -125,7 +125,7 @@ public class ItemsController : ControllerBase
 
     [Authorize]
     [HttpGet("{id:int}/copies/{copyId:int}")]
-    public async Task<ActionResult<ItemCopyDto>> GetCopyById(int id, int copyId, CancellationToken ct)
+    public async Task<ActionResult<ItemCopyDto>> GetCopyById([FromRoute] int id, [FromRoute] int copyId, CancellationToken ct)
     {
         var item = await _itemService.GetByIdAsync(id, ct);
         if (item == null) return NotFound();
