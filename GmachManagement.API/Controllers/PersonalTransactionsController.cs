@@ -46,8 +46,15 @@ public class PersonalTransactionsController : ControllerBase
             string.IsNullOrWhiteSpace(request.ItemDescription) ||
             request.TransactionDate == default || request.TransactionDate > DateTime.UtcNow)
             return BadRequest("Invalid personal transaction details.");
-        var result = await _service.AddAsync(id.Value, request, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { transactionId = result.Id }, result);
+        try
+        {
+            var result = await _service.AddAsync(id.Value, request, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { transactionId = result.Id }, result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("{transactionId:int}/complete")]
