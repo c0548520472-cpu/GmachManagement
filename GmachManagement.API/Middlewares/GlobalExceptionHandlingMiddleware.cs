@@ -28,6 +28,7 @@ namespace GmachManagement.API.Middlewares
                 }
                 catch (ConcurrencyConflictException ex)
                 {
+                    using var scope = _logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = context.Response.Headers["X-Correlation-ID"].ToString() });
                     _logger.LogWarning(ex, "Concurrency conflict");
 
                     context.Response.StatusCode = 409;
@@ -40,6 +41,7 @@ namespace GmachManagement.API.Middlewares
 
             catch (DbUpdateConcurrencyException ex)
             {
+                using var scope = _logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = context.Response.Headers["X-Correlation-ID"].ToString() });
                 _logger.LogWarning(ex, "Optimistic concurrency conflict");
                 context.Response.StatusCode = StatusCodes.Status409Conflict;
                 await context.Response.WriteAsJsonAsync(new { message = "The resource was modified by another request. Please retry." });
@@ -49,6 +51,7 @@ namespace GmachManagement.API.Middlewares
                 when (ex.InnerException is SqlException sqlEx &&
                       (sqlEx.Number == 2601 || sqlEx.Number == 2627))
             {
+                using var scope = _logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = context.Response.Headers["X-Correlation-ID"].ToString() });
                 _logger.LogWarning(ex, "Unique constraint violation");
 
                 context.Response.StatusCode = StatusCodes.Status409Conflict;
@@ -61,6 +64,7 @@ namespace GmachManagement.API.Middlewares
 
             catch (Exception ex)
                 {
+                    using var scope = _logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = context.Response.Headers["X-Correlation-ID"].ToString() });
                     _logger.LogError(ex, "Unhandled exception");
 
                     context.Response.StatusCode = 500;
