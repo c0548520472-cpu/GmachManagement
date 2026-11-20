@@ -58,9 +58,7 @@ public class CategoriesController : ControllerBase
         [FromBody] SaveCategoryDto dto,
         CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            return BadRequest("Category name is required.");
-
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         try
         {
