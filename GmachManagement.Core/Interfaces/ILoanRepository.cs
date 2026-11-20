@@ -9,6 +9,7 @@ namespace GmachManagement.Core.Interfaces
 {
     public interface ILoanRepository
     {
+        Task<List<Loan>> GetOwnerLoansAsync(int ownerId, bool activeOnly, bool overdueOnly, CancellationToken ct);
         Task<bool> ReturnAsAdminAsync(int loanId, CancellationToken ct);
         Task<bool> ChangeReturnDateAsync(int loanId, DateTime date, CancellationToken ct);
 
