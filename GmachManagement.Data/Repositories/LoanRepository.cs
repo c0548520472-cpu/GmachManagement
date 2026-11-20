@@ -13,6 +13,19 @@ namespace GmachManagement.Data.Repositories
 {
     public class LoanRepository : ILoanRepository
     {
+        public async Task<List<Loan>> GetOwnerLoansAsync(int ownerId, bool activeOnly, bool overdueOnly, CancellationToken ct)
+        {
+            var query = _context.Loans.AsNoTracking()
+                .Where(l => l.ItemCopy.Item.Gmach != null && l.ItemCopy.Item.Gmach.OwnerId == ownerId);
+            if (activeOnly) query = query.Where(l => l.ActualReturnDate == null);
+            if (overdueOnly)
+            {
+                var now = DateTime.UtcNow;
+                query = query.Where(l => l.ActualReturnDate == null && l.ExpectedReturnDate < now);
+            }
+            return await query.OrderBy(l => l.ExpectedReturnDate).ToListAsync(ct);
+        }
+
         public async Task<bool> ReturnAsAdminAsync(int loanId, CancellationToken ct)
         {
             var loan = await _context.Loans.AsNoTracking().FirstOrDefaultAsync(l => l.Id == loanId, ct);
