@@ -146,40 +146,11 @@ namespace GmachManagement.API.Controllers
         }
 
 
+        // Legacy direct borrowing is disabled: requests must go through the owner's approval flow.
         [HttpPost]
-        public async Task<ActionResult<LoanDto>> BorrowItem(
-            [FromBody] BorrowItemDto request,
-            CancellationToken cancellationToken)
+        public IActionResult BorrowItem([FromBody] BorrowItemDto request)
         {
             return StatusCode(410, new { message = "יש לשלוח בקשת השאלה. רק בעל הגמ״ח יכול לסמן פריט כהושאל." });
-#pragma warning disable CS0162
-            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (!int.TryParse(userIdValue, out int userId) || userId <= 0)
-            {
-                return Unauthorized("לא ניתן לזהות את המשתמש המחובר");
-            }
-
-            if (request.ExpectedReturnDate <= DateTime.UtcNow)
-            {
-                return BadRequest("תאריך ההחזרה חייב להיות בעתיד");
-            }
-
-            var loan = await _loanService.BorrowItemAsync(
-                userId,
-                request.ItemCopyId,
-                request.ExpectedReturnDate,
-                cancellationToken);
-
-            if (loan == null)
-            {
-                return NotFound("העותק המבוקש לא נמצא");
-            }
-
-            var result = _mapper.Map<LoanDto>(loan);
-
-            return StatusCode(201, result);
-#pragma warning restore CS0162
         }
 
         [HttpPost("{loanId:int}/return")]
