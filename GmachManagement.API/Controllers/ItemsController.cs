@@ -8,7 +8,6 @@ using GmachManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using GmachManagement.Service.Services;
-using Microsoft.AspNetCore.Mvc;
 
 namespace GmachManagement.API.Controllers;
 
@@ -137,7 +136,7 @@ public class ItemsController : ControllerBase
         if (copy == null)
             return NotFound();
 
-        return StatusCode(201, ToCopyDto(copy));
+        return Created($"/api/items/{id}/copies", ToCopyDto(copy));
     }
 
 
