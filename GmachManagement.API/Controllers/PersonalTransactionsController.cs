@@ -26,6 +26,16 @@ public class PersonalTransactionsController : ControllerBase
         return id is null ? Unauthorized() : Ok(await _service.GetMineAsync(id.Value, cancellationToken));
     }
 
+    [HttpGet("{transactionId:int}")]
+    public async Task<IActionResult> GetById([FromRoute] int transactionId, CancellationToken cancellationToken)
+    {
+        var id = CurrentUserId();
+        if (id is null) return Unauthorized();
+        var transactions = await _service.GetMineAsync(id.Value, cancellationToken);
+        var transaction = transactions.FirstOrDefault(t => t.Id == transactionId);
+        return transaction is null ? NotFound() : Ok(transaction);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] CreatePersonalTransactionDto request, CancellationToken cancellationToken)
     {
@@ -37,7 +47,7 @@ public class PersonalTransactionsController : ControllerBase
             request.TransactionDate == default || request.TransactionDate > DateTime.UtcNow)
             return BadRequest("Invalid personal transaction details.");
         var result = await _service.AddAsync(id.Value, request, cancellationToken);
-        return StatusCode(201, result);
+        return CreatedAtAction(nameof(GetById), new { transactionId = result.Id }, result);
     }
 
     [HttpPost("{transactionId:int}/complete")]
