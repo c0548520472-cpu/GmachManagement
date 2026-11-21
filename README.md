@@ -8,13 +8,22 @@
 - **Service** — לוגיקה עסקית, אימות ומיפוי.
 - **API** — Controllers, JWT, Middlewares, CORS; תלות ב־Core וב־Service בלבד. שירותי Data נטענים באמצעות Reflection.
 - **Tests** — בדיקות xUnit/Moq ו־Concurrency.
-- **Client** — HTML/CSS/JavaScript במאגר נפרד: https://github.com/c0548520472-cpu/GmachManagement.Client (אינו חלק מענף ההגשה של מאגר השרת).
+- **Client** — HTML/CSS/JavaScript במאגר נפרד: [גרסה תואמת להגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/fe5623054fe52ecbcf430295a64114cea860c07a).
 
 ## המשאב המוגבל
 כל `ItemCopy` מייצג עותק פיזי יחיד. בעת השאלה, עדכון סטטוס העותק ויצירת הרשומה מתבצעים בטרנזקציה; ב־SQL Server נעשה שימוש ב־`RowVersion`, וב־PostgreSQL בעמודת `xmin` כבקרת תחרות. ניסיון להשאיל עותק שכבר נתפס מוחזר כ־HTTP 409.
 
 ## הרצה מקומית להגשה (ללא ענן)
-1. התקינו .NET 10 SDK, בסיס נתונים מקומי מסוג **PostgreSQL או SQL Server**, וכלי `dotnet-ef`.
+1. התקינו .NET 10 SDK ו־**PostgreSQL מקומי**. בהגשה נבדקת הרצה מול PostgreSQL. התחילו בתיקיית השורש של ענף `submission`.
+   ```sh
+   dotnet dev-certs https --trust
+   dotnet user-secrets set "DatabaseProvider" "PostgreSQL" --project GmachManagement.API
+   dotnet user-secrets set "ConnectionStrings:PostgreSQL" "Host=localhost;Port=5432;Database=gmach_submission;Username=<local-role>;Password=<local-password>" --project GmachManagement.API
+   dotnet user-secrets set "Jwt:Issuer" "GmachSubmission" --project GmachManagement.API
+   dotnet user-secrets set "Jwt:Audience" "GmachSubmission" --project GmachManagement.API
+   dotnet user-secrets set "Jwt:Key" "<local-generated-key-at-least-32-bytes>" --project GmachManagement.API
+   ```
+   החליפו את הערכים בסוגריים המשולשים בפרטים של PostgreSQL המקומי ובמפתח מקומי אקראי. תפקיד מסד הנתונים המקומי צריך להיות מורשה ליצור את מסד ההדגמה.
 2. בפרויקט `GmachManagement.API` הגדירו **User Secrets** (או משתני סביבה), בלי להכניס סודות ל־Git:
    - `DatabaseProvider` = `PostgreSQL` או `SqlServer` (ברירת המחדל ב־`appsettings.json` היא SQL Server).
    - עבור PostgreSQL: `ConnectionStrings:PostgreSQL`; עבור SQL Server: `ConnectionStrings:DefaultConnection`.
@@ -25,14 +34,21 @@
    dotnet ef database update --context AppDbContext --project GmachManagement.Data --startup-project GmachManagement.API
    ```
 4. הריצו את השרת: `dotnet run --project GmachManagement.API --launch-profile https` (או דרך Visual Studio). בדקו ש־Swagger נפתח ב־`https://localhost:7042/swagger` כאשר זה הפורט המקומי.
-5. לאחר שכפול המאגר הנפרד `https://github.com/c0548520472-cpu/GmachManagement.Client`, מתוך תיקיית המאגר המקומית `GmachManagement.Client` הריצו `python -m http.server 5500 --bind 127.0.0.1`, ופתחו `http://127.0.0.1:5500`. **בגרסת הלקוח שהועברה ממאגר submission**, הלקוח מזהה `localhost` או `127.0.0.1` ופונה ל־`https://localhost:7042/api`. יש להתאים את הפורט אם סביבת ההרצה שונה.
+5. שכפלו את המאגר הנפרד והפעילו את גרסת הלקוח התואמת מתיקיית המאגר.
+   ```sh
+   git clone https://github.com/c0548520472-cpu/GmachManagement.Client.git
+   cd GmachManagement.Client
+   git checkout --detach fe5623054fe52ecbcf430295a64114cea860c07a
+   python -m http.server 5500 --bind 127.0.0.1
+   ```
+   פתחו `http://127.0.0.1:5500`. הלקוח פונה ל־`https://localhost:7042/api`.
 6. בדיקות חובה: `dotnet test GmachManagement.slnx`. בדיקת תחרות ממוקדת: `dotnet test GmachManagement.Tests/GmachManagement.Tests.csproj --filter FullyQualifiedName~ConcurrencyTests`.
 7. **משתמשי הדגמה:** יש ליצור במסד המקומי משתמש רגיל ומשתמש בעל גמ"ח דרך מסך ההרשמה או `POST /api/Auth/register`. בעת ההגשה למסור למורה פרטי כניסה של משתמשי הדמו המקומיים בלבד, לא סיסמאות אמיתיות. פרטי דמו אינם מאוחסנים במאגר. אם מדגימים גם את תפקיד `SiteAdmin`, יש להכין משתמש דמו ייעודי באמצעות מנגנון יצירת מנהל האתר המוגדר בפרויקט, בלי להעלות סיסמת מנהל ל־Git.
 
 ### מאגרי ההגשה
 
 - שרת (ענף הגשה): https://github.com/c0548520472-cpu/GmachManagement/tree/submission
-- לקוח (ענף main): https://github.com/c0548520472-cpu/GmachManagement.Client
+- לקוח: [Commit תואם לגרסת ההגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/fe5623054fe52ecbcf430295a64114cea860c07a)
 - אין צורך בתיקיית `GmachManagement.Client` במאגר השרת; קוד הלקוח הועבר למאגר הנפרד.
 
 ### הדגמה ממוקדת לפי דרישות המורה
@@ -40,7 +56,7 @@
 - קטלוג פריטים עם חיפוש ו־pagination; הוספת פריט ועותק בידי בעל גמ"ח.
 - יצירת בקשת השאלה דרך `POST /api/borrow-requests` ואישורה בידי בעל הגמ"ח דרך `POST /api/borrow-requests/mine/{id}/fulfill`.
 - בקשה שכבר טופלה או מצב של חוסר זמינות מוחזרים כ־`409` עם הודעה ללקוח.
-- בדיקת `ConcurrencyTests` מציגה שני `DbContext` נפרדים; ב־SQLite in-memory נדרשת סימולציה ידנית של שינוי גרסה משום שאין בו rowversion אוטומטי.
+- בדיקת `ConcurrencyTests` מציגה שני `DbContext` נפרדים; ב־SQLite in-memory טריגר מקומי מחליף את ערך הגרסה אוטומטית בזמן העדכון.
 
 ## תפקידי משתמש
 - **User** — הרשמה, התחברות, צפייה בפריטים, השאלת עותקים, ניהול השאלות אישיות וסימון החזרה.
@@ -85,5 +101,5 @@
 - בדיקת חבילות פגיעות: `dotnet list GmachManagement.slnx package --vulnerable --include-transitive`.
 - בדיקת פרסום השרת בלי לפרוס: `dotnet publish GmachManagement.API/GmachManagement.API.csproj -c Release -o ./artifacts/api-publish`.
 - בדיקת EF Core / migrations מול בסיס נתונים מקומי בלבד, ורק לאחר גיבוי. אין להריץ `database update` נגד Neon/Render.
-- בדיקת תחרות: `ConcurrencyTests.TwoContexts_UpdatingSameCopy_SecondUpdateFails` משתמשת בשני DbContext נפרדים וב־SQLite in-memory. היא מאמתת זיהוי גרסה ישנה; יש להשלים גם בדיקות אינטגרציה מול ספק בסיס הנתונים של סביבת ההגשה.
+- בדיקת תחרות: `ConcurrencyTests.TwoContexts_UpdatingSameCopy_SecondUpdateFails` משתמשת בשני DbContext נפרדים וב־SQLite in-memory. היא מאמתת זיהוי גרסה ישנה; בבדיקת האינטגרציה של PostgreSQL אפשר לאשר במקביל שתי בקשות נפרדות לעותק הפיזי האחרון. הציפייה היא אישור אחד, תשובת 409 אחת והשאלה פעילה אחת.
 - אין לכתוב סיסמאות, מפתחות JWT או פרטי SMTP ל־Git.

@@ -46,6 +46,11 @@ public class ItemsController : ControllerBase
             return BadRequest("Page must be at least 1 and pageSize must be between 1 and 100.");
         }
 
+        if ((page - 1L) * pageSize > int.MaxValue)
+        {
+            return BadRequest("The requested page offset is too large.");
+        }
+
         var items = await _itemService.GetAllAsync(
             search,
             availableOnly,

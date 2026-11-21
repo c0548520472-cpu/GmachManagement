@@ -27,7 +27,11 @@ public class BorrowRequestsController : ControllerBase {
  public async Task<IActionResult> Create([FromBody] NewRequest request,CancellationToken ct){
   var applicantId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ? (int?)userId : null;
   var result=await service.AddBorrowRequestAsync(request.ItemId,request.ApplicantName,request.Phone,request.Email,ct,applicantId);
-  if(result==null)return Conflict(new{message="אין עותק זמין לבקשה."});
+  if (result == null)
+  {
+   logger.LogWarning("No copy available for borrow request on item {ItemId}", request.ItemId);
+   return Conflict(new { message = "אין עותק זמין לבקשה." });
+  }
   try {
    var ownerEmail=await service.GetOwnerEmailForItemAsync(request.ItemId,ct);
    if(!string.IsNullOrWhiteSpace(ownerEmail))
@@ -52,8 +56,10 @@ public class BorrowRequestsController : ControllerBase {
   return Ok(requests.Select(r=>new{r.Id,r.ItemId,ItemName=r.Item.Name,r.ApplicantName,r.Phone,r.Email,r.CreatedAt}));
  }
  [HttpPost("mine/{id:int}/fulfill"),Authorize(Roles="GmachAdmin")]
- public async Task<IActionResult> Fulfill(int id,CancellationToken ct){
+ public async Task<IActionResult> Fulfill([FromRoute] int id,CancellationToken ct){
   if(!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var ownerId))return Unauthorized();
-  return await service.FulfillBorrowRequestAsync(ownerId,id,ct)?NoContent():Conflict(new{message="הבקשה או הפריט אינם זמינים."});
+  if (await service.FulfillBorrowRequestAsync(ownerId, id, ct)) return NoContent();
+  logger.LogWarning("Borrow request {RequestId} or its item is unavailable for fulfillment", id);
+  return Conflict(new { message = "הבקשה או הפריט אינם זמינים." });
  }
 }

@@ -70,8 +70,6 @@ namespace GmachManagement.API.Controllers
             [FromBody] RegisterDto request,
             CancellationToken cancellationToken)
         {
-            if (request.IsGmachOwner && (string.IsNullOrWhiteSpace(request.GmachName) || string.IsNullOrWhiteSpace(request.City)))
-                return BadRequest(new { message = "יש להזין שם גמ״ח ועיר." });
             if(await _authService.RequiresReRegistrationApprovalAsync(request.Email,cancellationToken))
                 return StatusCode(403,new {message="החשבון הוסר בעבר. יש לבקש אישור מנהל לפני הרשמה מחדש.",requiresApproval=true});
             bool registered;
@@ -95,7 +93,7 @@ namespace GmachManagement.API.Controllers
                 });
             }
 
-            return StatusCode(201, new
+            return CreatedAtAction(nameof(Profile), new
             {
                 message = "ההרשמה בוצעה בהצלחה."
             });

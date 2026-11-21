@@ -23,6 +23,7 @@ namespace GmachManagement.Service.Mappings
             CreateMap<Category, CategoryDto>();
 
             CreateMap<Loan, LoanDto>();
+            CreateMap<ManagedLoan, ManagedLoanDto>();
         }
     }
 }

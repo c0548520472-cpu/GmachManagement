@@ -1,7 +1,7 @@
 ﻿
 
 using GmachManagement.Core.DTOs;
-using GmachManagement.Core.Entities;
+using AutoMapper;
 using GmachManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,10 +19,13 @@ public class CategoriesController : ControllerBase
     private readonly ICategoryService _service;
     private readonly IMemoryCache _cache;
 
-    public CategoriesController(ICategoryService service, IMemoryCache cache)
+    private readonly IMapper _mapper;
+
+    public CategoriesController(ICategoryService service, IMemoryCache cache, IMapper mapper)
     {
         _service = service;
         _cache = cache;
+        _mapper = mapper;
     }
 
     [AllowAnonymous]
@@ -33,7 +36,7 @@ public class CategoriesController : ControllerBase
         var categories = await _cache.GetOrCreateAsync("public-categories", async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20);
-            return (await _service.GetAllAsync(ct)).Select(ToDto).ToList();
+            return _mapper.Map<List<CategoryDto>>(await _service.GetAllAsync(ct));
         });
         return Ok(categories);
     }
@@ -41,7 +44,7 @@ public class CategoriesController : ControllerBase
     [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CategoryDto>> GetById(
-        int id,
+        [FromRoute] int id,
         CancellationToken ct)
     {
         var category = await _service.GetByIdAsync(id, ct);
@@ -49,7 +52,7 @@ public class CategoriesController : ControllerBase
         if (category == null)
             return NotFound();
 
-        return Ok(ToDto(category));
+        return Ok(_mapper.Map<CategoryDto>(category));
     }
 
     [HttpPost]
@@ -68,7 +71,7 @@ public class CategoriesController : ControllerBase
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = category.Id },
-                ToDto(category));
+                _mapper.Map<CategoryDto>(category));
         }
         catch (DuplicateCategoryNameException ex)
         {
@@ -80,7 +83,7 @@ public class CategoriesController : ControllerBase
     [HttpPut("{id:int}")]
     [Authorize(Roles = "GmachAdmin")]
     public async Task<IActionResult> Update(
-        int id,
+        [FromRoute] int id,
         [FromBody] SaveCategoryDto dto,
         CancellationToken ct)
     {
@@ -101,17 +104,10 @@ public class CategoriesController : ControllerBase
 
     }
 
-    private static CategoryDto ToDto(Category category)
-        => new CategoryDto
-        {
-            Id = category.Id,
-            Name = category.Name
-        };
-
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "GmachAdmin")]
     public async Task<IActionResult> Delete(
-        int id,
+        [FromRoute] int id,
         CancellationToken ct)
     {
         var deleted = await _service.DeleteAsync(id, ct);

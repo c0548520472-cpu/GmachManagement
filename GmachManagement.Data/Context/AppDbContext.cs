@@ -101,7 +101,19 @@ namespace GmachManagement.Data.Context
                 .HasForeignKey(l => l.ItemCopyId);
             modelBuilder.Entity<EmailReminderDelivery>(e => { e.Property(x=>x.Kind).HasMaxLength(20).IsRequired(); e.HasIndex(x=>new {x.Kind,x.ReferenceId,x.ReminderDay}).IsUnique(); });
             modelBuilder.Entity<ManagedLoan>(entity => { entity.HasKey(x=>x.Id); entity.Property(x=>x.BorrowerName).HasMaxLength(150).IsRequired(); entity.Property(x=>x.BorrowerPhone).HasMaxLength(30); entity.Property(x=>x.BorrowerEmail).HasMaxLength(254); entity.HasIndex(x=>x.GmachId); entity.HasIndex(x=>x.ItemCopyId); });
-            modelBuilder.Entity<BorrowRequest>(e => { e.Property(x=>x.ApplicantName).HasMaxLength(150).IsRequired(); e.Property(x=>x.Phone).HasMaxLength(30); e.Property(x=>x.Email).HasMaxLength(254); e.HasOne(x=>x.Item).WithMany().HasForeignKey(x=>x.ItemId).OnDelete(DeleteBehavior.Restrict); e.HasIndex(x=>x.ItemId); });
+            modelBuilder.Entity<BorrowRequest>(entity =>
+            {
+                entity.Property(request => request.ApplicantName).HasMaxLength(150).IsRequired();
+                entity.Property(request => request.Phone).HasMaxLength(30);
+                entity.Property(request => request.Email).HasMaxLength(254);
+                // Concurrent approvals of the same request must only create one loan.
+                entity.Property(request => request.FulfilledAt).IsConcurrencyToken();
+                entity.HasOne(request => request.Item)
+                    .WithMany()
+                    .HasForeignKey(request => request.ItemId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(request => request.ItemId);
+            });
             SeedData.Seed(modelBuilder);
         }
     }

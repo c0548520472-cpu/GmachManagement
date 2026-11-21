@@ -11,6 +11,27 @@ public class GmachOwnershipTests {
   protected override void OnModelCreating(ModelBuilder builder){base.OnModelCreating(builder);builder.Entity<ItemCopy>().Ignore(c=>c.RowVersion);}
  }
 
+ [Fact]
+ public async Task Concurrency_StaleApprovalCannotFulfillTheSameRequestTwice()
+ {
+  await using var connection = new SqliteConnection("Data Source=:memory:");
+  await connection.OpenAsync();
+  var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+  await using var first = new TestDbContext(options);
+  await first.Database.EnsureCreatedAsync();
+  var request = new BorrowRequest { ItemId = 1, ApplicantName = "Applicant", CreatedAt = DateTime.UtcNow };
+  first.BorrowRequests.Add(request);
+  await first.SaveChangesAsync();
+
+  await using var second = new TestDbContext(options);
+  var stale = await second.BorrowRequests.SingleAsync(row => row.Id == request.Id);
+  request.FulfilledAt = DateTime.UtcNow;
+  await first.SaveChangesAsync();
+
+  stale.FulfilledAt = request.FulfilledAt.Value.AddSeconds(1);
+  await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => second.SaveChangesAsync());
+ }
+
  [Fact] public async Task EmailLookupIsCaseInsensitive(){
   await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
   var options=new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;

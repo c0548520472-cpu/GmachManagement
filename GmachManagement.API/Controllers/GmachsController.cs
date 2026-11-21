@@ -1,3 +1,4 @@
+using AutoMapper;
 using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
 using GmachManagement.Service.Services;
@@ -10,7 +11,15 @@ namespace GmachManagement.API.Controllers;
 public sealed class GmachsController : ControllerBase {
  private readonly GmachService service;
  private readonly IMemoryCache cache;
- public GmachsController(GmachService service, IMemoryCache cache){this.service=service;this.cache=cache;}
+ private readonly IMapper mapper;
+ private readonly ILogger<GmachsController> logger;
+ public GmachsController(GmachService service, IMemoryCache cache, IMapper mapper, ILogger<GmachsController> logger)
+ {
+  this.service = service;
+  this.cache = cache;
+  this.mapper = mapper;
+  this.logger = logger;
+ }
  private int UserId=>int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
  [HttpGet,AllowAnonymous]
  public async Task<IActionResult> Search(
@@ -62,7 +71,9 @@ public sealed class GmachsController : ControllerBase {
   if(string.IsNullOrWhiteSpace(request.BorrowerName))return BadRequest(new {message="חובה למלא שם שואל."});
   if(string.IsNullOrWhiteSpace(request.BorrowerEmail)&&string.IsNullOrWhiteSpace(request.BorrowerPhone))return BadRequest(new {message="חובה למלא לפחות טלפון או אימייל."});
   var loan=await service.MarkBorrowedAsync(UserId,itemId,request.BorrowerName.Trim(),string.IsNullOrWhiteSpace(request.BorrowerPhone)?null:request.BorrowerPhone.Trim(),string.IsNullOrWhiteSpace(request.BorrowerEmail)?null:request.BorrowerEmail.Trim(),ct,request.ExpectedReturnDate);
-  return loan==null?Conflict(new {message="אין עותק זמין להשאלה."}):Ok(loan);
+  if (loan != null) return Ok(mapper.Map<ManagedLoanDto>(loan));
+  logger.LogWarning("No copy available for a managed loan on item {ItemId}", itemId);
+  return Conflict(new { message = "אין עותק זמין להשאלה." });
  }
  [HttpGet("mine/managed-loans"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> ManagedLoans(CancellationToken ct){
@@ -78,6 +89,23 @@ public sealed class GmachsController : ControllerBase {
    ItemName=copies.TryGetValue(loan.ItemCopyId,out var namedCopy)?namedCopy.ItemName:null
   }));
  }
+ [HttpPut("mine/managed-loans/{id:int}/due-date"), Authorize(Roles = "GmachAdmin")]
+ public async Task<IActionResult> ChangeManagedLoanDueDate(
+  [FromRoute] int id, [FromBody] ManagedLoanDueDateRequest request, CancellationToken ct)
+ {
+  try
+  {
+   var updated = await service.SetManagedLoanDueDateAsync(UserId, id, request.ExpectedReturnDate, ct);
+   return updated ? NoContent() : NotFound();
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+   return BadRequest(new { message = "מועד ההחזרה חייב להיות בעתיד." });
+  }
+ }
+
+ public sealed record ManagedLoanDueDateRequest(DateTime ExpectedReturnDate);
+
  [HttpPost("mine/managed-loans/{id:int}/return"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> ReturnManagedLoan(int id,CancellationToken ct)=>await service.ReturnManagedLoanAsync(UserId,id,ct)?NoContent():NotFound();
 }
