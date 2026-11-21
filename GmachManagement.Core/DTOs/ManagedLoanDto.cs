@@ -1,6 +1,6 @@
 namespace GmachManagement.Core.DTOs;
 
-public sealed class ManagedLoanDto
+public record ManagedLoanDto
 {
     public int Id { get; init; }
     public int GmachId { get; init; }

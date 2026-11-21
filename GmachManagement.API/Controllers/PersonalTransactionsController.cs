@@ -50,7 +50,7 @@ public class PersonalTransactionsController : ControllerBase
         }
     }
 
-    [HttpPost("{transactionId:int}/complete")]
+    [HttpPut("{transactionId:int}/completions/current")]
     public async Task<IActionResult> Complete([FromRoute] int transactionId, CancellationToken cancellationToken)
     {
         var id = CurrentUserId();

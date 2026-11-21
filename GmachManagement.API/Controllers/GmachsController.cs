@@ -35,7 +35,7 @@ public sealed class GmachsController : ControllerBase {
    var gmachs = string.IsNullOrEmpty(term)
     ? await service.SearchAsync(city, search, itemSearch, ct)
     : await service.SearchDirectoryAsync(string.IsNullOrEmpty(cityTerm) ? term : cityTerm, term, ct);
-   return gmachs.Select(g => new {g.Id,g.Name,g.City,g.Description,g.Type}).ToList();
+   return mapper.Map<List<GmachDirectoryEntryDto>>(gmachs);
   });
   return Ok(result);
  }
@@ -56,17 +56,25 @@ public sealed class GmachsController : ControllerBase {
  public async Task<IActionResult> CreateMine([FromBody]GmachDto dto,CancellationToken ct){
   if(await service.GetMineAsync(UserId,ct)!=null)return Conflict(new {message="כבר קיים גמ״ח המשויך לחשבון."});
   var g=await service.CreateAsync(new Gmach{Name=dto.Name.Trim(),City=dto.City.Trim(),Description=dto.Description,OwnerId=UserId},ct);
-  return Created($"/api/gmachs/{g.Id}",new {g.Id,g.Name,g.City,g.Description});
+  return Created($"/api/gmachs/{g.Id}",mapper.Map<GmachSummaryDto>(g));
  }
- [HttpGet("mine"),Authorize(Roles="GmachAdmin")] public async Task<IActionResult> Mine(CancellationToken ct){var g=await service.GetMineAsync(UserId,ct);return g==null?NotFound(new {message="לא נמצא גמ״ח משויך לחשבון."}):Ok(new {g.Id,g.Name,g.City,g.Description,Items=(await service.GetAsync(g.Id,ct)??g).Items.Select(i=>new {i.Id,i.Name,i.Description,i.IsActive,TotalCopies=i.Copies.Count,AvailableCopies=i.Copies.Count(c=>c.Status==GmachManagement.Core.Enums.ItemStatus.Available)})});}
- [HttpPost("mine/items"),Authorize(Roles="GmachAdmin")] public async Task<IActionResult> AddItem([FromBody]CreateItemDto dto,CancellationToken ct){var g=await service.GetMineAsync(UserId,ct);if(g==null)return Forbid();var item=await service.AddItemAsync(g.Id,dto.Name.Trim(),dto.Description?.Trim() ?? string.Empty,ct);return Created($"/api/items/{item.Id}",new {item.Id,item.Name,item.Description});}
+ [HttpGet("mine"), Authorize(Roles = "GmachAdmin")]
+ public async Task<IActionResult> Mine(CancellationToken ct)
+ {
+  var gmach = await service.GetMineAsync(UserId, ct);
+  if (gmach == null) return NotFound(new { message = "לא נמצא גמ״ח משויך לחשבון." });
+
+  var details = await service.GetAsync(gmach.Id, ct) ?? gmach;
+  return Ok(mapper.Map<OwnerGmachDto>(details));
+ }
+ [HttpPost("mine/items"),Authorize(Roles="GmachAdmin")] public async Task<IActionResult> AddItem([FromBody]CreateItemDto dto,CancellationToken ct){var g=await service.GetMineAsync(UserId,ct);if(g==null)return Forbid();var item=await service.AddItemAsync(g.Id,dto.Name.Trim(),dto.Description?.Trim() ?? string.Empty,ct);return Created($"/api/items/{item.Id}",mapper.Map<ItemSummaryDto>(item));}
  public sealed class MarkBorrowedRequest {
   [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(150)] public string BorrowerName {get;set;} = "";
   [System.ComponentModel.DataAnnotations.EmailAddress] public string? BorrowerEmail {get;set;}
   [System.ComponentModel.DataAnnotations.Phone] public string? BorrowerPhone {get;set;}
   public DateTime? ExpectedReturnDate {get;set;}
  }
- [HttpPost("mine/items/{itemId:int}/borrow"),Authorize(Roles="GmachAdmin")]
+ [HttpPost("mine/items/{itemId:int}/loans"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> MarkBorrowed(int itemId,[FromBody] MarkBorrowedRequest request,CancellationToken ct){
   if(string.IsNullOrWhiteSpace(request.BorrowerName))return BadRequest(new {message="חובה למלא שם שואל."});
   if(string.IsNullOrWhiteSpace(request.BorrowerEmail)&&string.IsNullOrWhiteSpace(request.BorrowerPhone))return BadRequest(new {message="חובה למלא לפחות טלפון או אימייל."});
@@ -83,10 +91,12 @@ public sealed class GmachsController : ControllerBase {
   var copies=(gmach?.Items??Enumerable.Empty<GmachManagement.Core.Entities.Item>())
    .SelectMany(item=>item.Copies.Select(copy=>new {copy.Id,ItemId=item.Id,ItemName=item.Name}))
    .ToDictionary(copy=>copy.Id);
-  return Ok(loans.Select(loan=>new {
-   loan.Id,loan.GmachId,loan.ItemCopyId,loan.BorrowerName,loan.BorrowerPhone,loan.BorrowerEmail,loan.BorrowedAt,loan.ReturnedAt,loan.ExpectedReturnDate,
-   ItemId=copies.TryGetValue(loan.ItemCopyId,out var copy)?copy.ItemId:(int?)null,
-   ItemName=copies.TryGetValue(loan.ItemCopyId,out var namedCopy)?namedCopy.ItemName:null
+  return Ok(loans.Select(loan =>
+  {
+   var dto = mapper.Map<ManagedLoanDetailsDto>(loan);
+   return copies.TryGetValue(loan.ItemCopyId, out var copy)
+    ? dto with { ItemId = copy.ItemId, ItemName = copy.ItemName }
+    : dto;
   }));
  }
  [HttpPut("mine/managed-loans/{id:int}/due-date"), Authorize(Roles = "GmachAdmin")]
@@ -106,6 +116,6 @@ public sealed class GmachsController : ControllerBase {
 
  public sealed record ManagedLoanDueDateRequest(DateTime ExpectedReturnDate);
 
- [HttpPost("mine/managed-loans/{id:int}/return"),Authorize(Roles="GmachAdmin")]
+ [HttpPut("mine/managed-loans/{id:int}/returns/current"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> ReturnManagedLoan(int id,CancellationToken ct)=>await service.ReturnManagedLoanAsync(UserId,id,ct)?NoContent():NotFound();
 }

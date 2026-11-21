@@ -14,7 +14,7 @@ namespace GmachManagement.API.Controllers
 
     public class LoansController : ControllerBase
     {
-        [HttpPost("{loanId:int}/admin-return")]
+        [HttpPut("managed/{loanId:int}/returns/current")]
         [Authorize(Roles = "GmachAdmin")]
         public async Task<IActionResult> AdminReturn(int loanId, CancellationToken ct)
         {
@@ -148,7 +148,7 @@ namespace GmachManagement.API.Controllers
             return StatusCode(410, new { message = "יש לשלוח בקשת השאלה. רק בעל הגמ״ח יכול לסמן פריט כהושאל." });
         }
 
-        [HttpPost("{loanId:int}/return")]
+        [HttpPut("{loanId:int}/returns/current")]
         public async Task<IActionResult> ReturnItem(
             int loanId,
             CancellationToken cancellationToken)

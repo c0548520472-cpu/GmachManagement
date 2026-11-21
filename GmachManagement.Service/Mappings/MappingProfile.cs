@@ -22,9 +22,23 @@ namespace GmachManagement.Service.Mappings
             CreateMap<ItemCopy, ItemCopyDto>();
             CreateMap<Category, CategoryDto>();
 
+            CreateMap<BorrowRequest, BorrowRequestDto>()
+                .ForCtorParam(nameof(BorrowRequestDto.ItemName), option => option.MapFrom(request => request.Item.Name));
+            CreateMap<Gmach, GmachDirectoryEntryDto>();
+            CreateMap<Gmach, GmachSummaryDto>();
+            CreateMap<Gmach, OwnerGmachDto>();
+            CreateMap<Item, ItemSummaryDto>();
+            CreateMap<Item, OwnerGmachItemDto>()
+                .ForCtorParam(nameof(OwnerGmachItemDto.TotalCopies), option => option.MapFrom(item => item.Copies.Count))
+                .ForCtorParam(nameof(OwnerGmachItemDto.AvailableCopies), option =>
+                    option.MapFrom(item => item.Copies.Count(copy => copy.Status == ItemStatus.Available)));
             CreateMap<Loan, LoanDto>();
             CreateMap<PersonalTransaction, PersonalTransactionDto>();
             CreateMap<ManagedLoan, ManagedLoanDto>();
+            CreateMap<ManagedLoan, ManagedLoanDetailsDto>()
+                .IncludeBase<ManagedLoan, ManagedLoanDto>()
+                .ForMember(loan => loan.ItemId, option => option.Ignore())
+                .ForMember(loan => loan.ItemName, option => option.Ignore());
         }
     }
 }

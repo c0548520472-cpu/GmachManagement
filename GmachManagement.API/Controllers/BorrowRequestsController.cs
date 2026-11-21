@@ -1,3 +1,5 @@
+using AutoMapper;
+using GmachManagement.Core.DTOs;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using GmachManagement.Service.Services;
@@ -10,9 +12,10 @@ namespace GmachManagement.API.Controllers;
 [ApiController, Route("api/borrow-requests")]
 public class BorrowRequestsController : ControllerBase {
  private readonly GmachService service;
+ private readonly IMapper mapper;
  private readonly ResendEmailService email;
  private readonly ILogger<BorrowRequestsController> logger;
- public BorrowRequestsController(GmachService service,ResendEmailService email,ILogger<BorrowRequestsController> logger){this.service=service;this.email=email;this.logger=logger;}
+ public BorrowRequestsController(GmachService service,ResendEmailService email,ILogger<BorrowRequestsController> logger,IMapper mapper){this.mapper=mapper;this.service=service;this.email=email;this.logger=logger;}
  public sealed class NewRequest : IValidatableObject {
   [Range(1,int.MaxValue)] public int ItemId {get;set;}
   [Required, StringLength(150,MinimumLength=2)] public string ApplicantName {get;set;}="";
@@ -47,15 +50,15 @@ public class BorrowRequestsController : ControllerBase {
   if(!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var ownerId))return Unauthorized();
   var requests=await service.GetBorrowRequestsAsync(ownerId,ct);
   var request=requests.FirstOrDefault(r=>r.Id==id);
-  return request==null?NotFound():Ok(new{request.Id,request.ItemId,ItemName=request.Item.Name,request.ApplicantName,request.Phone,request.Email,request.CreatedAt});
+  return request==null?NotFound():Ok(mapper.Map<BorrowRequestDto>(request));
  }
  [HttpGet("mine"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> Mine(CancellationToken ct){
   if(!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var ownerId))return Unauthorized();
   var requests=await service.GetBorrowRequestsAsync(ownerId,ct);
-  return Ok(requests.Select(r=>new{r.Id,r.ItemId,ItemName=r.Item.Name,r.ApplicantName,r.Phone,r.Email,r.CreatedAt}));
+  return Ok(mapper.Map<List<BorrowRequestDto>>(requests));
  }
- [HttpPost("mine/{id:int}/fulfill"),Authorize(Roles="GmachAdmin")]
+ [HttpPut("mine/{id:int}/approvals/current"),Authorize(Roles="GmachAdmin")]
  public async Task<IActionResult> Fulfill([FromRoute] int id,CancellationToken ct){
   if(!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var ownerId))return Unauthorized();
   if (await service.FulfillBorrowRequestAsync(ownerId, id, ct)) return NoContent();
