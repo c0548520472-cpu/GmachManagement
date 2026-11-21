@@ -12,7 +12,7 @@ namespace GmachManagement.API.Controllers;
 [ApiController]
 [Route("api/site-admin")]
 [Authorize(Roles="SiteAdmin")]
-public sealed class SiteAdminController(SiteAdminService service,IConfiguration config,ResendEmailService emailService,ILogger<SiteAdminController> logger) : ControllerBase {
+public sealed class SiteAdminController(SiteAdminService service, AutoMapper.IMapper mapper, IConfiguration config,ResendEmailService emailService,ILogger<SiteAdminController> logger) : ControllerBase {
  private string? Bootstrap => config["SiteAdmin:BootstrapEmail"];
  private async Task<bool> Allowed(CancellationToken ct)=>
   int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var id) &&
@@ -25,8 +25,8 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
  public sealed record GmachEditInput([Required,StringLength(150,MinimumLength=1)] string Name,[Required,StringLength(100,MinimumLength=1)] string City,string? Description);
  public sealed record ItemEditInput([Required,StringLength(150,MinimumLength=1)] string Name,string? Description);
  [HttpGet("re-registration-requests")]
- public async Task<IActionResult> ReRegistrationRequests(CancellationToken ct){if(!await Allowed(ct))return Forbid();return Ok((await service.PendingReRegistrationsAsync(ct)).Select(x=>new {x.Email,x.DeletedAtUtc}));}
- [HttpPost("re-registration-requests/approve")]
+ public async Task<IActionResult> ReRegistrationRequests(CancellationToken ct){if(!await Allowed(ct))return Forbid();return Ok(mapper.Map<List<ReRegistrationRequestDto>>(await service.PendingReRegistrationsAsync(ct)));}
+ [HttpPost("re-registration-requests/approvals")]
  public async Task<IActionResult> ApproveReRegistration(EmailInput input,CancellationToken ct){
   if(!await Allowed(ct))return Forbid();
   var error=await service.ApproveReRegistrationAsync(input.Email,ct);
@@ -34,7 +34,7 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
   var notified=await NotifyReRegistrationDecisionAsync(input.Email,true,ct);
   return Ok(new {message=notified?"ההרשמה מחדש אושרה ונשלחה הודעה למשתמש.":"ההרשמה מחדש אושרה, אך שליחת המייל נכשלה.",emailSent=notified});
  }
- [HttpPost("re-registration-requests/reject")]
+ [HttpPost("re-registration-requests/rejections")]
  public async Task<IActionResult> RejectReRegistration(EmailInput input,CancellationToken ct){
   if(!await Allowed(ct))return Forbid();
   var error=await service.RejectReRegistrationAsync(input.Email,ct);
@@ -59,7 +59,13 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
  public async Task<IActionResult> Users(CancellationToken ct){
   if(!await Allowed(ct))return Forbid();
   var list=await service.UsersAsync(ct);
-  return Ok(list.Select(u=>new {u.Id,u.Name,u.Email,role=(Bootstrap!=null && u.Email.Equals(Bootstrap,StringComparison.OrdinalIgnoreCase))?"SiteAdmin":u.Role.ToString(),isPrimary=Bootstrap!=null && u.Email.Equals(Bootstrap,StringComparison.OrdinalIgnoreCase)}));
+  return Ok(list.Select(user =>
+  {
+   var dto = mapper.Map<SiteAdminUserDto>(user);
+   return string.Equals(user.Email, Bootstrap, StringComparison.OrdinalIgnoreCase)
+    ? dto with { Role = "SiteAdmin", IsPrimary = true }
+    : dto;
+  }).ToList());
  }
  [HttpPost("administrators")]
  public async Task<IActionResult> SetAdmin(AdminGrantInput request,CancellationToken ct){
@@ -86,7 +92,7 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
  [HttpGet("gmachs")]
  public async Task<IActionResult> Gmachs(CancellationToken ct){
   if(!await Allowed(ct))return Forbid();
-  return Ok((await service.GmachsAsync(ct)).Select(g=>new {g.Id,g.Name,g.City,g.Description,g.OwnerId}));
+  return Ok(mapper.Map<List<SiteAdminGmachDto>>(await service.GmachsAsync(ct)));
  }
  [HttpPut("gmachs/{id:int}")]
  public async Task<IActionResult> GmachEdit(int id,GmachEditInput request,CancellationToken ct){
@@ -101,7 +107,7 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
  [HttpGet("items")]
  public async Task<IActionResult> Items(CancellationToken ct){
   if(!await Allowed(ct))return Forbid();
-  return Ok((await service.ItemsAsync(ct)).Select(i=>new {i.Id,i.Name,i.Description,i.GmachId,i.IsActive}));
+  return Ok(mapper.Map<List<SiteAdminItemDto>>(await service.ItemsAsync(ct)));
  }
  [HttpPut("items/{id:int}")]
  public async Task<IActionResult> ItemEdit(int id,ItemEditInput request,CancellationToken ct){
@@ -123,7 +129,7 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
      return Ok(await service.OpenLoansAsync(ct));
  }
 
- [HttpPost("open-loans/delete")]
+ [HttpDelete("open-loans")]
  public async Task<IActionResult> DeleteOpenLoans(DeleteOpenLoansInput request, CancellationToken ct)
  {
      if (!await Allowed(ct)) return Forbid();
@@ -135,6 +141,6 @@ public sealed class SiteAdminController(SiteAdminService service,IConfiguration 
      }
 
      var deleted = await service.DeleteOpenLoansAsync(request.Loans.Distinct().ToArray(), request.All, ct);
-     return Ok(new { deleted });
+     return Ok(new OpenLoanDeletionResultDto(deleted));
  }
 }

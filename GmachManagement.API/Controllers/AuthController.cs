@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 using GmachManagement.Core.DTOs;
 using GmachManagement.API.Services;
@@ -33,7 +33,7 @@ namespace GmachManagement.API.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("login")]
+        [HttpPost("sessions")]
         public async Task<IActionResult> Login(
             [FromBody] LoginDto request,
             CancellationToken cancellationToken)
@@ -57,15 +57,11 @@ namespace GmachManagement.API.Controllers
                 });
             }
 
-            return Ok(new
-            {
-                accessToken = token,
-                tokenType = "Bearer"
-            });
+            return Ok(new SessionDto(token));
         }
 
         [AllowAnonymous]
-        [HttpPost("register")]
+        [HttpPost("accounts")]
         public async Task<IActionResult> Register(
             [FromBody] RegisterDto request,
             CancellationToken cancellationToken)
@@ -105,7 +101,7 @@ namespace GmachManagement.API.Controllers
             [System.ComponentModel.DataAnnotations.Required] string Credential,
             [System.ComponentModel.DataAnnotations.Required] string Nonce);
 
-        [AllowAnonymous, HttpGet("google/config")]
+        [AllowAnonymous, HttpGet("google-sign-in/configuration")]
         public IActionResult GoogleConfig([FromServices] IConfiguration configuration,
             [FromServices] Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
@@ -121,7 +117,7 @@ namespace GmachManagement.API.Controllers
                     entry.Value = true;
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
                 }
-                return Ok(new { clientId, nonce });
+                return Ok(new GoogleSignInConfigurationDto(clientId, nonce));
             }
             catch (Exception ex)
             {
@@ -130,7 +126,7 @@ namespace GmachManagement.API.Controllers
             }
         }
 
-        [AllowAnonymous, HttpPost("google")]
+        [AllowAnonymous, HttpPost("google-sessions")]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
         public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request,
             [FromServices] IConfiguration configuration,
@@ -163,8 +159,8 @@ namespace GmachManagement.API.Controllers
                 ? (int?)id : null;
             var result = await _authService.SignInWithGoogleAsync(
                 payload.Subject, payload.Email, payload.Name ?? "", actorId, ct);
-            return result.Error == null
-                ? Ok(new { accessToken = result.Token, tokenType = "Bearer" })
+            return result.Token is { } accessToken
+                ? Ok(new SessionDto(accessToken))
                 : Conflict(new { message = result.Error });
         }
 
@@ -173,7 +169,7 @@ namespace GmachManagement.API.Controllers
             [System.ComponentModel.DataAnnotations.Required] string Token,
             [System.ComponentModel.DataAnnotations.Required] string NewPassword);
 
-        [AllowAnonymous, HttpPost("forgot-password")]
+        [AllowAnonymous, HttpPost("password-recovery-requests")]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
         {
@@ -199,7 +195,7 @@ namespace GmachManagement.API.Controllers
             return Ok(new { message });
         }
 
-        [AllowAnonymous, HttpPost("reset-password")]
+        [AllowAnonymous, HttpPost("password-resets")]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
         {
@@ -224,7 +220,7 @@ namespace GmachManagement.API.Controllers
         }
 
         public sealed record ReRegistrationRequest([System.ComponentModel.DataAnnotations.Required,System.ComponentModel.DataAnnotations.EmailAddress] string Email);
-        [AllowAnonymous,HttpPost("request-re-registration")]
+        [AllowAnonymous,HttpPost("re-registration-requests")]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("password-recovery")]
         public async Task<IActionResult> RequestReRegistration([FromBody] ReRegistrationRequest request,CancellationToken ct){
             var saved = await _authService.RequestReRegistrationAsync(request.Email,ct);
@@ -258,17 +254,17 @@ namespace GmachManagement.API.Controllers
             public string? City {get;set;}
             public string? GmachType {get;set;}
         }
-        [Authorize,HttpGet("profile")]
+        [Authorize,HttpGet("profiles/current")]
         public async Task<IActionResult> Profile(CancellationToken ct){
             if(!int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,out var id))return Unauthorized();
             var p=await _authService.GetProfileAsync(id,ct);
-            return p.Name==null?NotFound():Ok(new {name=p.Name,email=p.Email,isGmachOwner=p.IsOwner,gmachName=p.GmachName,city=p.City,gmachType=p.GmachType});
+            return p.Name==null?NotFound():Ok(new AccountProfileDto(p.Name, p.Email, p.IsOwner, p.GmachName, p.City, p.GmachType));
         }
-        [Authorize,HttpPut("profile")]
+        [Authorize,HttpPut("profiles/current")]
         public async Task<IActionResult> UpdateProfile([FromBody] ProfileUpdateRequest request,CancellationToken ct){
             if(!int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,out var id))return Unauthorized();
             var result=await _authService.UpdateProfileAsync(id,request.Name,request.Email,request.CurrentPassword,request.NewPassword,request.IsGmachOwner,request.GmachName,request.City,request.GmachType,ct);
-            return result.Error==null?Ok(new {accessToken=result.Token,message="הפרטים עודכנו בהצלחה."}):BadRequest(new {message=result.Error});
+            return result.Error==null?Ok(new ProfileUpdateDto(result.Token,"הפרטים עודכנו בהצלחה.")):BadRequest(new {message=result.Error});
         }
 
 }

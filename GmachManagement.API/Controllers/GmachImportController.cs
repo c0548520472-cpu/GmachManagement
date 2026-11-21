@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using GmachManagement.Service.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -5,7 +6,7 @@ using System.IO.Compression;
 using System.Security.Claims;
 using System.Xml.Linq;
 namespace GmachManagement.API.Controllers;
-[ApiController,Route("api/gmachs/mine/import"),Authorize(Roles="GmachAdmin")]
+[ApiController,Route("api/gmachs/mine/imports"),Authorize(Roles="GmachAdmin")]
 public sealed class GmachImportController : ControllerBase {
  private readonly GmachService service;
  public GmachImportController(GmachService service)=>this.service=service;
@@ -20,7 +21,7 @@ public sealed class GmachImportController : ControllerBase {
   if(rows.Count==0)return BadRequest(new {message="אין שורות לייבוא."});
   if(rows.Sum(r=>(long)r.Quantity)>10000)return BadRequest(new {message="ניתן לייבא עד 10,000 עותקים בקובץ."});
   var imported=await service.ImportItemsAsync(g.Id,rows,ct);
-  return Ok(new {imported});
+  return Ok(new ImportResultDto(imported));
  }
  private static List<(string Name,string Description,int Quantity)> ParseExcel(Stream stream){
   using var zip=new ZipArchive(stream,ZipArchiveMode.Read);

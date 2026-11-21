@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using System.ComponentModel.DataAnnotations;
 using System.Data.Common;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,20 +14,20 @@ using Microsoft.EntityFrameworkCore;
 namespace GmachManagement.API.Controllers;
 
 [ApiController]
-[Route("api/auth/google/alternative")]
+[Route("api/auth/alternative-google-sessions")]
 public sealed class GoogleSignInController(
     IConfiguration configuration, IDataProtectionProvider protection, IAuthService auth) : ControllerBase
 {
     private string? ClientId => configuration["GoogleAuth:ClientId"]?.Trim();
     private ITimeLimitedDataProtector NonceProtector => protection.CreateProtector("Gmach.GoogleAuth.Nonce.v1").ToTimeLimitedDataProtector();
 
-    [AllowAnonymous, HttpGet("config")]
+    [AllowAnonymous, HttpGet("configuration")]
     public IActionResult Config()
     {
         if (string.IsNullOrEmpty(ClientId)) return NoContent();
         Response.Headers.CacheControl = "no-store";
         var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
-        return Ok(new { clientId = ClientId, nonce = NonceProtector.Protect(nonce, TimeSpan.FromMinutes(20)) });
+        return Ok(new GoogleSignInConfigurationDto(ClientId, NonceProtector.Protect(nonce, TimeSpan.FromMinutes(20))));
     }
 
     public sealed record GoogleCredential(
@@ -63,7 +64,7 @@ public sealed class GoogleSignInController(
             var result = await auth.SignInWithGoogleAsync(identity.Subject, identity.Email, identity.Name ?? "", userId, ct);
             return result.Token == null
                 ? Conflict(new { message = result.Error })
-                : Ok(new { accessToken = result.Token, tokenType = "Bearer" });
+                : Ok(new SessionDto(result.Token));
         }
         catch (DbException ex) when (ex.SqlState == "23505")
         {

@@ -1,3 +1,4 @@
+using GmachManagement.Core.DTOs;
 using Microsoft.Extensions.Caching.Memory;
 using GmachManagement.Core.Interfaces;
 using GmachManagement.API.Services;
@@ -10,18 +11,19 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace GmachManagement.API.Controllers;
 
-[ApiController, Authorize, Route("api/gmach-communication")]
+[ApiController, Authorize, Route("api/gmach-communications")]
 public sealed class GmachCommunicationController(
     GmachCommunicationService service,
     ResendEmailService email,
     IMemoryCache cache,
+    AutoMapper.IMapper mapper,
     ILogger<GmachCommunicationController> logger) : ControllerBase
 {
     private int ActorId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
 
     private static string OnlineKey(int userId) => $"GmachChatOnline:{userId}";
 
-    [HttpPost("presence")]
+    [HttpPut("presences/current")]
     public IActionResult SetPresence()
     {
         if (ActorId <= 0) return Unauthorized();
@@ -37,7 +39,7 @@ public sealed class GmachCommunicationController(
     public async Task<IActionResult> Approvals(CancellationToken ct)
         => ActorId > 0 ? Ok(await service.GetApprovalsAsync(ActorId, ct)) : Unauthorized();
 
-    [HttpPost("approvals/{id:int}/seen")]
+    [HttpPut("approvals/{id:int}/receipts/current")]
     public async Task<IActionResult> MarkSeen(int id, CancellationToken ct)
     {
         if (ActorId <= 0) return Unauthorized();
@@ -55,21 +57,24 @@ public sealed class GmachCommunicationController(
         if (ActorId <= 0) return Unauthorized();
         var messages = await service.GetChatAsync(gmachId, customerId, ActorId, ct);
         if (messages == null) return NotFound();
-        var result = messages.AsEnumerable().Reverse().Select(message => new
+        var result = messages.AsEnumerable().Reverse().Select(message =>
         {
-            message.Id, message.Text, message.SentAt, message.AttachmentName, Mine = message.SenderId == ActorId,
-            ReadByOwner = message.ReadByOwnerAt.HasValue,
-            ReadByRecipient = message.SenderId == (customerId ?? ActorId)
-                ? message.ReadByOwnerAt.HasValue : message.ReadByCustomerAt.HasValue
-        });
+            var dto = mapper.Map<ChatMessageDto>(message);
+            return dto with
+            {
+                Mine = message.SenderId == ActorId,
+                ReadByRecipient = message.SenderId == (customerId ?? ActorId)
+                    ? dto.ReadByOwner : message.ReadByCustomerAt.HasValue
+            };
+        }).ToList();
         if (!presence) return Ok(result);
         var counterpartTyping = cache.TryGetValue(TypingKey(gmachId, customerId ?? ActorId, !customerId.HasValue), out _);
-        return Ok(new { messages = result, counterpartTyping });
+        return Ok(new ChatMessagesDto(result, counterpartTyping));
     }
 
     public sealed record ChatReadReceipt([Range(1, int.MaxValue)] int ThroughId);
 
-    [HttpPost("{gmachId:int}/messages/read")]
+    [HttpPut("{gmachId:int}/message-receipts/current")]
     public async Task<IActionResult> MarkChatRead(int gmachId, [FromQuery] int? customerId, ChatReadReceipt input, CancellationToken ct)
     {
         if (ActorId <= 0) return Unauthorized();
@@ -89,7 +94,7 @@ public sealed class GmachCommunicationController(
     private static (string, int, int, bool) TypingKey(int gmachId, int customerId, bool asOwner)
         => ("GmachTyping", gmachId, customerId, asOwner);
 
-    [HttpPost("{gmachId:int}/typing")]
+    [HttpPut("{gmachId:int}/typing-indicators/current")]
     public async Task<IActionResult> Typing(int gmachId, [FromQuery] int? customerId, CancellationToken ct)
     {
         if (ActorId <= 0) return Unauthorized();

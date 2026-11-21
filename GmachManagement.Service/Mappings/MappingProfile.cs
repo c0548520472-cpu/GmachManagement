@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+using GmachManagement.Core.Interfaces;
+using AutoMapper;
 using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
 using GmachManagement.Core.Enums;
@@ -14,6 +15,16 @@ namespace GmachManagement.Service.Mappings
         public MappingProfile()
         {
             CreateMap<User, UserDto>();
+            CreateMap<User, SiteAdminUserDto>()
+                .ForCtorParam(nameof(SiteAdminUserDto.Role), option => option.MapFrom(user => user.Role.ToString()))
+                .ForMember(user => user.IsPrimary, option => option.Ignore());
+            CreateMap<Gmach, SiteAdminGmachDto>();
+            CreateMap<Item, SiteAdminItemDto>();
+            CreateMap<DeletedAccount, ReRegistrationRequestDto>();
+            CreateMap<GmachChatMessage, ChatMessageDto>()
+                .ForCtorParam(nameof(ChatMessageDto.ReadByOwner), option => option.MapFrom(message => message.ReadByOwnerAt.HasValue))
+                .ForMember(message => message.Mine, option => option.Ignore())
+                .ForMember(message => message.ReadByRecipient, option => option.Ignore());
 
             CreateMap<Item, ItemDto>()
                 .ForMember(d => d.TotalCopies, o => o.MapFrom(s => s.Copies.Count))

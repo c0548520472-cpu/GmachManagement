@@ -8,7 +8,7 @@
 - **Service** — לוגיקה עסקית, אימות ומיפוי.
 - **API** — Controllers, JWT, Middlewares, CORS; תלות ב־Core וב־Service בלבד. שירותי Data נטענים באמצעות Reflection.
 - **Tests** — בדיקות xUnit/Moq ו־Concurrency.
-- **Client** — HTML/CSS/JavaScript במאגר נפרד: [גרסה תואמת להגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/2ee165c3be092eb37a0e35497705139fb9b77fe6).
+- **Client** — HTML/CSS/JavaScript במאגר נפרד: [גרסה תואמת להגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/8795467722c82402ea73cf960b233e2224fbca69).
 
 ## המשאב המוגבל
 כל `ItemCopy` מייצג עותק פיזי יחיד. בעת השאלה, עדכון סטטוס העותק ויצירת הרשומה מתבצעים בטרנזקציה; ב־SQL Server נעשה שימוש ב־`RowVersion`, וב־PostgreSQL בעמודת `xmin` כבקרת תחרות. ניסיון להשאיל עותק שכבר נתפס מוחזר כ־HTTP 409.
@@ -38,7 +38,7 @@
    ```sh
    git clone --branch submission https://github.com/c0548520472-cpu/GmachManagement.Client.git
    cd GmachManagement.Client
-   git checkout --detach 2ee165c3be092eb37a0e35497705139fb9b77fe6
+   git checkout --detach 8795467722c82402ea73cf960b233e2224fbca69
    python -m http.server 5500 --bind 127.0.0.1
    ```
    פתחו `http://127.0.0.1:5500`. הלקוח פונה ל־`https://localhost:7042/api`.
@@ -56,7 +56,7 @@
 ### מאגרי ההגשה
 
 - שרת (ענף הגשה): https://github.com/c0548520472-cpu/GmachManagement/tree/submission
-- לקוח: [Commit תואם לגרסת ההגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/2ee165c3be092eb37a0e35497705139fb9b77fe6)
+- לקוח: [Commit תואם לגרסת ההגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/8795467722c82402ea73cf960b233e2224fbca69)
 - אין צורך בתיקיית `GmachManagement.Client` במאגר השרת; קוד הלקוח הועבר למאגר הנפרד.
 
 ### הדגמה ממוקדת לפי דרישות המורה
