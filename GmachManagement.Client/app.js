@@ -1,5 +1,8 @@
 
-const API_BASE = "https://gmachmanagement-api.onrender.com/api";
+// Submission runs locally; deployed site continues to use the hosted API.
+const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? "https://localhost:7042/api"
+    : "https://gmachmanagement-api.onrender.com/api";
 const PAGE_SIZE = 6;
 const normalizeCity = value => String(value ?? "").replaceAll("ירושליים","ירושלים");
 
@@ -145,8 +148,8 @@ async function requestFromServer(path, options = {}) {
             }
         }
 
-        if (response.status === 409 && path.toLowerCase() === "/loans") {
-            throw new Error("העותק נתפס על ידי משתמש אחר. יש לרענן את הרשימה ולנסות שוב.");
+        if (response.status === 409 && (path.toLowerCase() === "/loans" || path.toLowerCase().startsWith("/borrow-requests"))) {
+            throw new Error("אין עותק פנוי או שהבקשה כבר טופלה. יש לרענן את הרשימה ולנסות שוב.");
         }
 
         throw new Error(message);
