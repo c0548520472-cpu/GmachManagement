@@ -183,9 +183,9 @@ builder.Services.AddControllers();
             await (Task)(migrationMethod.Invoke(null, new object[] { app.Services, app.Configuration })
                 ?? throw new InvalidOperationException("Migration runner returned no task."));
 
-            app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
-
             app.UseMiddleware<CorrelationIdMiddleware>();
+
+            app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 
             // Configure the HTTP request pipeline.
