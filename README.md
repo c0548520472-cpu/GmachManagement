@@ -8,7 +8,7 @@
 - **Service** — לוגיקה עסקית, אימות ומיפוי.
 - **API** — Controllers, JWT, Middlewares, CORS; תלות ב־Core וב־Service בלבד. שירותי Data נטענים באמצעות Reflection.
 - **Tests** — בדיקות xUnit/Moq ו־Concurrency.
-- **Client** — HTML/CSS/JavaScript במאגר נפרד: [גרסה תואמת להגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/fe5623054fe52ecbcf430295a64114cea860c07a).
+- **Client** — HTML/CSS/JavaScript במאגר נפרד: [גרסה תואמת להגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/68da8388c43f392cbd1fd1d3a584a8a53d6c457a).
 
 ## המשאב המוגבל
 כל `ItemCopy` מייצג עותק פיזי יחיד. בעת השאלה, עדכון סטטוס העותק ויצירת הרשומה מתבצעים בטרנזקציה; ב־SQL Server נעשה שימוש ב־`RowVersion`, וב־PostgreSQL בעמודת `xmin` כבקרת תחרות. ניסיון להשאיל עותק שכבר נתפס מוחזר כ־HTTP 409.
@@ -36,19 +36,27 @@
 4. הריצו את השרת: `dotnet run --project GmachManagement.API --launch-profile https` (או דרך Visual Studio). בדקו ש־Swagger נפתח ב־`https://localhost:7042/swagger` כאשר זה הפורט המקומי.
 5. שכפלו את המאגר הנפרד והפעילו את גרסת הלקוח התואמת מתיקיית המאגר.
    ```sh
-   git clone https://github.com/c0548520472-cpu/GmachManagement.Client.git
+   git clone --branch submission https://github.com/c0548520472-cpu/GmachManagement.Client.git
    cd GmachManagement.Client
-   git checkout --detach fe5623054fe52ecbcf430295a64114cea860c07a
+   git checkout --detach 68da8388c43f392cbd1fd1d3a584a8a53d6c457a
    python -m http.server 5500 --bind 127.0.0.1
    ```
    פתחו `http://127.0.0.1:5500`. הלקוח פונה ל־`https://localhost:7042/api`.
 6. בדיקות חובה: `dotnet test GmachManagement.slnx`. בדיקת תחרות ממוקדת: `dotnet test GmachManagement.Tests/GmachManagement.Tests.csproj --filter FullyQualifiedName~ConcurrencyTests`.
-7. **משתמשי הדגמה:** יש ליצור במסד המקומי משתמש רגיל ומשתמש בעל גמ"ח דרך מסך ההרשמה או `POST /api/Auth/register`. בעת ההגשה למסור למורה פרטי כניסה של משתמשי הדמו המקומיים בלבד, לא סיסמאות אמיתיות. פרטי דמו אינם מאוחסנים במאגר. אם מדגימים גם את תפקיד `SiteAdmin`, יש להכין משתמש דמו ייעודי באמצעות מנגנון יצירת מנהל האתר המוגדר בפרויקט, בלי להעלות סיסמת מנהל ל־Git.
+7. **משתמשי הדגמה ב־PostgreSQL המקומי.** צרו את החשבונות הבאים דרך מסך ההרשמה. בחרו לכל חשבון סיסמה מקומית של לפחות שמונה תווים, עם אות וספרה. ההתחברות משתמשת בסיסמה שבחרתם בהרשמה.
+
+   | תפקיד | אימייל להדגמה | בחירה בהרשמה |
+   | --- | --- | --- |
+   | `User` | `demo-member@example.test` | הרשמה רגילה |
+   | `GmachAdmin` | `demo-owner@example.test` | סמנו בעל גמ״ח ומלאו שם גמ״ח ועיר |
+   | `SiteAdmin` | `demo-admin@example.test` | הרשמה רגילה עם כתובת מנהל ההדגמה |
+
+   כדי להפעיל את תפקיד מנהל ההדגמה, הריצו `dotnet user-secrets set "SiteAdmin:BootstrapEmail" "demo-admin@example.test" --project GmachManagement.API` בסביבת ההגשה המקומית, ואתחלו את השרת לפני התחברות לחשבון זה.
 
 ### מאגרי ההגשה
 
 - שרת (ענף הגשה): https://github.com/c0548520472-cpu/GmachManagement/tree/submission
-- לקוח: [Commit תואם לגרסת ההגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/fe5623054fe52ecbcf430295a64114cea860c07a)
+- לקוח: [Commit תואם לגרסת ההגשה](https://github.com/c0548520472-cpu/GmachManagement.Client/tree/68da8388c43f392cbd1fd1d3a584a8a53d6c457a)
 - אין צורך בתיקיית `GmachManagement.Client` במאגר השרת; קוד הלקוח הועבר למאגר הנפרד.
 
 ### הדגמה ממוקדת לפי דרישות המורה

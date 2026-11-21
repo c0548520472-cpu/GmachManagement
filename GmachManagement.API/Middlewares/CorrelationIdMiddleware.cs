@@ -6,7 +6,7 @@ namespace GmachManagement.API.Middlewares
     public class CorrelationIdMiddleware
     {
         private readonly RequestDelegate _next;
-        private const string HeaderName = "X-Correlation-ID";
+        internal const string HeaderName = "X-Correlation-ID";
 
         public CorrelationIdMiddleware(RequestDelegate next)
         {
@@ -33,16 +33,7 @@ namespace GmachManagement.API.Middlewares
                     context.Request.Method,
                     context.Request.Path);
 
-                try
-                {
-                    await _next(context);
-                }
-                finally
-                {
-                    logger.LogInformation(
-                        "Request completed with status {StatusCode}",
-                        context.Response.StatusCode);
-                }
+                await _next(context);
 
             }
         }

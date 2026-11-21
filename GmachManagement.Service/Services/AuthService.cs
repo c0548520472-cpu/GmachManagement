@@ -193,7 +193,7 @@ namespace GmachManagement.Service.Services
                 request.Password);
 
             if (request.IsGmachOwner)
-                await _userRepository.AddWithGmachAsync(user, new Gmach { Name = request.GmachName!.Trim(), City = request.City!.Trim(), Type = request.GmachType?.Trim() }, cancellationToken);
+                await _userRepository.AddWithGmachAsync(user, new Gmach { Name = request.GmachName!.Trim(), City = request.City!.Trim(), Type = request.GmachType?.Trim() ?? string.Empty }, cancellationToken);
             else
                 await _userRepository.AddAsync(user, cancellationToken);
 
