@@ -85,7 +85,7 @@ public class ItemsController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { id = item.Id },
-            ToDto(item));
+            _mapper.Map<ItemDto>(item));
     }
 
     [HttpPut("{id:int}")]
@@ -150,7 +150,7 @@ public class ItemsController : ControllerBase
         if (copy == null)
             return NotFound();
 
-        return CreatedAtAction(nameof(GetCopyById), new { id, copyId = copy.Id }, ToCopyDto(copy));
+        return CreatedAtAction(nameof(GetCopyById), new { id, copyId = copy.Id }, _mapper.Map<ItemCopyDto>(copy));
     }
 
 
