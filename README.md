@@ -8,7 +8,7 @@
 - **Service** — לוגיקה עסקית, אימות ומיפוי.
 - **API** — Controllers, JWT, Middlewares, CORS; תלות ב־Core וב־Service בלבד. שירותי Data נטענים באמצעות Reflection.
 - **Tests** — בדיקות xUnit/Moq ו־Concurrency.
-- **Client** — HTML/CSS/JavaScript.
+- **Client** — HTML/CSS/JavaScript במאגר נפרד: https://github.com/c0548520472-cpu/GmachManagement.Client (אינו חלק מענף ההגשה של מאגר השרת).
 
 ## המשאב המוגבל
 כל `ItemCopy` מייצג עותק פיזי יחיד. בעת השאלה, עדכון סטטוס העותק ויצירת הרשומה מתבצעים בטרנזקציה; ב־SQL Server נעשה שימוש ב־`RowVersion`, וב־PostgreSQL בעמודת `xmin` כבקרת תחרות. ניסיון להשאיל עותק שכבר נתפס מוחזר כ־HTTP 409.
@@ -25,9 +25,15 @@
    dotnet ef database update --context AppDbContext --project GmachManagement.Data --startup-project GmachManagement.API
    ```
 4. הריצו את השרת: `dotnet run --project GmachManagement.API --launch-profile https` (או דרך Visual Studio). בדקו ש־Swagger נפתח ב־`https://localhost:7042/swagger` כאשר זה הפורט המקומי.
-5. מתוך `GmachManagement.Client` הריצו `python -m http.server 5500 --bind 127.0.0.1`, ופתחו `http://127.0.0.1:5500`. **בענף submission**, הלקוח מזהה `localhost` או `127.0.0.1` ופונה ל־`https://localhost:7042/api`. יש להתאים את הפורט אם סביבת ההרצה שונה.
+5. לאחר שכפול המאגר הנפרד `https://github.com/c0548520472-cpu/GmachManagement.Client`, מתוך תיקיית המאגר המקומית `GmachManagement.Client` הריצו `python -m http.server 5500 --bind 127.0.0.1`, ופתחו `http://127.0.0.1:5500`. **בגרסת הלקוח שהועברה ממאגר submission**, הלקוח מזהה `localhost` או `127.0.0.1` ופונה ל־`https://localhost:7042/api`. יש להתאים את הפורט אם סביבת ההרצה שונה.
 6. בדיקות חובה: `dotnet test GmachManagement.slnx`. בדיקת תחרות ממוקדת: `dotnet test GmachManagement.Tests/GmachManagement.Tests.csproj --filter FullyQualifiedName~ConcurrencyTests`.
 7. **משתמשי הדגמה:** יש ליצור במסד המקומי משתמש רגיל ומשתמש בעל גמ"ח דרך מסך ההרשמה או `POST /api/Auth/register`. בעת ההגשה למסור למורה פרטי כניסה של משתמשי הדמו המקומיים בלבד, לא סיסמאות אמיתיות. פרטי דמו אינם מאוחסנים במאגר. אם מדגימים גם את תפקיד `SiteAdmin`, יש להכין משתמש דמו ייעודי באמצעות מנגנון יצירת מנהל האתר המוגדר בפרויקט, בלי להעלות סיסמת מנהל ל־Git.
+
+### מאגרי ההגשה
+
+- שרת (ענף הגשה): https://github.com/c0548520472-cpu/GmachManagement/tree/submission
+- לקוח (ענף main): https://github.com/c0548520472-cpu/GmachManagement.Client
+- אין צורך בתיקיית `GmachManagement.Client` במאגר השרת; קוד הלקוח הועבר למאגר הנפרד.
 
 ### הדגמה ממוקדת לפי דרישות המורה
 - הרשמה והתחברות של משתמש רגיל ושל בעל גמ"ח; JWT והרשאות שונות.
