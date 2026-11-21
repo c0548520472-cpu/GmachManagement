@@ -75,6 +75,9 @@ namespace GmachManagement.Service.Services
             DateTime expectedReturnDate,
             CancellationToken cancellationToken = default)
         {
+            if (expectedReturnDate <= DateTime.UtcNow)
+                throw new ArgumentOutOfRangeException(nameof(expectedReturnDate), "תאריך ההחזרה חייב להיות בעתיד");
+
             return await _loanRepository.BorrowItemAsync(
                 userId,
                 itemCopyId,
