@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
+using GmachManagement.Core.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,7 +15,12 @@ namespace GmachManagement.Service.Mappings
         {
             CreateMap<User, UserDto>();
 
-            CreateMap<Item, ItemDto>();
+            CreateMap<Item, ItemDto>()
+                .ForMember(d => d.TotalCopies, o => o.MapFrom(s => s.Copies.Count))
+                .ForMember(d => d.AvailableCopies, o => o.MapFrom(s => s.IsActive
+                    ? s.Copies.Count(c => c.Status == ItemStatus.Available) : 0));
+            CreateMap<ItemCopy, ItemCopyDto>();
+            CreateMap<Category, CategoryDto>();
 
             CreateMap<Loan, LoanDto>();
         }
