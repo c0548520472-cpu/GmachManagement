@@ -13,7 +13,7 @@ function Check([string]$name,[string]$path,[int]$expected,[string]$token="") {
     try {
         # Windows PowerShell 5.1 throws for 4xx/5xx; read the HTTP status from the exception.
         try {
-            $response = Invoke-WebRequest -Uri "$base$path" -Headers $headers -Method Get -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 15
+            $response = Invoke-WebRequest -Uri "$base$path" -Headers $headers -Method Get -UseBasicParsing -TimeoutSec 15
             $actual = [int]$response.StatusCode
         } catch [System.Net.WebException] {
             if ($null -eq $_.Exception.Response) { throw }
