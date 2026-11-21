@@ -17,6 +17,10 @@ public class PersonalTransactionRepository : IPersonalTransactionRepository
             .OrderByDescending(t => t.TransactionDate)
             .ToListAsync(cancellationToken);
 
+    public Task<PersonalTransaction?> GetByIdAsync(int userId, int transactionId, CancellationToken cancellationToken) =>
+        _context.PersonalTransactions.AsNoTracking()
+            .SingleOrDefaultAsync(t => t.Id == transactionId && t.UserId == userId, cancellationToken);
+
     public async Task<PersonalTransaction> AddAsync(PersonalTransaction transaction, CancellationToken cancellationToken)
     {
         _context.PersonalTransactions.Add(transaction);

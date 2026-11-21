@@ -1,3 +1,4 @@
+using AutoMapper;
 using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Entities;
 using GmachManagement.Core.Enums;
@@ -8,23 +9,19 @@ namespace GmachManagement.Service.Services;
 public class PersonalTransactionService : IPersonalTransactionService
 {
     private readonly IPersonalTransactionRepository _repository;
+    private readonly IMapper _mapper;
 
-    public PersonalTransactionService(IPersonalTransactionRepository repository) => _repository = repository;
-
-    private static PersonalTransactionDto Map(PersonalTransaction t) => new()
+    public PersonalTransactionService(IPersonalTransactionRepository repository, IMapper mapper)
     {
-        Id = t.Id,
-        OtherPartyName = t.OtherPartyName,
-        ItemDescription = t.ItemDescription,
-        Type = t.Type,
-        Amount = t.Amount,
-        TransactionDate = t.TransactionDate,
-        ReminderDate = t.ReminderDate,
-        IsCompleted = t.IsCompleted
-    };
+        _repository = repository;
+        _mapper = mapper;
+    }
 
     public async Task<List<PersonalTransactionDto>> GetMineAsync(int userId, CancellationToken cancellationToken) =>
-        (await _repository.GetByUserAsync(userId, cancellationToken)).Select(Map).ToList();
+        _mapper.Map<List<PersonalTransactionDto>>(await _repository.GetByUserAsync(userId, cancellationToken));
+
+    public async Task<PersonalTransactionDto?> GetByIdAsync(int userId, int transactionId, CancellationToken cancellationToken) =>
+        _mapper.Map<PersonalTransactionDto?>(await _repository.GetByIdAsync(userId, transactionId, cancellationToken));
 
     public async Task<PersonalTransactionDto> AddAsync(int userId, CreatePersonalTransactionDto request, CancellationToken cancellationToken)
     {
@@ -45,7 +42,7 @@ public class PersonalTransactionService : IPersonalTransactionService
             ReminderDate = request.ReminderDate,
             IsCompleted = false
         };
-        return Map(await _repository.AddAsync(transaction, cancellationToken));
+        return _mapper.Map<PersonalTransactionDto>(await _repository.AddAsync(transaction, cancellationToken));
     }
 
     public Task<bool> CompleteAsync(int userId, int transactionId, CancellationToken cancellationToken) =>

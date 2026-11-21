@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using GmachManagement.Core.DTOs;
 using GmachManagement.Core.Interfaces;
-using GmachManagement.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,8 +30,7 @@ public class PersonalTransactionsController : ControllerBase
     {
         var id = CurrentUserId();
         if (id is null) return Unauthorized();
-        var transactions = await _service.GetMineAsync(id.Value, cancellationToken);
-        var transaction = transactions.FirstOrDefault(t => t.Id == transactionId);
+        var transaction = await _service.GetByIdAsync(id.Value, transactionId, cancellationToken);
         return transaction is null ? NotFound() : Ok(transaction);
     }
 
@@ -41,11 +39,6 @@ public class PersonalTransactionsController : ControllerBase
     {
         var id = CurrentUserId();
         if (id is null) return Unauthorized();
-        if (!Enum.IsDefined(typeof(TransactionType), request.Type) ||
-            string.IsNullOrWhiteSpace(request.OtherPartyName) ||
-            string.IsNullOrWhiteSpace(request.ItemDescription) ||
-            request.TransactionDate == default || request.TransactionDate > DateTime.UtcNow)
-            return BadRequest("Invalid personal transaction details.");
         try
         {
             var result = await _service.AddAsync(id.Value, request, cancellationToken);
@@ -58,7 +51,7 @@ public class PersonalTransactionsController : ControllerBase
     }
 
     [HttpPost("{transactionId:int}/complete")]
-    public async Task<IActionResult> Complete(int transactionId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Complete([FromRoute] int transactionId, CancellationToken cancellationToken)
     {
         var id = CurrentUserId();
         if (id is null) return Unauthorized();
