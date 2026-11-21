@@ -33,11 +33,16 @@ namespace GmachManagement.API.Middlewares
                     context.Request.Method,
                     context.Request.Path);
 
-                await _next(context);
-
-                logger.LogInformation(
-                    "Request completed with status {StatusCode}",
-                    context.Response.StatusCode);
+                try
+                {
+                    await _next(context);
+                }
+                finally
+                {
+                    logger.LogInformation(
+                        "Request completed with status {StatusCode}",
+                        context.Response.StatusCode);
+                }
 
             }
         }
