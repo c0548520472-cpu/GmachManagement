@@ -59,23 +59,32 @@ public class ConcurrencyTests
         // שני התהליכים קראו את אותה גרסה
         Assert.Equal(copy1.RowVersion, copy2.RowVersion);
 
-        // התהליך הראשון מעדכן את העותק
-        copy1.Status = ItemStatus.Borrowed;
-
+        // SQLite does not provide SQL Server rowversion automatically.
+        // Simulate database-managed rowversion with a trigger, not a manual
+        // update between the two SaveChanges calls.
+        // The trigger is installed before either context saves.
         await context1.Database.ExecuteSqlRawAsync("""
-            UPDATE ItemCopies
-            SET RowVersion = X'1112131415161718'
-            WHERE Id = 100;
+            CREATE TRIGGER ItemCopies_UpdateVersion
+            AFTER UPDATE OF Status ON ItemCopies
+            BEGIN
+                UPDATE ItemCopies
+                SET RowVersion = randomblob(8)
+                WHERE Id = NEW.Id;
+            END;
             """);
 
-        // מגדירים את הגרסה החדשה כגרסה המקורית
-        // לצורך שמירת העדכון הראשון
-        context1.Entry(copy1)
-            .Property(c => c.RowVersion)
-            .OriginalValue =
-                Convert.FromHexString("1112131415161718");
-
+        copy1.Status = ItemStatus.Borrowed;
         await context1.SaveChangesAsync();
+
+        // Confirm the database actually changed the concurrency token.
+        await using (var verification = new AppDbContext(options))
+        {
+            var saved = await verification.ItemCopies.AsNoTracking()
+                .SingleAsync(c => c.Id == 100);
+            Assert.Equal(ItemStatus.Borrowed, saved.Status);
+            Assert.NotEqual(Convert.ToHexString(copy2.RowVersion),
+                Convert.ToHexString(saved.RowVersion));
+        }
 
         // התהליך השני עדיין מחזיק בגרסה הישנה
         copy2.Status = ItemStatus.Reserved;
