@@ -11,8 +11,14 @@ function Check([string]$name,[string]$path,[int]$expected,[string]$token="") {
     $headers = @{}
     if ($token) { $headers["Authorization"] = "Bearer $token" }
     try {
-        $response = Invoke-WebRequest -Uri "$base$path" -Headers $headers -Method Get -SkipHttpErrorCheck -TimeoutSec 15
-        $actual = [int]$response.StatusCode
+        # Windows PowerShell 5.1 throws for 4xx/5xx; read the HTTP status from the exception.
+        try {
+            $response = Invoke-WebRequest -Uri "$base$path" -Headers $headers -Method Get -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 15
+            $actual = [int]$response.StatusCode
+        } catch [System.Net.WebException] {
+            if ($null -eq $_.Exception.Response) { throw }
+            $actual = [int]$_.Exception.Response.StatusCode
+        }
         if ($actual -eq $expected) {
             $script:passed++
             Write-Host "PASS $name ($actual)"
