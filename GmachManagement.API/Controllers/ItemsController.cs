@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using AutoMapper;
 
 
 using GmachManagement.Core.DTOs;
@@ -15,13 +16,15 @@ namespace GmachManagement.API.Controllers;
 [Route("api/items")]
 public class ItemsController : ControllerBase
 {
+    private readonly IMapper _mapper;
     private readonly IItemService _itemService;
     private readonly GmachService _gmachService;
     private int OwnerId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    public ItemsController(IItemService itemService, GmachService gmachService)
+    public ItemsController(IItemService itemService, GmachService gmachService, IMapper mapper)
     {
         
+        _mapper = mapper;
         _itemService = itemService;
         _gmachService = gmachService;
     }
@@ -51,7 +54,7 @@ public class ItemsController : ControllerBase
             pageSize,
             ct);
 
-        return Ok(items.Select(ToDto).ToList());
+        return Ok(_mapper.Map<List<ItemDto>>(items));
     }
 
 
@@ -66,7 +69,7 @@ public class ItemsController : ControllerBase
         if (item == null)
             return NotFound();
 
-        return Ok(ToDto(item));
+        return Ok(_mapper.Map<ItemDto>(item));
     }
 
     [HttpPost]
@@ -118,7 +121,7 @@ public class ItemsController : ControllerBase
         var copies = await _itemService.GetCopiesAsync(
             id, cancellationToken);
 
-        return Ok(copies.Select(ToCopyDto).ToList());
+        return Ok(_mapper.Map<List<ItemCopyDto>>(copies));
     }
 
 
@@ -131,7 +134,7 @@ public class ItemsController : ControllerBase
         if (item == null) return NotFound();
         var copies = await _itemService.GetCopiesAsync(id, ct);
         var copy = copies.FirstOrDefault(c => c.Id == copyId);
-        return copy == null ? NotFound() : Ok(ToCopyDto(copy));
+        return copy == null ? NotFound() : Ok(_mapper.Map<ItemCopyDto>(copy));
     }
 
     [HttpPost("{id:int}/copies")]
@@ -162,23 +165,6 @@ public class ItemsController : ControllerBase
         return added==0?NotFound():Ok(new {added});
     }
 
-    private static ItemDto ToDto(Item item)
-    {
-        return new ItemDto
-        {
-            Id = item.Id,
-            Name = item.Name,
-            Description = item.Description,
-            IsActive = item.IsActive,
-            TotalCopies = item.Copies.Count,
-            AvailableCopies = item.IsActive
-                ? item.Copies.Count(c => c.Status == ItemStatus.Available)
-                : 0
-        };
-    }
-
-
-
     [HttpPut("copies/{copyId:int}/status")]
     [Authorize(Roles = "GmachAdmin")]
     public async Task<IActionResult> UpdateCopyStatus(
@@ -204,16 +190,6 @@ public class ItemsController : ControllerBase
         }
     }
 
-
-    private static ItemCopyDto ToCopyDto(ItemCopy copy)
-    {
-        return new ItemCopyDto
-        {
-            Id = copy.Id,
-            ItemId = copy.ItemId,
-            Status = copy.Status
-        };
-    }
 
     [HttpPut("{id:int}/active")]
     [Authorize(Roles = "GmachAdmin")]
@@ -243,11 +219,7 @@ public class ItemsController : ControllerBase
         if (categories == null)
             return NotFound();
 
-        return Ok(categories.Select(c => new CategoryDto
-        {
-            Id = c.Id,
-            Name = c.Name
-        }));
+        return Ok(_mapper.Map<List<CategoryDto>>(categories));
     }
 
     [HttpPost("{id:int}/categories/{categoryId:int}")]
