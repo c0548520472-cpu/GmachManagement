@@ -4,23 +4,37 @@
 
 ## ארכיטקטורה
 - **Core** — ישויות, ממשקים, DTOs ו־Enums; ללא תלות בפרויקטים אחרים.
-- **Data** — EF Core, SQL Server, Repositories, Migrations, תזכורות.
+- **Data** — EF Core, SQL Server או PostgreSQL, Repositories, Migrations, תזכורות.
 - **Service** — לוגיקה עסקית, אימות ומיפוי.
 - **API** — Controllers, JWT, Middlewares, CORS; תלות ב־Core וב־Service בלבד. שירותי Data נטענים באמצעות Reflection.
 - **Tests** — בדיקות xUnit/Moq ו־Concurrency.
 - **Client** — HTML/CSS/JavaScript.
 
 ## המשאב המוגבל
-כל `ItemCopy` מייצג עותק פיזי יחיד. בעת השאלה, עדכון סטטוס העותק ויצירת הרשומה מתבצעים בטרנזקציה; `RowVersion` משמש לבקרת תחרות. ניסיון להשאיל עותק שכבר נתפס מוחזר כ־HTTP 409.
+כל `ItemCopy` מייצג עותק פיזי יחיד. בעת השאלה, עדכון סטטוס העותק ויצירת הרשומה מתבצעים בטרנזקציה; ב־SQL Server נעשה שימוש ב־`RowVersion`, וב־PostgreSQL בעמודת `xmin` כבקרת תחרות. ניסיון להשאיל עותק שכבר נתפס מוחזר כ־HTTP 409.
 
-## הרצה מקומית
-1. נדרש .NET 10 SDK ושרת SQL Server מקומי.
-2. הגדירו ב־User Secrets או במשתני סביבה את `ConnectionStrings:DefaultConnection`, `Jwt:Issuer`, `Jwt:Audience`, `Jwt:Key` (לפחות 32 בתים). אין להעלות סודות ל־Git.
-3. החילו Migrations קיימות על מסד הנתונים.
-4. הריצו את `GmachManagement.API` דרך Visual Studio או `dotnet run --project GmachManagement.API`.
-5. מתוך `GmachManagement.Client` הריצו `python -m http.server 5500 --bind 127.0.0.1`, ופתחו `http://127.0.0.1:5500`.
-6. כתובת ה־API מוגדרת ב־`GmachManagement.Client/app.js` כ־`https://localhost:7042/api`. אם פורט ה־API משתנה, עדכנו אותה.
-7. בדיקות: `dotnet test GmachManagement.slnx`.
+## הרצה מקומית להגשה (ללא ענן)
+1. התקינו .NET 10 SDK, בסיס נתונים מקומי מסוג **PostgreSQL או SQL Server**, וכלי `dotnet-ef`.
+2. בפרויקט `GmachManagement.API` הגדירו **User Secrets** (או משתני סביבה), בלי להכניס סודות ל־Git:
+   - `DatabaseProvider` = `PostgreSQL` או `SqlServer` (ברירת המחדל ב־`appsettings.json` היא SQL Server).
+   - עבור PostgreSQL: `ConnectionStrings:PostgreSQL`; עבור SQL Server: `ConnectionStrings:DefaultConnection`.
+   - `Jwt:Issuer`, `Jwt:Audience`, `Jwt:Key` (מפתח של 32 בתים לפחות).
+   - אל תשתמשו בחיבור למסד הנתונים של Neon או Render עבור ההגשה.
+3. עבור **PostgreSQL**, השרת מפעיל migrations ממתינות בזמן האתחול באמצעות `PostgreSqlMigrationsDbContext`. עבור **SQL Server**, הפעילו migrations **על בסיס מקומי בלבד**:
+   ```powershell
+   dotnet ef database update --context AppDbContext --project GmachManagement.Data --startup-project GmachManagement.API
+   ```
+4. הריצו את השרת: `dotnet run --project GmachManagement.API --launch-profile https` (או דרך Visual Studio). בדקו ש־Swagger נפתח ב־`https://localhost:7042/swagger` כאשר זה הפורט המקומי.
+5. מתוך `GmachManagement.Client` הריצו `python -m http.server 5500 --bind 127.0.0.1`, ופתחו `http://127.0.0.1:5500`. **בענף submission**, הלקוח מזהה `localhost` או `127.0.0.1` ופונה ל־`https://localhost:7042/api`. יש להתאים את הפורט אם סביבת ההרצה שונה.
+6. בדיקות חובה: `dotnet test GmachManagement.slnx`. בדיקת תחרות ממוקדת: `dotnet test GmachManagement.Tests/GmachManagement.Tests.csproj --filter FullyQualifiedName~ConcurrencyTests`.
+7. **משתמשי הדגמה:** יש ליצור במסד המקומי משתמש רגיל ומשתמש בעל גמ"ח דרך מסך ההרשמה או `POST /api/Auth/register`. בעת ההגשה למסור למורה פרטי כניסה של משתמשי הדמו המקומיים בלבד, לא סיסמאות אמיתיות. פרטי דמו אינם מאוחסנים במאגר.
+
+### הדגמה ממוקדת לפי דרישות המורה
+- הרשמה והתחברות של משתמש רגיל ושל בעל גמ"ח; JWT והרשאות שונות.
+- קטלוג פריטים עם חיפוש ו־pagination; הוספת פריט ועותק בידי בעל גמ"ח.
+- יצירת בקשת השאלה דרך `POST /api/borrow-requests` ואישורה בידי בעל הגמ"ח דרך `POST /api/borrow-requests/mine/{id}/fulfill`.
+- בקשה שכבר טופלה או מצב של חוסר זמינות מוחזרים כ־`409` עם הודעה ללקוח.
+- בדיקת `ConcurrencyTests` מציגה שני `DbContext` נפרדים; ב־SQLite in-memory נדרשת סימולציה ידנית של שינוי גרסה משום שאין בו rowversion אוטומטי.
 
 ## תפקידי משתמש
 - **User** — הרשמה, התחברות, צפייה בפריטים, השאלת עותקים, ניהול השאלות אישיות וסימון החזרה.
@@ -52,22 +66,9 @@
 - Excel import: `POST /api/gmachs/mine/import` with multipart field `file`, `.xlsx` only, first worksheet; first row is headers, column A item name, B description, up to 500 items and 2 MB.
 - Existing unassigned items remain unassigned; no automatic transfer of ownership.
 
-### Required database upgrade (before using owner registration)
+### בטיחות סביבת ההגשה
 
-**Back up the existing Neon database first.** Run the additive PostgreSQL migration using the already-configured local Neon credentials:
-
-```powershell
-dotnet ef database update --context PostgreSqlMigrationsDbContext --project GmachManagement.Data --startup-project GmachManagement.API
-```
-
-For local SQL Server:
-
-```powershell
-dotnet ef database update --context AppDbContext --project GmachManagement.Data --startup-project GmachManagement.API
-```
-
-The API now applies pending PostgreSQL migrations on startup. Confirm Render logs show a successful startup and verify the new tables before testing owner registration, gmach search or Excel import. The manual command above remains available for local use.
-
+ההגשה מבוססת על שרת ולקוח מקומיים. אין צורך בענן, Docker או Google Sign-In. אין להריץ migrations, איפוס או בדיקות מול בסיס הנתונים החי. שינויי ההגשה מתבצעים בענף `submission` בלבד.
 
 ## בדיקות הגשה בענף submission
 
