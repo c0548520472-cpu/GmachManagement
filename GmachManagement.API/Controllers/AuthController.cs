@@ -10,7 +10,6 @@ using GmachManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
-using Microsoft.AspNetCore.Mvc;
 
 namespace GmachManagement.API.Controllers
 {
